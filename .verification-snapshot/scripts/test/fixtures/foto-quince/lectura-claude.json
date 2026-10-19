@@ -1,0 +1,285 @@
+{
+ "resumen": "Montaje rosa y dorado con arco de globos rosa, malva cromado y dorado sobre un panel blanco con arco, lentejuelas plateadas a los lados y un sillón tapizado rosa con marco dorado.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 850,
+  "referencia": "panel blanco con arco de 230 cm, ocupa 0,27 del alto"
+ },
+ "pisoY": 0.47,
+ "sala": {
+  "pared": "#d9b6c8",
+  "piso": "#e8e0e6"
+ },
+ "piezas": [
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.03,
+     "y": 0.36,
+     "grosor": 0.15
+    },
+    {
+     "x": 0.1,
+     "y": 0.25,
+     "grosor": 0.16
+    },
+    {
+     "x": 0.2,
+     "y": 0.2,
+     "grosor": 0.16
+    },
+    {
+     "x": 0.3,
+     "y": 0.2,
+     "grosor": 0.15
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 30,
+    "medianos": 50,
+    "chicos": 20,
+    "diametroGrande": 0.045,
+    "diametroMediano": 0.033,
+    "diametroChico": 0.018,
+    "formatoGrande": "R-18",
+    "formatoMediano": "R-12",
+    "formatoChico": "R-5"
+   },
+   "racimos": 0.6,
+   "follaje": [
+    "rosa"
+   ],
+   "colores": [
+    {
+     "nombre": "dorado",
+     "hex": "#d4a84b",
+     "peso": 40,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "rosa pálido",
+     "hex": "#f4cfd9",
+     "peso": 35,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "malva",
+     "hex": "#7c3f6e",
+     "peso": 25,
+     "acabado": "cromado"
+    }
+   ],
+   "nota": "Lado izquierdo: dorado cromado en la base del arco, malva y rosa pálido hacia arriba."
+  },
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.34,
+     "y": 0.3,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.38,
+     "y": 0.2,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.45,
+     "y": 0.17,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.52,
+     "y": 0.18,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.55,
+     "y": 0.26,
+     "grosor": 0.09
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 15,
+    "medianos": 55,
+    "chicos": 30,
+    "diametroGrande": 0.035,
+    "diametroMediano": 0.027,
+    "diametroChico": 0.016,
+    "formatoGrande": "R-18",
+    "formatoMediano": "R-12",
+    "formatoChico": "R-5"
+   },
+   "racimos": 0.5,
+   "follaje": [
+    "rosa"
+   ],
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#f2c2d6",
+     "peso": 75,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "blanco",
+     "hex": "#f7f3f4",
+     "peso": 25,
+     "acabado": "mate"
+    }
+   ],
+   "nota": "Arco central sobre el panel blanco; flores rosas de tela entre los globos."
+  },
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.48,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.56,
+     "y": 0.2,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.63,
+     "y": 0.24,
+     "grosor": 0.13
+    },
+    {
+     "x": 0.66,
+     "y": 0.3,
+     "grosor": 0.12
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 30,
+    "medianos": 45,
+    "chicos": 25,
+    "diametroGrande": 0.045,
+    "diametroMediano": 0.032,
+    "diametroChico": 0.018,
+    "formatoGrande": "R-18",
+    "formatoMediano": "R-12",
+    "formatoChico": "R-5"
+   },
+   "racimos": 0.6,
+   "colores": [
+    {
+     "nombre": "malva",
+     "hex": "#7c3f6e",
+     "peso": 40,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#d4a84b",
+     "peso": 35,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "rosa",
+     "hex": "#f0b8cc",
+     "peso": 25,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "arcos_chiara",
+   "x": 0.45,
+   "yBase": 0.47,
+   "ancho": 0.22,
+   "alto": 0.27,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#f5f2f2",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ],
+   "nota": "Panel blanco con arco arriba, tras el arco de globos."
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.42,
+   "yBase": 0.5,
+   "ancho": 0.1,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "plata",
+     "hex": "#c8c8cc",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ],
+   "nota": "Panel de brillo plateado detrás del arco central."
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.15,
+   "yBase": 0.5,
+   "ancho": 0.14,
+   "alto": 0.36,
+   "colores": [
+    {
+     "nombre": "plata",
+     "hex": "#c8c8cc",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ],
+   "nota": "Panel plateado a la izquierda; tiene una foto impresa que no se arma."
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.6,
+   "yBase": 0.47,
+   "ancho": 0.12,
+   "alto": 0.22,
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#f0c4d6",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#d4a85a",
+     "peso": 30,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "neón de mariposa en pie con base, sin letras"
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "neón de mariposa blanco sobre el arco central, sin letras"
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "arreglo de flores rosas en el piso junto al panel izquierdo"
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "primer plano: mesa de invitados con vajilla, copas, bolso de lentejuelas y arreglo colgante del techo"
+  }
+ ]
+}

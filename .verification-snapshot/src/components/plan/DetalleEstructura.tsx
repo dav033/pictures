@@ -1,0 +1,753 @@
+"use client";
+
+/* Catalog images come from runtime URLs and already carry explicit dimensions. */
+/* eslint-disable @next/next/no-img-element */
+
+import { useState, type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
+import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
+import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import {
+  acabadoCliente,
+  cantidadCliente,
+  cuentaEnGlobos,
+  medidasCliente,
+  metrosCliente,
+  muestraColor,
+  productoCliente,
+  productoConTamanoCliente,
+  tonoCliente,
+  ubicacionCliente,
+} from "@/lib/plan/presentacion-cliente";
+import { IconoEstructura } from "./IconoEstructura";
+import { BarraTamanos, tramosPorTamano } from "./BarraTamanos";
+import { RecortePieza } from "@/components/referencia/RecortePieza";
+import type { Mezcla } from "@/lib/plan/mezclas";
+import { RepartoColores } from "./RepartoColores";
+import { BalanceTamanos } from "./BalanceTamanos";
+import type { PendientesAjustes } from "./cola-ajustes";
+import type { CajaNormalizada } from "@/components/referencia/recorte";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
+import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
+import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
+import type { ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
+import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
+import type { PiezaDibujoEstructura } from "./dibujo/vista-dibujo-estructura";
+import type { CambiosPieza } from "./dibujo/borrador-pieza";
+import { nombreDePieza } from "@/lib/plan/nombre-pieza";
+import { BloquePatron } from "./patron/BloquePatron";
+import { BloqueBouquet } from "./bouquet/BloqueBouquet";
+import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
+import { BloqueArco } from "./arco/BloqueArco";
+import type { PiezaVistaArco } from "./arco/vista-arco";
+import { BloqueArcoOrganico } from "./arco-organico/BloqueArcoOrganico";
+import type { PiezaVistaArcoOrganico } from "./arco-organico/vista-arco-organico";
+import { BloqueColumna } from "./columna/BloqueColumna";
+import type { PiezaVistaColumna } from "./columna/vista-columna";
+import { BloqueColumnaOrganica } from "./columna-organica/BloqueColumnaOrganica";
+import type { PiezaVistaColumnaOrganica } from "./columna-organica/vista-columna-organica";
+import { BloqueGuirnaldaOrganica } from "./guirnalda-organica/BloqueGuirnaldaOrganica";
+import { BloqueDibujoEstructura } from "./dibujo/BloqueDibujoEstructura";
+import type { PiezaVistaGuirnaldaOrganica } from "./guirnalda-organica/vista-guirnalda-organica";
+import { curvaDeArmado } from "./guirnalda/geometria-guirnalda";
+import type { VistasEnVivo } from "./vistas-en-vivo";
+import type { ColorLeyenda } from "./patron/leyenda";
+
+const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+type EstructuraDeclarada = PlanResuelto["plan"]["estructuras"][number];
+
+type Props = {
+  idBase: string;
+  estructura: EstructuraResuelta;
+  declarada?: EstructuraDeclarada;
+  oficial?: EstructuraOficial;
+  abierto: boolean;
+  onAlternar: () => void;
+  recorte?: { src: string; caja: CajaNormalizada } | null;
+  lineas: LineaMaterial[];
+  imagenDe: (linea: LineaMaterial) => string | undefined;
+  fotoAusente: (linea: LineaMaterial) => boolean;
+  /** Consumption value of this piece's balloons, when every line has a price. */
+  sumaCop: number | null;
+  editable: boolean;
+  onAgregar: () => void;
+  onEditar: (linea: LineaMaterial) => void;
+  onQuitar: (linea: LineaMaterial) => void;
+  /** "Quitar" only where the structure keeps a material afterwards (`lineaQuitable`); default: every line. */
+  puedeQuitar?: (linea: LineaMaterial) => boolean;
+  onVerProducto: (linea: LineaMaterial, disparador: HTMLButtonElement) => void;
+  /** Extras per line (training reference count). */
+  extraLinea?: (linea: LineaMaterial) => ReactNode;
+  modoDev?: boolean;
+  /** Saves a new color split of the piece (shares in `materiales` order); resolves the reason when it was not saved. */
+  onRepartir?: (participaciones: number[]) => Promise<string | null>;
+  /** Saves another size mix for the piece; resolves the reason when it was not saved. */
+  onCambiarMezcla?: (mezcla: Mezcla) => Promise<string | null>;
+  /** A dialog edit of the card is in flight: the interactive controls wait. */
+  ocupado?: boolean;
+  /** The card's count of slider changes not in the plan yet (approving waits for them). */
+  pendientes?: PendientesAjustes;
+  /**
+   * Color pattern block (ADR-0028): the applied expansion from Python, its
+   * numbered legend and the ways into the editor and the assembly sheet.
+   * Absent for pieces that cannot carry a pattern.
+   */
+  patron?: {
+    /** The plan's applied pattern. */
+    resuelto?: PatronColorResuelto;
+    leyenda: readonly ColorLeyenda[];
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
+    /** Other edits are still saving: the editor opens once the plan they sign is in. */
+    ocupado?: boolean;
+  };
+  /**
+   * Bouquet assembly block (ADR-0030): Python's resolved assembly, its
+   * numbered legend and the ways into the editor and the assembly sheet.
+   * Only for bouquets; a bouquet never carries a pattern, so at most one of
+   * the two blocks shows.
+   */
+  armado?: {
+    /** The plan's assembly for this bouquet. */
+    resuelto?: ArmadoBouquetResuelto;
+    leyenda: readonly ColorLeyenda[];
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
+    /** Other edits are still saving: the editor opens once the plan they sign is in. */
+    ocupado?: boolean;
+  };
+  /**
+   * Garland assembly block (ADR-0032, E6): Python's resolved assembly, its
+   * numbered legend and the ways into the editor and the (single, merged)
+   * assembly sheet. Only when the plan carries the garland's assembly;
+   * without it the card stays exactly as before. With it, the pattern block
+   * draws its grid over the assembly's real shape.
+   */
+  guirnalda?: {
+    resuelto: ArmadoGuirnaldaResuelto;
+    leyenda: readonly ColorLeyenda[];
+    /** Name of the host piece when the garland goes over another one. */
+    anfitriona?: string;
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
+    ocupado?: boolean;
+  };
+  /**
+   * Arch block drawn by the designer's engine (ADR-0034): the piece's
+   * `armado_arco` and what the drawing needs to be asked for
+   * (`/api/plan-armado-arco`). Only when the piece carries the assembly, and
+   * then it takes the pattern block's place: the engine's SVG replaces the
+   * graphic that recomputed the geometry in the browser. Without the
+   * assembly the card stays exactly as before, which is what makes the change
+   * reversible (ADR-0034, decision 3).
+   */
+  arco?: {
+    armado: ArmadoArcoV1;
+    pieza: PiezaVistaArco;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the arch assembly into the proposal (`armado_arco` edit; ADR-0035, step 1) and resolves the
+     * reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoArcoV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Organic arch block drawn by the designer's engine (ADR-0034, ADR-0035): the piece's
+   * `armado_arco_organico` and what the drawing needs to be asked for
+   * (`/api/plan-armado-arco-organico`). Same rules as `arco`: only when the piece carries the assembly, and then
+   * it takes the pattern block's place and the engine is the one that draws, counts and measures. It is NOT the
+   * pattern grid (`arco`: solid, spiral, chevron…); when a piece carries both assemblies the classic one wins and
+   * this block is not drawn. **A half arch is drawn here**, with `forma.corte` below 1.
+   */
+  arcoOrganico?: {
+    armado: ArmadoArcoOrganicoV1;
+    pieza: PiezaVistaArcoOrganico;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the arch assembly into the proposal (`armado_arco_organico` edit; ADR-0035) and resolves the reason
+     * when it did not get in, or `null`. Without it the block is read-only (the card without editing). It also
+     * saves a half arch (`semiarco`), which is this same assembly with `forma.corte` < 1.
+     */
+    onGuardar?: (armado: ArmadoArcoOrganicoV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Column block drawn by the designer's engine (ADR-0034, ADR-0035 step 3): the piece's
+   * `armado_columna` and what the drawing needs to be asked for
+   * (`/api/plan-armado-columna`). Same rules as `arco`: only when the piece carries
+   * the assembly, and then it takes the pattern block's place and the engine is the
+   * one that draws, counts and measures. Without the assembly the card stays exactly as
+   * before, which is what makes the change reversible.
+   */
+  columna?: {
+    armado: ArmadoColumnaV1;
+    pieza: PiezaVistaColumna;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the column assembly into the proposal (`armado_columna` edit; ADR-0035, step 3) and resolves the
+     * reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoColumnaV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Organic column block drawn by the designer's engine (ADR-0034, ADR-0035 step 3): the piece's
+   * `armado_columna_organica` and what the drawing needs to be asked for
+   * (`/api/plan-armado-columna-organica`). Same rules as `columna`: only when the piece carries the assembly, and
+   * then it takes the pattern block's place and the engine is the one that draws, counts and measures. It is NOT the
+   * ring tower (`columna`: patterns); when a piece carries both assemblies the classic one wins and this block is
+   * not drawn.
+   */
+  columnaOrganica?: {
+    armado: ArmadoColumnaOrganicaV1;
+    pieza: PiezaVistaColumnaOrganica;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the column assembly into the proposal (`armado_columna_organica` edit; ADR-0035, step 3) and resolves
+     * the reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoColumnaOrganicaV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Garland block drawn by the designer's engine (ADR-0034): the piece's
+   * `armado_guirnalda_organica` and what the drawing needs to be asked for
+   * (`/api/plan-armado-guirnalda-organica`). Same rules as `arco`: only when the
+   * piece carries the assembly, and then it takes the pattern block's place and
+   * the engine is the one that draws, counts and measures. It is NOT the
+   * ADR-0032 garland block (`guirnalda`: clusters, fill and toppers); when a
+   * piece carries both assemblies the engine's wins and that block is not drawn.
+   */
+  guirnaldaOrganica?: {
+    armado: ArmadoGuirnaldaOrganicaV1;
+    pieza: PiezaVistaGuirnaldaOrganica;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the garland assembly into the proposal (`armado_guirnalda_organica` edit; ADR-0035, step 3) and resolves
+     * the reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoGuirnaldaOrganicaV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Schematic drawing of a piece **no engine builds**: the wall, the circular
+   * hoop, the balloon ceiling and the table centerpiece. It takes the pattern
+   * block's place and comes **after** every `armado*` block, so a piece an
+   * engine really draws always wins.
+   *
+   * There are still no numbers to save -- these drawings are schematic and
+   * compute no quantities, «No calculan cantidades: la medida es la típica de
+   * cada estructura» (`dibujos.py`) -- but there is one decision: the shape of
+   * the piece (`onCambiarForma`, a `forma` plan edit; `formas-pieza.ts`). It
+   * changes the silhouette, never the count or the price, which stay the ones
+   * `plan.py` resolved and show up in the card's own lines and total.
+   */
+  dibujo?: {
+    pieza: PiezaDibujoEstructura;
+    /** Saves the chosen shape (`null` removes it); without it the block only draws. */
+    onCambiarForma?: (forma: string | null) => Promise<string | null>;
+    /**
+     * Saves what the piece's editor changed (shape, density, measures) as ONE `propiedades` edit; with it the
+     * block offers «Editar pared» / «Editar aro»… instead of the loose shape selector.
+     */
+    onGuardarPropiedades?: (cambios: CambiosPieza) => Promise<string | null>;
+  };
+  /**
+   * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
+   * Python draws each split while it moves; the slider leaves it in `vistas`
+   * (by structure) and the pattern block and the card's summary strip show
+   * it until the signed plan arrives.
+   */
+  vistaReparto?: {
+    pedir: (participaciones: readonly number[], signal: AbortSignal) => Promise<PatronColorResuelto>;
+    vistas: VistasEnVivo<PatronColorResuelto>;
+  };
+};
+
+/** Pieces whose balloons come from the geometry, so their colors and sizes can be rebalanced. */
+const TIPOS_GEOMETRICOS = new Set(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);
+
+/** Measurement tiles for the structure, only those present in the plan. */
+function mosaicosMedidas(tipo: string, medidas: EstructuraDeclarada["medidas"] | undefined): Array<{ etiqueta: string; valor: string }> {
+  if (!medidas) return [];
+  if (tipo === "guirnalda") {
+    const largo = medidas.largo_m ?? medidas.ancho_m;
+    return largo != null ? [{ etiqueta: "Largo", valor: metrosCliente(largo) }] : [];
+  }
+  const mosaicos: Array<{ etiqueta: string; valor: string }> = [];
+  if (medidas.ancho_m != null) mosaicos.push({ etiqueta: tipo === "centro_mesa" ? "Diámetro" : "Ancho", valor: metrosCliente(medidas.ancho_m) });
+  if (medidas.alto_m != null) mosaicos.push({ etiqueta: "Alto", valor: metrosCliente(medidas.alto_m) });
+  if (medidas.largo_m != null) mosaicos.push({ etiqueta: ["arco", "semiarco", "columna"].includes(tipo) ? "Fondo" : "Largo", valor: metrosCliente(medidas.largo_m) });
+  return mosaicos;
+}
+
+/** "12″" for a size chip. */
+function tamanoCorto(linea: LineaMaterial): string {
+  const pulgadas = linea.diam_pulg ?? Number(/(\d+(?:[.,]\d+)?)/.exec(linea.tamano_codigo ?? "")?.[1]?.replace(",", "."));
+  return Number.isFinite(pulgadas) && pulgadas ? `${pulgadas}″` : linea.tamano_codigo ?? "";
+}
+
+/** The catalog size code the decorator orders by ("R-12"); the inches when the line has no code. */
+function codigoTamano(linea: LineaMaterial): string {
+  return linea.tamano_codigo?.trim() || tamanoCorto(linea);
+}
+
+/** The exact variant to order, set apart from the size so it reads as a code to copy. */
+function EtiquetaSku({ sku }: { sku: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-baseline gap-1 rounded-md bg-superficie-suave px-1.5 py-px ring-1 ring-borde-suave ring-inset">
+      <span className="text-[9px] font-semibold tracking-wider text-texto-suave uppercase">SKU</span>
+      <span className="font-mono text-[11px] tracking-tight text-texto select-all">{sku}</span>
+    </span>
+  );
+}
+
+/** "R-12" followed by its SKU tag: the size code plus the exact variant to order. */
+function tamanoConSku(linea: LineaMaterial, extra?: string | null): ReactNode {
+  const codigo = codigoTamano(linea);
+  return (
+    <span className="inline-flex max-w-full items-center gap-2">
+      <span className="truncate">
+        {codigo && <span className="font-semibold tabular-nums">{codigo}</span>}
+        {codigo && extra ? " · " : null}
+        {extra}
+      </span>
+      {linea.sku && <EtiquetaSku sku={linea.sku} />}
+    </span>
+  );
+}
+
+/**
+ * Lines of the same catalog product in the same color are one family: the
+ * sizes are variants of it. Grouped so a piece with five sizes of "Fashion
+ * Rosado" reads as one row instead of five (2026-09-24). Sizes stay in
+ * ascending order.
+ */
+function familiasDeLineas(lineas: readonly LineaMaterial[]): Array<{ clave: string; lineas: LineaMaterial[]; unidades: number }> {
+  const familias = new Map<string, { clave: string; lineas: LineaMaterial[]; unidades: number }>();
+  for (const linea of lineas) {
+    const clave = `${linea.product_id}|${linea.color ?? ""}`;
+    const familia = familias.get(clave) ?? { clave, lineas: [], unidades: 0 };
+    familia.lineas.push(linea);
+    familia.unidades += linea.unidades;
+    familias.set(clave, familia);
+  }
+  for (const familia of familias.values()) familia.lineas.sort((a, b) => (a.diam_pulg ?? 0) - (b.diam_pulg ?? 0));
+  return [...familias.values()];
+}
+
+type AccionesLinea = Pick<Props, "imagenDe" | "fotoAusente" | "editable" | "onEditar" | "onQuitar" | "puedeQuitar" | "onVerProducto" | "extraLinea">;
+
+/** One size of one product, with its photo, units and the edit/remove actions. */
+function FilaLinea({ linea, detalle, compacta = false, imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea }: { linea: LineaMaterial; detalle: ReactNode; compacta?: boolean } & AccionesLinea) {
+  const imagen = imagenDe(linea);
+  const nombreAccesible = productoConTamanoCliente(linea.titulo, linea.tamano_codigo);
+  return (
+    <div className={`flex items-center gap-2 rounded-xl border border-borde-suave bg-superficie pr-2.5 ${compacta ? "p-1.5" : "p-2"}`}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={(evento) => onVerProducto(linea, evento.currentTarget)}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+      >
+        {compacta ? null : imagen ? (
+          <img src={imagen} alt="" width={44} height={44} loading="lazy" className="size-11 shrink-0 rounded-lg bg-white object-contain" />
+        ) : (
+          <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg bg-superficie-2 text-center text-[9px] leading-tight text-texto-suave">{fotoAusente(linea) ? "Sin foto" : "Cargando…"}</span>
+        )}
+        <span className="min-w-0 flex-1">
+          {compacta ? (
+            <span className="block truncate text-[13px] text-texto">{detalle}</span>
+          ) : (
+            <>
+              <span className="block truncate text-sm font-medium text-texto">{productoCliente(linea.titulo)}</span>
+              <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalle}</span>
+            </>
+          )}
+        </span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-texto">
+          {linea.unidades}<span className="sr-only"> {linea.unidades === 1 ? "unidad" : "unidades"}</span>
+        </span>
+      </button>
+      {extraLinea?.(linea)}
+      {editable && (
+        <span className="flex shrink-0 items-center">
+          <button type="button" title={`Modificar ${nombreAccesible}`} aria-label={`Modificar ${nombreAccesible}`} onClick={() => onEditar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento">
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </button>
+          {(puedeQuitar?.(linea) ?? true) && (
+            <button type="button" title={`Quitar ${nombreAccesible}`} aria-label={`Quitar ${nombreAccesible}`} onClick={() => onQuitar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
+              <Trash2 className="size-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** "unos 85 globos" with the number emphasized; other phrasings stay as text. */
+function CantidadTexto({ texto }: { texto: string }) {
+  const partes = /^(unos )([\d.]+)( .+)$/.exec(texto);
+  if (!partes) return <>{texto}</>;
+  return <>{partes[1]}<strong className="font-semibold text-texto">{partes[2]}</strong>{partes[3]}</>;
+}
+
+/**
+ * One structure of the proposal, expandable (maqueta DetallePieza): icon,
+ * measurements, the reason, the size mix and the products with real photos,
+ * with the existing edit and remove actions. The body stays in the DOM while
+ * closed (height 0, `inert`) so it is still part of the static render.
+ */
+export function DetalleEstructura({
+  idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
+  editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, arcoOrganico, columna, columnaOrganica, guirnaldaOrganica, dibujo, vistaReparto,
+}: Props) {
+  const reducir = useReducedMotion();
+  const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
+  const alternarFamilia = (clave: string) => setFamiliasAbiertas((actuales) => {
+    const siguientes = new Set(actuales);
+    if (siguientes.has(clave)) siguientes.delete(clave);
+    else siguientes.add(clave);
+    return siguientes;
+  });
+  const acciones = { imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea };
+  const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
+  const medidasTexto = medidasCliente(estructura.tipo, declarada?.medidas);
+  const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura);
+  // A bouquet or a kit made of balloons counts balloons, not pieces.
+  const deGlobos = cuentaEnGlobos(estructura);
+  const tramos = tramosPorTamano(estructura.mezcla_real.map((linea) => ({ pulgadas: linea.diam_pulg, unidades: linea.unidades })));
+  const mosaicos = [
+    ...mosaicosMedidas(estructura.tipo, declarada?.medidas),
+    ...(estructura.repeticiones > 1 ? [{ etiqueta: "Piezas iguales", valor: String(estructura.repeticiones) }] : []),
+    { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `${deGlobos ? "unos" : "unas"} ${Math.round(estructura.total_unidades)}` },
+  ];
+  const pequenosRellenan = tramos.length >= 2 && tramos[0]!.unidades > tramos[tramos.length - 1]!.unidades;
+  // With a pattern, the grid decides how much of each color goes in; only confetti still takes a color split.
+  const confeti = declarada?.patron_color?.base.modo === "aleatorio";
+  const repartoLibre = !declarada?.patron_color || confeti;
+  const proporcion = declarada?.medidas.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
+  const idCuerpo = `${idBase}-cuerpo`;
+  // Un arco armado con el motor compra lo que su armado coloca: ni el reparto de colores ni la mezcla de tamaños lo
+  // cambian (solo moverían el `plan_hash` con el mismo total), así que esos controles no se ofrecen (ADR-0035).
+  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && !arco && !arcoOrganico && !columna && !columnaOrganica && !guirnaldaOrganica;
+  const armadoSinReparto = Boolean(editable && (arco || arcoOrganico || columna || columnaOrganica || guirnaldaOrganica) && (onRepartir || onCambiarMezcla));
+  // On a confetti the slider changes the drawing: it goes inside the pattern block, next to (on a phone, right under) it.
+  const repartoEnBloque = confeti && Boolean(patron?.resuelto);
+  const reparto = ajustable && onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") ? (
+    <RepartoColores
+      // Same materials, same control: it follows the shares the resolver signs. Adding or removing a color starts it over.
+      key={declarada.materiales.map((material) => material.variant_id ?? material.product_id).join("|")}
+      colores={declarada.materiales.map((material) => ({
+        etiqueta: material.color ? tonoCliente(material.color, material.product_id) : productoCliente(material.product_id),
+        fondo: muestraColor(material.color ?? "", null).fondo,
+        participacion: material.participacion ?? 0,
+      }))}
+      totalGlobos={estructura.total_unidades}
+      ocupado={ocupado}
+      onGuardar={onRepartir}
+      pendientes={pendientes}
+      vistaPrevia={confeti ? vistaReparto?.pedir : undefined}
+      onVistaPrevia={vistaReparto ? (vista) => vistaReparto.vistas.fijar(estructura.estructura_id, vista) : undefined}
+      conteo={patron?.resuelto?.conteo}
+      avisosPlan={patron?.resuelto?.avisos}
+      incrustado={repartoEnBloque}
+    />
+  ) : null;
+
+  return (
+    <li className={`overflow-hidden rounded-2xl border bg-superficie transition-colors ${abierto ? "border-borde shadow-[0_1px_2px_var(--sombra)]" : "border-borde-suave"}`}>
+      <button
+        type="button"
+        aria-expanded={abierto}
+        aria-controls={idCuerpo}
+        onClick={onAlternar}
+        className="flex w-full items-center gap-3.5 p-3 text-left hover:bg-superficie-suave focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-acento sm:p-4"
+      >
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-acento-suave text-acento sm:size-14" title={oficial?.descripcion}>
+          {oficial ? <IconoEstructura id={oficial.id} espejo={estructura.ubicacion === "lateral_derecho"} className="size-8 sm:size-9" /> : <span aria-hidden className="size-3 rounded-full bg-acento/60" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-texto sm:text-base">{nombreVisible} <span className="font-normal text-texto-suave">{ubicacionCliente(estructura)}</span></span>
+          <span className="mt-0.5 block text-[13px] text-texto-suave">
+            {medidasTexto && <>{medidasTexto} · </>}
+            <CantidadTexto texto={cantidad} />
+          </span>
+        </span>
+        {recorte && <RecortePieza src={recorte.src} caja={recorte.caja} alt="" revelar={false} className="hidden h-15 w-11 shrink-0 rounded-lg min-[420px]:block" />}
+        <ChevronDown aria-hidden="true" className={`size-4.5 shrink-0 text-texto-suave transition-transform duration-200 ${abierto ? "rotate-180" : ""}`} />
+      </button>
+
+      <motion.div
+        id={idCuerpo}
+        inert={!abierto}
+        initial={false}
+        animate={{ height: abierto ? "auto" : 0, opacity: abierto ? 1 : 0 }}
+        transition={reducir ? { duration: 0 } : { height: { duration: 0.38, ease: [0.23, 1, 0.32, 1] }, opacity: { duration: 0.25, delay: abierto ? 0.08 : 0 } }}
+        style={{ overflow: "hidden" }}
+      >
+        <div className="space-y-4 border-t border-borde-suave px-3 pb-4 pt-4 sm:px-4">
+          <dl className="grid grid-cols-2 gap-2 @lg:grid-cols-4">
+            {mosaicos.map((mosaico) => (
+              <div key={mosaico.etiqueta} className="rounded-xl bg-superficie-suave px-3 py-2">
+                <dt className="text-xs text-texto-suave">{mosaico.etiqueta}</dt>
+                <dd className="text-[15px] font-semibold tabular-nums text-texto">{mosaico.valor}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {declarada?.porque && <p className="text-sm leading-relaxed text-texto-suave">{declarada.porque}</p>}
+
+          {tramos.length > 0 && (
+            <div>
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <p className="text-[13px] font-semibold text-texto">Mezcla de tamaños</p>
+                {pequenosRellenan && <p className="text-xs text-texto-suave">Más globos pequeños para rellenar, pocos grandes para dar volumen</p>}
+              </div>
+              <BarraTamanos tramos={tramos} variante="detalle" retraso={0.1} />
+              {modoDev && <p className="mt-1 text-[11px] text-texto-suave">{estructura.nombre} · {estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg} · ${linea.unidades} (${Math.round(linea.pct)}%)`).join(" · ")}</p>}
+            </div>
+          )}
+
+          {/*
+            Un arco con armado y el bloque del patrón comparten UN hueco: con `armado_arco` el
+            dibujo lo emite el motor que colocó y contó los globos, y el patrón deja de calcular
+            geometría en el navegador para esta pieza (ADR-0034, consecuencia 2). Comparten el
+            hueco —y no se añade otro— por lo mismo que el bouquet y la guirnalda: un hijo más
+            correría el `useId` de todos los controles que vienen después, y una tarjeta sin
+            armado dejaría de pintarse byte por byte como antes.
+          */}
+          {arco ? (
+            <BloqueArco
+              armado={arco.armado}
+              pieza={arco.pieza}
+              leyenda={arco.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={arco.onGuardar}
+              ocupado={ocupado || Boolean(arco.ocupado)}
+            />
+          ) : arcoOrganico ? (
+            <BloqueArcoOrganico
+              armado={arcoOrganico.armado}
+              pieza={arcoOrganico.pieza}
+              leyenda={arcoOrganico.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={arcoOrganico.onGuardar}
+              ocupado={ocupado || Boolean(arcoOrganico.ocupado)}
+              sustantivo={estructura.tipo === "semiarco" ? "semiarco" : "arco"}
+            />
+          ) : columna ? (
+            <BloqueColumna
+              armado={columna.armado}
+              pieza={columna.pieza}
+              leyenda={columna.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={columna.onGuardar}
+              ocupado={ocupado || Boolean(columna.ocupado)}
+            />
+          ) : columnaOrganica ? (
+            <BloqueColumnaOrganica
+              armado={columnaOrganica.armado}
+              pieza={columnaOrganica.pieza}
+              leyenda={columnaOrganica.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={columnaOrganica.onGuardar}
+              ocupado={ocupado || Boolean(columnaOrganica.ocupado)}
+            />
+          ) : guirnaldaOrganica ? (
+            <BloqueGuirnaldaOrganica
+              armado={guirnaldaOrganica.armado}
+              pieza={guirnaldaOrganica.pieza}
+              leyenda={guirnaldaOrganica.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={guirnaldaOrganica.onGuardar}
+              ocupado={ocupado || Boolean(guirnaldaOrganica.ocupado)}
+            />
+          ) : dibujo ? (
+            // Después de todos los `armado*` y antes del patrón: una pieza que un motor dibuja de verdad
+            // siempre gana, y una que ningún motor arma se ve mejor con este esquema que con el dibujo del
+            // patrón, que calculaba su geometría en el navegador. Comparte el mismo hueco, así que ningún
+            // `useId` se desplaza. Lo único que guarda es la forma elegida de la pieza (`formas-pieza.ts`):
+            // no hay armado ni cifra que escribir, porque el dibujo no calcula cantidades.
+            <BloqueDibujoEstructura
+              pieza={dibujo.pieza}
+              nombrePieza={nombreVisible}
+              onCambiarForma={dibujo.onCambiarForma}
+              onGuardarPropiedades={dibujo.onGuardarPropiedades}
+              nombre={nombreDePieza(oficial?.id ?? declarada?.estructura_oficial, estructura.tipo)}
+              pendientes={pendientes}
+              // Las dos acciones del patrón viajan con el dibujo: este bloque ocupa el hueco de `BloquePatron`
+              // en estas piezas, y sin ellas una pared se quedaba sin poder editar su patrón de color.
+              onEditarPatron={patron?.onEditar}
+              onHojaArmado={patron?.onHojaArmado}
+              ocupado={ocupado}
+            />
+          ) : patron ? (
+            <BloquePatron
+              resuelto={patron.resuelto}
+              enVivo={vistaReparto ? { vistas: vistaReparto.vistas, id: estructura.estructura_id } : undefined}
+              reparto={repartoEnBloque ? reparto : undefined}
+              leyenda={patron.leyenda}
+              tipo={estructura.tipo}
+              oficialId={oficial?.id ?? declarada?.estructura_oficial}
+              espejo={estructura.ubicacion === "lateral_derecho"}
+              proporcion={proporcion}
+              guirnalda={guirnalda ? curvaDeArmado(guirnalda.resuelto) : undefined}
+              repeticiones={estructura.repeticiones}
+              nombrePieza={nombreVisible}
+              onEditar={patron.onEditar}
+              onHojaArmado={patron.onHojaArmado}
+              ocupado={ocupado || Boolean(patron.ocupado)}
+              modoDev={modoDev}
+            />
+          ) : null}
+
+          {/*
+            The bouquet's and the garland's assembly share ONE child slot (a piece is never
+            both): a new slot would shift the `useId` of every control after it and the card
+            without an assembly would no longer render byte for byte as before (ADR-0032, E6).
+          */}
+          {armado ? (
+            <BloqueBouquet
+              resuelto={armado.resuelto}
+              leyenda={armado.leyenda}
+              nombrePieza={nombreVisible}
+              onEditar={armado.onEditar}
+              onHojaArmado={armado.onHojaArmado}
+              ocupado={ocupado || Boolean(armado.ocupado)}
+              modoDev={modoDev}
+            />
+          ) : guirnalda && !guirnaldaOrganica && (
+            <BloqueGuirnalda
+              resuelto={guirnalda.resuelto}
+              leyenda={guirnalda.leyenda}
+              nombrePieza={nombreVisible}
+              anfitriona={guirnalda.anfitriona}
+              onEditar={guirnalda.onEditar}
+              onHojaArmado={guirnalda.onHojaArmado}
+              ocupado={ocupado || Boolean(guirnalda.ocupado)}
+              modoDev={modoDev}
+            />
+          )}
+
+          {/*
+            Un solo hijo para los dos casos, a propósito: un hermano más delante de este hueco corre el `useId` de
+            todos los controles que vienen después y una pieza sin armado de arco dejaría de pintarse byte por byte
+            como antes (`ui:test-armado-guirnalda`). Con armado de arco el hueco explica por qué no hay reparto ni mezcla.
+          */}
+          {armadoSinReparto ? (
+            <p data-testid="arco-sin-reparto" className="rounded-xl bg-superficie-suave px-3 py-2 text-xs text-texto-suave">
+              {arcoOrganico && estructura.tipo === "semiarco" ? "Los colores y los globos de este semiarco los define su armado: cámbialos con «Editar semiarco»." : arco || arcoOrganico ? "Los colores y los globos de este arco los define su armado: cámbialos con «Editar arco»." : columna || columnaOrganica ? "Los colores y los globos de esta columna los define su armado: cámbialos con «Editar columna»." : "Los colores y los globos de esta guirnalda los define su armado: el motor los coloca y los cuenta, por eso aquí no se reparten. Cámbialos con «Editar guirnalda»."}
+            </p>
+          ) : ajustable && ((reparto && !repartoEnBloque) || onCambiarMezcla) && (
+            <div className="space-y-2.5">
+              {!repartoEnBloque && reparto}
+              {onCambiarMezcla && (
+                <BalanceTamanos mezcla={declarada.mezcla} totalGlobos={estructura.total_unidades} ocupado={ocupado} onGuardar={onCambiarMezcla} pendientes={pendientes} />
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="text-[13px] font-semibold text-texto">{deGlobos ? "Globos que lleva" : "Piezas que lleva"}</p>
+            <ul className="mt-2 space-y-2">
+              {familiasDeLineas(lineas).map((familia) => {
+                const primera = familia.lineas[0]!;
+                const acabado = acabadoCliente(primera.acabado, primera.titulo);
+                const tono = primera.color ? [tonoCliente(primera.color, primera.titulo), acabado].filter(Boolean).join(" ") : null;
+                if (familia.lineas.length === 1) {
+                  return (
+                    <li key={familia.clave}>
+                      <FilaLinea linea={primera} detalle={tamanoConSku(primera, tono)} {...acciones} />
+                    </li>
+                  );
+                }
+                const abiertaFamilia = familiasAbiertas.has(familia.clave);
+                const imagen = familia.lineas.map(imagenDe).find(Boolean);
+                const idTamanos = `${idBase}-familia-${familia.clave.replace(/[^a-z0-9]/gi, "")}`;
+                return (
+                  <li key={familia.clave} className="rounded-xl border border-borde-suave bg-superficie">
+                    <button
+                      type="button"
+                      aria-expanded={abiertaFamilia}
+                      aria-controls={idTamanos}
+                      onClick={() => alternarFamilia(familia.clave)}
+                      className="flex w-full min-w-0 items-center gap-3 rounded-xl p-2 pr-2.5 text-left hover:bg-superficie-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+                    >
+                      {imagen ? (
+                        <img src={imagen} alt="" width={44} height={44} loading="lazy" className="size-11 shrink-0 rounded-lg bg-white object-contain" />
+                      ) : (
+                        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg bg-superficie-2 text-center text-[9px] leading-tight text-texto-suave">{familia.lineas.every(fotoAusente) ? "Sin foto" : "Cargando…"}</span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-texto">{productoCliente(primera.titulo)}</span>
+                        {tono && <span className="mt-0.5 block truncate text-xs text-texto-suave">{tono}</span>}
+                        {/* Every size of the family at a glance: the list used to repeat the product once per size. */}
+                        <span className="mt-1 flex flex-wrap gap-1" aria-label={`Tamaños: ${familia.lineas.map((linea) => `${codigoTamano(linea)} ${linea.unidades}`).join(", ")}`}>
+                          {familia.lineas.map((linea) => (
+                            <span key={linea.variant_id} aria-hidden="true" className="rounded-full bg-superficie-suave px-1.5 py-px text-[11px] tabular-nums text-texto-suave ring-1 ring-borde-suave ring-inset">
+                              <span className="font-semibold text-texto">{codigoTamano(linea)}</span> {linea.unidades}
+                            </span>
+                          ))}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block text-sm font-semibold tabular-nums text-texto">{familia.unidades}<span className="sr-only"> unidades en total</span></span>
+                        <span className="block text-[11px] text-texto-suave">{familia.lineas.length} tamaños</span>
+                      </span>
+                      <ChevronDown aria-hidden="true" className={`size-4 shrink-0 text-texto-suave transition-transform duration-200 ${abiertaFamilia ? "rotate-180" : ""}`} />
+                    </button>
+                    <motion.ul
+                      id={idTamanos}
+                      inert={!abiertaFamilia}
+                      initial={false}
+                      animate={{ height: abiertaFamilia ? "auto" : 0, opacity: abiertaFamilia ? 1 : 0 }}
+                      transition={reducir ? { duration: 0 } : { height: { duration: 0.3, ease: [0.23, 1, 0.32, 1] }, opacity: { duration: 0.2 } }}
+                      style={{ overflow: "hidden" }}
+                      aria-label={`Tamaños de ${productoCliente(primera.titulo)}`}
+                      className="space-y-1.5 px-2"
+                    >
+                      {familia.lineas.map((linea, posicion) => (
+                        <li key={linea.variant_id} className={posicion === familia.lineas.length - 1 ? "pb-2" : undefined}>
+                          <FilaLinea linea={linea} detalle={tamanoConSku(linea)} compacta {...acciones} />
+                        </li>
+                      ))}
+                    </motion.ul>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {(editable || sumaCop != null) && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {editable ? (
+                <button type="button" onClick={onAgregar} className="ui-pressable inline-flex h-9 items-center gap-1.5 rounded-xl border border-borde px-3 text-[13px] font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                  <Plus className="size-4" aria-hidden="true" />{deGlobos ? "Agregar un globo" : "Agregar una pieza"}
+                </button>
+              ) : <span />}
+              {sumaCop != null && (
+                <p className="text-[13px] text-texto-suave" title="Precio por globo de cada paquete; los paquetes se compran una sola vez para toda la decoración.">
+                  Esta pieza suma unos <strong className="font-semibold tabular-nums text-texto">{pesos.format(sumaCop)}</strong>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </li>
+  );
+}

@@ -1,0 +1,136 @@
+{
+ "caso": "catalogo-aleatoria-12",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "839",
+   "cantidad": 84,
+   "productId": "9407246074151",
+   "color": "azul",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "48718442299687",
+     "unidadesPaq": 12,
+     "precio": 6527
+    },
+    {
+     "variantId": "48718442332455",
+     "unidadesPaq": 50,
+     "precio": 21403
+    }
+   ]
+  },
+  {
+   "formatoId": "T-260",
+   "codigo": "011",
+   "cantidad": 174,
+   "productId": "9832318959911",
+   "color": "rosado",
+   "diamPulg": 2,
+   "presentaciones": [
+    {
+     "variantId": "50030991900967",
+     "unidadesPaq": 20,
+     "precio": 4818
+    },
+    {
+     "variantId": "50030991933735",
+     "unidadesPaq": 50,
+     "precio": 10815
+    }
+   ]
+  },
+  {
+   "formatoId": "T-160",
+   "codigo": "406",
+   "cantidad": 69,
+   "productId": "8634276413735",
+   "color": "perla",
+   "diamPulg": 1,
+   "presentaciones": [
+    {
+     "variantId": "46594304409895",
+     "unidadesPaq": 50,
+     "precio": 9159
+    }
+   ]
+  },
+  {
+   "formatoId": "LOL-660",
+   "codigo": "031",
+   "cantidad": 262,
+   "productId": "8634222903591",
+   "color": "verde",
+   "diamPulg": 6,
+   "presentaciones": [
+    {
+     "variantId": "46594189099303",
+     "unidadesPaq": 20,
+     "precio": 14041
+    },
+    {
+     "variantId": "46594189132071",
+     "unidadesPaq": 50,
+     "precio": 32336
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 292967,
+  "reserva": {
+   "objetivo": 48,
+   "cubierta": 48,
+   "sinCubrir": 0,
+   "excedenteNatural": 91
+  },
+  "compras": [
+   {
+    "variantId": "46594189099303",
+    "paquetes": 2,
+    "cantidad": 40,
+    "reserva": 0,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594189132071",
+    "paquetes": 5,
+    "cantidad": 222,
+    "reserva": 21,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594304409895",
+    "paquetes": 2,
+    "cantidad": 69,
+    "reserva": 6,
+    "paraReserva": false
+   },
+   {
+    "variantId": "48718442332455",
+    "paquetes": 2,
+    "cantidad": 84,
+    "reserva": 7,
+    "paraReserva": true
+   },
+   {
+    "variantId": "50030991900967",
+    "paquetes": 2,
+    "cantidad": 40,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "50030991933735",
+    "paquetes": 3,
+    "cantidad": 134,
+    "reserva": 14,
+    "paraReserva": true
+   }
+  ]
+ }
+}

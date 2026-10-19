@@ -1,0 +1,114 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12192-1",
+  "image_sha256": "0d89f7be58c880c9826bcf28f374ea2317cd7ab218398ea233af0115dba2a45a",
+  "idempotency_key": "ab95c6829c46f14aed2d42591469d0ba891251eddc614ab3f0ad3950b26492c6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12192/foto-1.jpg",
+    "orden": "12192"
+  },
+  "anotacion": {
+    "image_id": "12192-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "cream walls and a tan tile floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.foil.star.blue",
+          "balloon.round.latex.pastel_matte.assorted_colors.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.foil.star.blue",
+            "size_code": "18 IN"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.assorted_colors.printed_birthday_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of assorted pastel round balloons and curly loops draped along the ceiling beams above the table, including a blue foil star balloon and several printed 'Feliz Cumpleaños' lettering balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a fabric birthday banner",
+      "a birthday cake stand",
+      "a paper tablecloth",
+      "a silver balloon"
+    ],
+    "uncertainties": [
+      "Several balloons in the garland (purple, gold, cream plain) are not in the allowed product list and were excluded.",
+      "Garland shape sits between a swag and a corner arch; annotated as guirnalda."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.foil.star.blue",
+      "balloon.round.latex.pastel_matte.assorted_colors.printed_birthday_lettering"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "PAQUETE X 1",
+      "R-12"
+    ],
+    "sin_resolver": [
+      "MANTEL PEVA RECTANGULAR PASTEL DUSK",
+      "KIT DIY GUIRNALDA SWEET PASTEL"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12192-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from 12-inch round latex balloons in assorted colors with a Pastel Matte finish and printed birthday lettering, 18-inch Metallic blue star-shaped foil balloons, mixed organically rather than graded, alongside a fabric birthday banner, a birthday cake stand, a paper tablecloth and a silver balloon, set against cream walls and a tan tile floor.",
+    "palabras": 61,
+    "caracteres": 419,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_matte.assorted_colors.printed_birthday_lettering",
+      "balloon.star.foil.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.star.foil.blue",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:36:19.874Z",
+    "recompilado_en": "2026-09-03T14:45:22.009Z"
+  }
+}

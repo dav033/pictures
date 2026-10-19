@@ -1,0 +1,72 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13522-1",
+  "image_sha256": "764e74179f1a92f15238001c5ab4468d9d35cdc0fafb1be22720822f66029442",
+  "idempotency_key": "03ffb6f1eca778aae3a4b82686d9f5c699d8def057bb96cc032283d3940fa8d4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13522/foto-1.jpg",
+    "orden": "13522"
+  },
+  "anotacion": {
+    "image_id": "13522-1",
+    "usable": false,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a table covered with a teal cloth",
+      "symmetry": "unknown"
+    },
+    "structures": [],
+    "non_purchased_elements": [
+      "unopened balloon packages",
+      "birthday candles",
+      "a rainbow greeting card",
+      "purple foam sticks"
+    ],
+    "uncertainties": [
+      "This photo shows unopened Sempertex product packaging on a table, not an installed decoration; no decorative structures are present to annotate."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [
+      "FUCSIA",
+      "PAQUETE X 1",
+      "PAQUETE X 16",
+      "PAQUETE X 2",
+      "PAQUETE X 4",
+      "PAQUETE X 5",
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "VELITA ARCOIRIS",
+      "SERVILLETA ARCOIRIS",
+      "VELITA MUSICAL",
+      "SERPENTINA DELUXE PASTEL",
+      "INFLADOR MANUAL TUBITOS",
+      "INFLADOR MANUAL PROFESIONAL",
+      "CUCHARA DELUXE OXO"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "reason": "no_usable"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:53.317Z"
+  }
+}

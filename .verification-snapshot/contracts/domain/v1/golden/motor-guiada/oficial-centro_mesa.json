@@ -1,0 +1,27 @@
+{
+ "caso": "oficial-centro_mesa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "8d0ed5ec5f98bc6265aa869465489acba90b2b0ac15fd86eeed3537badf55a57",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_01_CENTRO_MESA",
+   "motivo": "El constructor de centros de mesa todavía no está en el motor."
+  }
+ ],
+ "piezas": {},
+ "total": {
+  "lineas": [],
+  "unidades": 0
+ },
+ "caja": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

@@ -1,0 +1,197 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000014-1",
+  "image_sha256": "79b4c2013cb6c8708565699b67849e4178a84aadec2cfcc625a3fb66cd6ef0fe",
+  "idempotency_key": "5cbc3a7c204ea0ae568be48c57821ac5af33df31933e2957d795f7933df6b18f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000014/foto-1.png",
+    "orden": "950000014"
+  },
+  "anotacion": {
+    "image_id": "950000014-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "mostly cropped out; a hint of tan flooring and an off-white wall visible in the background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "large organic garland of red, burgundy and gold balloons draping from upper left down over the cart, with heart-shaped clusters built from small cream and gold balloons"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "vertical strand of gold pearl balloons stacked down the right side of the cart"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red",
+            "size_code": "C-6"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "two woven baskets filled with small red heart-shaped balloons on the ground in front of the cart"
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden cart with a wheel",
+      "woven baskets",
+      "tiered dessert trays",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "the cream/tan heart-shaped clusters in the garland may not all be the R-9 sand balloon size",
+      "the exact split between imperial red and standard red balloons in the garland is hard to distinguish"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "C-6",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000014-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 9-inch matte Fashion round latex balloons in imperial red and sand, 5-inch matte Fashion red round latex balloons and high-shine Reflex gold round latex balloons, mixed organically rather than graded, a balloon column, standing to one side, built from high-shine Reflex gold round latex balloons, all at a single 5-inch size, with two matching balloon bouquets, grounded across the front, built from matte Fashion red heart-shaped latex balloons, all at a single 6-inch size, alongside a wooden cart with a wheel, woven baskets, tiered dessert trays and a printed sign, set against mostly cropped out; a hint of tan flooring and an off-white wall visible in the background.",
+    "palabras": 119,
+    "caracteres": 755,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:33.466Z",
+    "recompilado_en": "2026-09-03T14:45:23.335Z"
+  }
+}

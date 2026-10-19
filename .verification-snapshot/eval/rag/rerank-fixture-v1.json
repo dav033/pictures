@@ -1,0 +1,67 @@
+{
+  "version": "rerank-fixture-v1",
+  "model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "nota": "Casos pequenos y versionados para medir orden, no pertenencia. El orden inicial representa la salida local de RRF; ideal_order es la relevancia humana revisada.",
+  "casos": [
+    {
+      "id": "rosas-mesa",
+      "query": "ramo de rosas rojas para centro de mesa",
+      "candidates": [
+        { "id": "rosas-1", "text": "Guirnalda de globos azules para fiesta de cumpleanos" },
+        { "id": "rosas-2", "text": "Ramo de rosas rojas para centro de mesa" },
+        { "id": "rosas-3", "text": "Mantel rojo rectangular para mesa de invitados" }
+      ],
+      "ideal_order": ["rosas-2", "rosas-3", "rosas-1"]
+    },
+    {
+      "id": "globos-azules",
+      "query": "blue balloon garland for a birthday party",
+      "candidates": [
+        { "id": "globos-1", "text": "Red roses centerpiece for a wedding table" },
+        { "id": "globos-2", "text": "Blue balloon garland for a birthday party" },
+        { "id": "globos-3", "text": "Yellow printed candles for a birthday cake" }
+      ],
+      "ideal_order": ["globos-2", "globos-3", "globos-1"]
+    },
+    {
+      "id": "dorado-fiesta",
+      "query": "gold party table decorations",
+      "candidates": [
+        { "id": "dorado-1", "text": "Pastel blue napkins for a casual lunch" },
+        { "id": "dorado-2", "text": "Gold balloon arch and table decorations for a party" },
+        { "id": "dorado-3", "text": "White roses and greenery for a wedding bouquet" }
+      ],
+      "ideal_order": ["dorado-2", "dorado-3", "dorado-1"]
+    },
+    {
+      "id": "velas-cumpleanos",
+      "query": "velas para torta de cumpleaños",
+      "candidates": [
+        { "id": "velas-1", "text": "Mantel blanco rectangular para mesa" },
+        { "id": "velas-2", "text": "Velas impresas para torta de cumpleaños" },
+        { "id": "velas-3", "text": "Guirnalda de globos para cumpleaños" }
+      ],
+      "ideal_order": ["velas-2", "velas-3", "velas-1"]
+    },
+    {
+      "id": "guirnalda-dorada",
+      "query": "guirnalda dorada para boda",
+      "candidates": [
+        { "id": "boda-1", "text": "Ramo de rosas blancas para boda" },
+        { "id": "boda-2", "text": "Guirnalda dorada para decoración de boda" },
+        { "id": "boda-3", "text": "Globos azules para fiesta infantil" }
+      ],
+      "ideal_order": ["boda-2", "boda-1", "boda-3"]
+    },
+    {
+      "id": "arreglo-flores",
+      "query": "arreglo de flores para boda",
+      "candidates": [
+        { "id": "flores-1", "text": "Servilletas de papel para mesa" },
+        { "id": "flores-2", "text": "Arreglo de flores blancas para boda" },
+        { "id": "flores-3", "text": "Arco de globos para cumpleaños" }
+      ],
+      "ideal_order": ["flores-2", "flores-1", "flores-3"]
+    }
+  ]
+}

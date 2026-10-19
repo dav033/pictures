@@ -1,0 +1,384 @@
+import "server-only";
+import { z } from "zod";
+import type { Pool } from "pg";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { admitirVariantePython, editarPlanPython, exigirContextoPython } from "./edicion-python";
+import { reemplazoIncompatible, MENSAJE_REEMPLAZO_INCOMPATIBLE } from "./edicion-compatibilidad";
+import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "./aprobacion";
+import { conFotosDeCatalogo } from "./cotizacion-fotos";
+import { PlanEditError } from "./edicion-error";
+import { getRagPool } from "@/lib/rag/db";
+import { encolarEscrituraObservabilidad, registrarPlanAudit } from "@/lib/rag/observability/log";
+import { claveResolucion, recordarResolucion, resolucionRecordada } from "./cache-resoluciones";
+import { resolverPlan } from "./resolver-backend";
+import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
+import type { PlanResuelto } from "./resuelto";
+import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
+import { ConteoAplicadoSchema, type PistaConteo } from "./conteo-referencia";
+import { PistaGuirnaldaSchema, type PistaGuirnalda } from "./armado-guirnalda";
+
+/**
+ * Applies one edit (agregar/reemplazar/quitar/repartir/mezcla/patron) to an
+ * already-approved plan. Shared by `src/app/api/plan-editar/route.ts` and the
+ * chat tool `ajustar_plan_decoracion`
+ * (`src/lib/ia/herramientas/registro-herramientas.ts`), so both run the exact
+ * same checks.
+ *
+ * Orchestration only (ADR-0028 §9): the mutation of the declarative plan is
+ * Python's (`services/ai-api/app/plan_edicion.py`, POST /internal/v1/plan/edit).
+ * Here: the signed approval, the re-resolution of the base plan, the admission
+ * of a new variant, the resolution of the edited plan, the new signature and
+ * the audit row.
+ *
+ * No `Request`/`Response`: throws `PlanEditError` (business rejection, safe to
+ * relay to the customer/model) or `PlanBackendNoDisponibleError`
+ * /`AllowlistProductoVarianteError`/Python-adapter errors (infrastructure —
+ * callers decide how to surface those).
+ */
+
+export const MENSAJE_APROBACION_INVALIDA = "La aprobación base expiró o no corresponde a este plan.";
+
+/** Verifies the HMAC + expiry + plan_hash binding and opens the signed
+ * provenance in one step; throws the same customer-facing rejection either
+ * way so a stale or tampered token never reaches the resolver. */
+export function abrirContextoExigido(token: string): ContextoPlan {
+  const contexto = abrirContextoPlan(token);
+  if (!contexto) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+  return contexto;
+}
+
+/** A candidate approval token/plan_hash pair, verified enough to open its context. */
+export function contextoBaseExigido(base: BasePlan): { aprobacion: { requestId: string; expiresAt: number }; contexto: ContextoPlan } {
+  const aprobacion = verificarTokenAprobacion(base.approval_token, base.plan_hash);
+  if (!aprobacion) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+  const contexto = abrirContextoExigido(base.approval_token);
+  // Una propuesta con procedencia "next" ya no se puede re-resolver: ese
+  // resolutor desapareció (ADR-0023 paso 5). Los tokens caducan a las 24 h.
+  if (contexto.backend !== "python") throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+  return { aprobacion, contexto };
+}
+
+/** A valid uuid candidate travels as the correlation id; anything else gets a fresh one. */
+export function correlationDesde(candidato: string | undefined): string {
+  const parsed = z.string().uuid().safeParse(candidato);
+  return parsed.success ? parsed.data : crypto.randomUUID();
+}
+
+export function unicos(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+/** Lines of the edited structure from the base resolution Next just verified against `plan_hash`. */
+function lineasVerificadas(resuelto: PlanResuelto, estructuraId: string) {
+  return resuelto.estructuras
+    .filter((estructura) => estructura.estructura_id === estructuraId)
+    .map((estructura) => ({
+      estructura_id: estructura.estructura_id,
+      lineas: estructura.lineas.map((linea) => ({ product_id: linea.product_id, variant_id: linea.variant_id, color: linea.color })),
+    }));
+}
+
+/** What the audit row records of each edit: the operation, never the whole plan. */
+function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
+  switch (edicion.accion) {
+    case "repartir":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, participaciones: edicion.participaciones };
+    case "mezcla":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla };
+    case "patron":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, modo: edicion.patron_color?.base.modo ?? null };
+    case "armado":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, variante: edicion.armado_bouquet?.variante ?? null };
+    case "armado_guirnalda":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, soporte: edicion.armado_guirnalda?.soporte ?? null, forma: edicion.armado_guirnalda?.forma ?? null };
+    case "armado_arco":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, patron: edicion.armado_arco?.patron ?? null, forma: edicion.armado_arco?.geometria.forma ?? null };
+    case "armado_columna":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, patron: edicion.armado_columna?.patron ?? null, modo: edicion.armado_columna?.modo ?? null };
+    case "armado_columna_organica":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_columna_organica?.colores.reparto ?? null, alto_m: edicion.armado_columna_organica?.forma.altoM ?? null };
+    case "armado_guirnalda_organica":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_guirnalda_organica?.colores.reparto ?? null, largo_m: edicion.armado_guirnalda_organica?.forma.largoM ?? null };
+    case "armado_arco_organico":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_arco_organico?.colores.reparto ?? null, corte: edicion.armado_arco_organico?.forma.corte ?? null };
+    case "forma":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma };
+    case "propiedades":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma, densidad: edicion.densidad ?? null, medidas: edicion.medidas ?? null };
+    case "flores":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, flores: edicion.flores?.cantidad ?? null, petalo: edicion.flores?.petalo.product_id ?? null, centro: edicion.flores?.centro?.product_id ?? null };
+    default:
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
+  }
+}
+
+export type AplicarEdicionInput = {
+  base: BasePlan;
+  edicion: EdicionPlan;
+  /** Preferred correlation id (e.g. the chat turn's); falls back to the plan's own request id. */
+  correlationId?: string;
+  signal?: AbortSignal;
+  pool?: Pool;
+  /**
+   * An intermediate step of several chained edits (chat tool `ediciones`): its
+   * plan is never shown if a later edit fails, so it leaves no `PLAN_EDITED` row.
+   * Default: audit, as every other caller does.
+   */
+  omitirAuditoria?: boolean;
+};
+
+/** `avisos`: sentences for the decorator from the edit itself (e.g. a color pattern that was rebuilt). */
+export type AplicarEdicionResultado = { plan: PlanResuelto; cotizacion: Cotizacion; avisos: string[] };
+
+type PlanConArmados = { estructuras: ReadonlyArray<{ estructura_id: string; armado_bouquet?: unknown; armado_guirnalda?: unknown }> };
+
+/**
+ * The edited piece lost its assembly (a bouquet whose balloons or shares
+ * changed; a garland whose assembly no longer fits): the re-resolution may
+ * suggest one again. `campo` says which assembly (ADR-0030, ADR-0032).
+ */
+export function armadoQuitadoPorLaEdicion(
+  base: PlanConArmados,
+  editado: PlanConArmados,
+  estructuraId: string,
+  campo: "armado_bouquet" | "armado_guirnalda" = "armado_bouquet",
+): boolean {
+  const antes = base.estructuras.find((item) => item.estructura_id === estructuraId);
+  const despues = editado.estructuras.find((item) => item.estructura_id === estructuraId);
+  return antes?.[campo] !== undefined && despues?.[campo] === undefined;
+}
+
+/**
+ * A garland's assembly is suggested again after an edit only when the edit
+ * took it away as a side effect (its colors or mix no longer fit it), never
+ * when the decorator removed it on purpose ("Quitar armado" in the editor:
+ * the `armado_guirnalda` action with `null`). ADR-0032, E6.
+ */
+export function resugerirArmadoGuirnalda(edicion: Pick<EdicionPlan, "accion" | "estructura_id">, base: PlanConArmados, editado: PlanConArmados): boolean {
+  return edicion.accion !== "armado_guirnalda" && armadoQuitadoPorLaEdicion(base, editado, edicion.estructura_id, "armado_guirnalda");
+}
+
+/**
+ * Un arco o una columna armados cuyo globo el catálogo no vende no se firman (ADR-0035): la resolución lo dice en `sin_cobertura`
+ * y firmarlo dejaba una propuesta a la que le faltan globos y que cuesta menos de lo que dice el dibujo. Solo
+ * cuenta lo que el armado nuevo dejó sin cobertura: lo que ya faltaba antes no es culpa de esta edición.
+ * Devuelve la frase para el decorador, o `null` si no falta nada.
+ */
+export function faltaCoberturaPorElArmado(edicion: EdicionPlan, antes: PlanResuelto, despues: PlanResuelto): string | null {
+  const armadoNuevo = edicion.accion === "armado_arco" ? edicion.armado_arco : edicion.accion === "armado_columna" ? edicion.armado_columna : edicion.accion === "armado_columna_organica" ? edicion.armado_columna_organica : edicion.accion === "armado_guirnalda_organica" ? edicion.armado_guirnalda_organica : edicion.accion === "armado_arco_organico" ? edicion.armado_arco_organico : null;
+  if (armadoNuevo === null) return null;
+  const clave = (item: PlanResuelto["sin_cobertura"][number]) => `${item.estructura_id}|${item.product_id}|${item.tamano}`;
+  const yaFaltaba = new Set(antes.sin_cobertura.map(clave));
+  const nuevas = despues.sin_cobertura.filter((item) => item.estructura_id === edicion.estructura_id && !yaFaltaba.has(clave(item)));
+  if (nuevas.length === 0) return null;
+  const tamanos = [...new Set(nuevas.map((item) => item.tamano))].join(", ");
+  const pieza = edicion.accion === "armado_columna" || edicion.accion === "armado_columna_organica" ? "esa columna" : edicion.accion === "armado_guirnalda_organica" ? "esa guirnalda" : "ese arco";
+  return `El catálogo no vende los globos que ${pieza} necesita (${tamanos}). Elige otro tamaño de globo o cambia los colores: así no se puede guardar.`;
+}
+
+export const AVISO_ARMADO_NO_REHECHO ="Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
+export const AVISO_ARMADO_GUIRNALDA_NO_REHECHO = "Con estos globos no se pudo volver a armar la guirnalda: queda sin armado.";
+
+type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[]; medidasDelCliente: boolean };
+
+/**
+ * Los conteos de la foto que la re-resolución de una edición vuelve a mandar
+ * (ADR-0031), desde `conteos_referencia` del plan base. Todos viajan, para que
+ * el plan editado los conserve; Python solo ajusta la pieza cuya mezcla se
+ * cambió (con la mezcla que eligió el decorador). Sin la bandera
+ * `CONTEO_REFERENCIA_V1` o sin conteos en el plan base, nada: la petición es la
+ * de siempre. `medidasDelCliente` viene del contexto firmado del plan base (la
+ * edición no tiene el texto del cliente): con ella, las medidas que el cliente
+ * dio siguen fijas frente a la foto (revisión 33).
+ */
+export function conteosDeLaEdicion(base: BasePlan, edicion: Pick<EdicionPlan, "accion" | "estructura_id"> | null, medidasDelCliente = false): ConteosDeLaEdicion | undefined {
+  if (!featureEnabled("CONTEO_REFERENCIA_V1")) return undefined;
+  const conteos = z.array(ConteoAplicadoSchema).max(32).safeParse((base as Record<string, unknown>).conteos_referencia);
+  if (!conteos.success || conteos.data.length === 0) return undefined;
+  const pistas = new Map<string, PistaConteo>();
+  for (const conteo of conteos.data) {
+    if (!pistas.has(conteo.referencia_element_id)) pistas.set(conteo.referencia_element_id, { referencia_element_id: conteo.referencia_element_id, ...conteo.lectura });
+  }
+  // Sin edición (quitar una pieza o añadir un color: `ajuste-plan-entero.ts`) los conteos viajan y no se ajusta ninguna.
+  const editada = edicion !== null && conteos.data.some((conteo) => conteo.estructura_id === edicion.estructura_id);
+  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion !== null && edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [], medidasDelCliente };
+}
+
+/**
+ * Las lecturas de la foto de las guirnaldas que la re-resolución de una edición
+ * vuelve a mandar (ADR-0032), desde `lecturas_guirnalda` del plan base, como
+ * los conteos. El navegador no tiene la foto: sin ellas, un armado que la
+ * edición quita se re-sugería con la receta (pared, recta) y perdía el soporte
+ * y la forma leídos (hallazgo 32). Viajan siempre que existan, para que Python
+ * las devuelva otra vez y la próxima edición las tenga; solo se usan en la
+ * pieza que se re-sugiere (`completar_armados_de`). Sin `GUIRNALDAS_ARMADO_V1`
+ * o sin lecturas en el plan base, nada: la petición es la de siempre.
+ */
+export function lecturasGuirnaldaDeLaEdicion(base: BasePlan): PistaGuirnalda[] | undefined {
+  if (!featureEnabled("GUIRNALDAS_ARMADO_V1")) return undefined;
+  const lecturas = z.array(PistaGuirnaldaSchema).max(16).safeParse((base as Record<string, unknown>).lecturas_guirnalda);
+  return lecturas.success && lecturas.data.length > 0 ? lecturas.data : undefined;
+}
+
+/**
+ * Re-verifies the base plan's signed approval, re-resolves it against Python
+ * to make sure nothing drifted since it was shown, admits the new variant
+ * (when the edit adds one), has Python apply the edit and resolves the edited
+ * plan — issuing a fresh approval token bound to the new `plan_hash`. Throws
+ * instead of silently rebuilding when the token is stale, the backend isn't
+ * Python, or the catalog changed underneath.
+ */
+export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<AplicarEdicionResultado> {
+  const pool = input.pool ?? getRagPool();
+  const { base, edicion } = input;
+  const { aprobacion, contexto: contextoPlan } = contextoBaseExigido(base);
+  const snapshotPython = exigirContextoPython(contextoPlan);
+  const whitelist = mapaDesdeAllowlist(contextoPlan.allowlist);
+  const correlationId = correlationDesde(input.correlationId ?? base.request_id ?? aprobacion.requestId);
+
+  const resolver = (
+    plan: PlanDecoracion,
+    allowlistPython: ContextoPlan["allowlist"],
+    rehacer?: { completarArmadosDe: readonly string[]; bouquet: boolean; guirnalda: boolean },
+    conteos?: ConteosDeLaEdicion,
+    lecturasGuirnalda?: readonly PistaGuirnalda[],
+  ) =>
+    resolverPlan({
+      plan,
+      allowlist: allowlistPython,
+      catalogSnapshotId: snapshotPython,
+      // ADR-0030 / ADR-0032: only the edited piece gets its assembly suggested
+      // again; one the decorator removed on purpose stays without it.
+      ...(rehacer ? { completarArmadosDe: rehacer.completarArmadosDe } : {}),
+      ...(rehacer?.bouquet ? { completarArmados: true } : {}),
+      ...(rehacer?.guirnalda ? { completarArmadosGuirnalda: true } : {}),
+      // ADR-0031: the photo's counts travel again so they are not lost; only
+      // a mix edit has Python adjust the edited piece to its count.
+      ...(conteos ? { completarConteos: true, pistasConteo: conteos.pistas, completarConteosDe: conteos.ajustar } : {}),
+      // Review 33: the measures the customer gave stay fixed against the count.
+      ...(conteos?.medidasDelCliente ? { medidasDelCliente: true } : {}),
+      // ADR-0032: the garland readings of the photo travel again too, so a
+      // re-suggested assembly keeps the support and shape the photo showed.
+      ...(lecturasGuirnalda ? { pistasGuirnalda: lecturasGuirnalda } : {}),
+      requestId: crypto.randomUUID(),
+      correlationId,
+      ...(input.signal ? { signal: input.signal } : {}),
+    });
+
+  // Saving edits one after another: the base is the plan the previous edit
+  // resolved and signed here, so it is only resolved again when it is not.
+  const planBaseVerificado = resolucionRecordada(base.plan_hash, claveResolucion({
+    plan: base.plan,
+    catalogSnapshotId: snapshotPython,
+    allowlist: contextoPlan.allowlist,
+  })) ?? await resolver(base.plan, contextoPlan.allowlist);
+  if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
+    throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
+  }
+  if (!verificarTokenAprobacion(base.approval_token, planBaseVerificado.resuelto.plan_hash)) {
+    throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+  }
+
+  let coloresVariante: string[] = [];
+  // Only adding or replacing brings a new variant to admit; the other edits do not.
+  if (edicion.accion === "agregar" || edicion.accion === "reemplazar") {
+    const variante = edicion.variante!;
+    // Se exige la variante exacta: que el producto esté entrenado no dice
+    // nada del tamaño concreto, y aceptarlo por `product_id` dejaba pasar
+    // tamaños nunca fotografiados (R-24 de un producto entrenado en R-5..R-18).
+    // El resolutor admite el par dentro del snapshot firmado; Next no
+    // consulta el catálogo por SQL.
+    coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, ...(input.signal ? { signal: input.signal } : {}) });
+  }
+  // ADR-0030: un bouquet que pierde su armado al editar lo recibe de nuevo
+  // (receta) en la re-resolución, solo con la bandera, igual que al confirmar.
+  const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
+  // ADR-0032: lo mismo para una guirnalda cuyo armado ya no cabe tras la edición.
+  const completarArmadosGuirnalda = featureEnabled("GUIRNALDAS_ARMADO_V1");
+  const { plan: planEditado, avisos } = await editarPlanPython({
+    plan: base.plan,
+    lineasBase: lineasVerificadas(planBaseVerificado.resuelto, edicion.estructura_id),
+    edicion,
+    coloresVariante,
+    // ADR-0028: una pieza que pasa de uno a dos colores recibe su patrón
+    // sugerido solo con la bandera, igual que al confirmar el plan.
+    completarPatrones: featureEnabled("PATRONES_COLOR_V1"),
+    ...(completarArmados ? { completarArmados } : {}),
+    ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
+    correlationId,
+    ...(input.signal ? { signal: input.signal } : {}),
+  });
+  const allowlistFinal = allowlistDesdeMapa(whitelist);
+  const rehacerArmado = completarArmados && armadoQuitadoPorLaEdicion(base.plan, planEditado, edicion.estructura_id);
+  const rehacerGuirnalda = completarArmadosGuirnalda && resugerirArmadoGuirnalda(edicion, base.plan, planEditado);
+  const resolucionEditada = await resolver(
+    planEditado,
+    allowlistFinal,
+    rehacerArmado || rehacerGuirnalda
+      ? { completarArmadosDe: [edicion.estructura_id], bouquet: rehacerArmado, guirnalda: rehacerGuirnalda }
+      : undefined,
+    conteosDeLaEdicion(base, edicion, contextoPlan.medidasDelCliente),
+    lecturasGuirnaldaDeLaEdicion(base),
+  );
+  const resuelto = resolucionEditada.resuelto;
+  if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
+  const sinCobertura = faltaCoberturaPorElArmado(edicion, planBaseVerificado.resuelto, resuelto);
+  if (sinCobertura) throw new PlanEditError(422, sinCobertura, "ARMADO_INVALIDO", { motivo: "sin_cobertura", mensaje: sinCobertura });
+  if (edicion.accion === "flores" && edicion.flores && !resuelto.estructuras.some((item) => item.estructura_id === edicion.estructura_id && item.lineas.some((linea) => linea.adorno === "flor"))) {
+    // Ningún globo de las flores tiene compra (el catálogo no vende ese globo redondo): no se firma un plan que las promete.
+    throw new PlanEditError(422, "El catálogo no tiene globos para esas flores. Prueba con otro color.");
+  }
+  if (rehacerArmado && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id)) {
+    // Python avisó que lo volvería a sugerir y no pudo (la compra no se arma): el decorador lo sabe.
+    avisos.push(AVISO_ARMADO_NO_REHECHO);
+  }
+  if (rehacerGuirnalda && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id, "armado_guirnalda")) {
+    avisos.push(AVISO_ARMADO_GUIRNALDA_NO_REHECHO);
+  }
+  if (edicion.accion === "reemplazar") {
+    // Server-verified lines on both sides: the base plan was just re-resolved.
+    const objetivo = planBaseVerificado.resuelto.estructuras
+      .find((item) => item.estructura_id === edicion.estructura_id)
+      ?.lineas.find((linea) => linea.variant_id === edicion.objetivo_variant_id);
+    const lineasNuevas = resuelto.estructuras
+      .find((item) => item.estructura_id === edicion.estructura_id)
+      ?.lineas.filter((linea) => linea.variant_id === edicion.variante?.variant_id) ?? [];
+    if (objetivo && reemplazoIncompatible(objetivo, lineasNuevas)) {
+      throw new PlanEditError(422, MENSAJE_REEMPLAZO_INCOMPATIBLE, "REEMPLAZO_INCOMPATIBLE");
+    }
+  }
+
+  const requestId = base.request_id ?? aprobacion.requestId;
+  resuelto.request_id = requestId;
+  resuelto.approval_token = crearTokenPlan({
+    planHash: resuelto.plan_hash,
+    requestId,
+    backend: "python",
+    catalogSnapshotId: contextoPlan.catalogSnapshotId,
+    allowlist: allowlistFinal,
+    ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),
+    // The next edit has no customer text either: the evidence travels signed.
+    ...(contextoPlan.medidasDelCliente ? { medidasDelCliente: true } : {}),
+  });
+  const planFirmado = PlanDecoracionSchema.safeParse(resuelto.plan);
+  if (planFirmado.success) {
+    recordarResolucion(claveResolucion({ plan: planFirmado.data, catalogSnapshotId: snapshotPython, allowlist: allowlistFinal }), resolucionEditada);
+  }
+  // Observability, not part of the answer: the decorator does not wait for it
+  // (it already swallows its own failures), same as the chat's plan audits.
+  if (!input.omitirAuditoria) encolarEscrituraObservabilidad(registrarPlanAudit(pool, {
+    requestId,
+    planHash: resuelto.plan_hash,
+    restricciones: resuelto.plan.restricciones,
+    selectedProductIds: resuelto.compras.map((compra) => compra.variant_id),
+    geometry: geometriaAuditada(edicion),
+    costChosenCop: resuelto.totales.total_cop,
+    ceilingCop: resuelto.comercial.techo_cop,
+    deltaCop: resuelto.comercial.delta_cop,
+    packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
+    status: "PLAN_EDITED",
+  }));
+
+  return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras), avisos };
+}

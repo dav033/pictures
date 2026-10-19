@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000031-1",
+  "image_sha256": "d062ed542b666374803c752cab97a7a11980e887015865bff62a08e676379c56",
+  "idempotency_key": "a50d3d12a539742d4b99420cead5156a584b8d00b1c3307dc1f12d7f5e5ea4c5",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000031/foto-1.jpg",
+    "orden": "950000031"
+  },
+  "anotacion": {
+    "image_id": "950000031-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no real wall or floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic garland of pink, purple, and silvery-lavender latex balloons of varied sizes built into a heart-shaped frame"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "banner.sign.unspecified_material.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "banner.sign.unspecified_material.printed_greeting_lettering",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "flat printed panel with 'Feliz Dia' lettering and a heart pattern showing through the center opening of the heart-shaped balloon frame"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "studio product photo on white background, not an on-site venue shot"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.silk.amethyst",
+      "banner.sign.unspecified_material.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000031-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 5-inch matte Fashion pink round latex balloons, 12-inch matte Fashion purple orchid round latex balloons, 9-inch satin Silk amethyst round latex balloons, mixed organically rather than graded, a decorated backdrop, anchored to the organic balloon garland, built from decorative signs with printed greeting lettering, set against plain white studio backdrop, no real wall or floor visible.",
+    "palabras": 68,
+    "caracteres": 481,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.silk.amethyst",
+      "banner.sign.unspecified_material.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:53:35.591Z",
+    "recompilado_en": "2026-09-03T14:45:23.515Z"
+  }
+}

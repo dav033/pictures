@@ -1,0 +1,336 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14574-1",
+  "image_sha256": "cde6d764686c44091fa2a66b9505d7cff6ea3a5156fa31c0cf9529feb23a9c42",
+  "idempotency_key": "888f0e515fee05e184253bf81afadc16096ef00fd769cfdc6b1d80bc3af397a3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14574/foto-1.jpg",
+    "orden": "14574"
+  },
+  "anotacion": {
+    "image_id": "14574-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dark stone-tiled accent wall, light beige tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Bare gold circular metal ring frame spanning the backdrop, largely covered by the two garland clusters mounted on it."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.blue",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic cluster on the left side of the ring with muted blue balloons at top, gold chrome accents in the middle, dusty rose balls, and cream balloons at the base."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_dusk.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Larger organic cluster on the right side of the ring with coral-pink balls at top, gold chrome and cream balls in the middle, and blue balls at the base; tallest and most colorful part of the scene."
+      }
+    ],
+    "non_purchased_elements": [
+      "a two-tier cake",
+      "gold dessert stands",
+      "pink and blue cupcakes",
+      "a neon sign"
+    ],
+    "uncertainties": [
+      "Clear bubble balloons visible on both garlands are not in the allowed product list, so they were not annotated.",
+      "Exact size codes for dusty_rose/sand/pastel_dusk_blue balls could not be distinguished within the organic mix."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14574-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorative accessory, built from 18-inch, 12-inch and 5-inch matte Fashion round latex balloons in dusty rose and sand and muted Pastel Dusk blue round latex balloons, 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, an organic balloon garland, anchored to the decorative accessory, built from 18-inch, 12-inch and 5-inch matte Fashion round latex balloons in dusty rose and sand and muted Pastel Dusk blue round latex balloons, 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, a decorative accessory, installed against the rear wall, alongside a two-tier cake, gold dessert stands, pink and blue cupcakes and a neon sign, set against white walls and a dark stone-tiled accent wall, light beige tiled floor.",
+    "palabras": 128,
+    "caracteres": 854,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:12.743Z",
+    "recompilado_en": "2026-09-03T14:45:22.424Z"
+  }
+}

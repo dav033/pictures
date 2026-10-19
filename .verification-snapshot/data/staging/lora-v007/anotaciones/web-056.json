@@ -1,0 +1,95 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-056",
+  "image_sha256": "3978d44f05086c31d1066abd6f5e764a7c1061cf60825305d941a38df0f9e79e",
+  "idempotency_key": "1394cd84850e61920ef681337cc05ab5d5c1bcb94aa43b8ee48e36f5a5203728",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-056.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Centro-de-Mesa-Organica-FC-Terra.jpg?v=1662749049",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-056",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "an off-white wall and a light floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.terracotta",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A vertical balloon column with a large organic top cluster, a smaller base cluster, and a narrow connecting stem."
+      }
+    ],
+    "non_purchased_elements": [
+      "a white plinth",
+      "a support rod"
+    ],
+    "uncertainties": [
+      "Individual balloon size codes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Redondo Infinity® Feliz Cumpleaños Terra Fashion Surtido"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-056",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion round latex balloons in mustard, sand and terracotta and high-shine Reflex gold round latex balloons, alongside a white plinth and a support rod, set against an off-white wall and a light floor.",
+    "palabras": 44,
+    "caracteres": 285,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:22:29.786Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000071-1",
+  "image_sha256": "b6e121dd5bb7b61cd1afc75dd3d9736ccedbce23740f376ff3b06714847f9b20",
+  "idempotency_key": "2223428a15e5d0cdd8d1e5b748dff3c799cd12d9705433f22e3bf25856edb603",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000071/foto-1.jpg",
+    "orden": "950000071"
+  },
+  "anotacion": {
+    "image_id": "950000071-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.arctic_blue",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A symmetrical crown-shaped sculpture twisted from long pearlescent mint/blue modeling balloons, trimmed with small gold round accents along the base and points."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "This is a standalone product shot of a balloon crown (likely a wearable/photo-prop piece), not an installed event scene; placement and design_role are guesses without real context.",
+      "None of the closed structure_type options describe a crown exactly; 'kit' was chosen as the closest fit for a coordinated pre-assembled piece.",
+      "The gold accents appear as small round beads rather than clearly elongated tubito shapes, so the match to balloon.tubito.latex.reflex.gold is uncertain.",
+      "The base color reads as a pearlescent mint/seafoam rather than a typical 'blue', so the match to arctic_blue is not fully certain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000071-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from high-shine Reflex gold modeling latex balloons and satin Silk arctic blue modeling latex balloons, all at a single 2-inch size, set against plain white studio backdrop, no floor visible.",
+    "palabras": 40,
+    "caracteres": 275,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.silk.arctic_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:24.729Z",
+    "recompilado_en": "2026-09-03T14:45:23.966Z"
+  }
+}

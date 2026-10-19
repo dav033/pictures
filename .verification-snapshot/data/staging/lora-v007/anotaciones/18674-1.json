@@ -1,0 +1,161 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "18674-1",
+  "image_sha256": "c830ba456445753c6eea8fc2099a34479ffd3952e396f551cce2af54b835005e",
+  "idempotency_key": "c7c3649db388da170a168e0476d5f9c95e6bcc3601908a09310e5ec51ca6226f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "18674/foto-1.jpg",
+    "orden": "18674"
+  },
+  "anotacion": {
+    "image_id": "18674-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls and a dark patterned tile floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense mass of green round balloons built into a tree canopy over a wooden trunk cutout, with leaf garland and white daisy accents."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.honey_yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster of yellow and white round balloons visible at the left edge of the frame."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden desk",
+      "a bee mural backdrop",
+      "a sunflower bouquet",
+      "a wooden tree trunk cutout"
+    ],
+    "uncertainties": [
+      "Exact size codes for the green tree canopy balloons could not be distinguished.",
+      "White balloons in the left cluster may be plain white or the dusk cream concept; could not confirm."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "confirmed_size_codes": [
+      "R-18",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "18674-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, installed against the rear wall, built from matte Fashion eucalyptus green round latex balloons, all in 18-inch, 9-inch and 5-inch, mixed organically rather than graded, an organic balloon garland, standing to one side, built from matte Fashion honey yellow round latex balloons, all in 18-inch and 9-inch, mixed organically rather than graded, alongside a wooden desk, a bee mural backdrop, a sunflower bouquet and a wooden tree trunk cutout, set against white walls and a dark patterned tile floor.",
+    "palabras": 84,
+    "caracteres": 551,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:47:43.825Z",
+    "recompilado_en": "2026-09-03T14:45:22.952Z"
+  }
+}

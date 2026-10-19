@@ -1,0 +1,94 @@
+{
+  "_comentario": "Fixture escrita a mano (ADR-0030, segunda entrega): un bouquet de helio apilado de 3 blancos R-12, 3 rosados R-12 y un corazón dorado metalizado como remate. `armado` es lo que Python resolvería para esa pieza; los prompts son marcadores cortos. La UI solo la dibuja.",
+  "declarada": {
+    "estructura_id": "EST_05_BOUQUET",
+    "nombre": "Bouquet de bienvenida",
+    "tipo": "kit",
+    "rol_escena": "soporte",
+    "ubicacion": "entrada",
+    "medidas": {},
+    "repeticiones": 1,
+    "densidad": "media",
+    "mezcla": "clasica",
+    "materiales": [
+      { "product_id": "P-BLANCO", "variant_id": "V-BLANCO-12", "color": "blanco", "acabado": "fashion", "participacion": 0.43, "rol_material": "principal" },
+      { "product_id": "P-ROSADO", "variant_id": "V-ROSADO-12", "color": "rosado", "acabado": "fashion", "participacion": 0.43, "rol_material": "secundario" },
+      { "product_id": "P-CORAZON-DORADO", "variant_id": "V-CORAZON-DORADO-18", "color": "dorado", "acabado": "metalizado", "participacion": 0.14, "rol_material": "acento" }
+    ],
+    "unidades_declaradas": 7,
+    "porque": "Recibe a los invitados en la entrada con los colores de la fiesta.",
+    "estructura_oficial": "bouquet",
+    "armado_bouquet": {
+      "version": "armado-bouquet.v1",
+      "origen": "sugerido",
+      "variante": "helio_apilado",
+      "niveles": [
+        { "rol": "base", "unidad": "trio", "cantidad": 1, "posiciones": [0, 1, 0] },
+        { "rol": "cuerpo", "unidad": "trio", "cantidad": 1, "posiciones": [1, 0, 1] }
+      ],
+      "remate": [2]
+    }
+  },
+  "estructura": {
+    "estructura_id": "EST_05_BOUQUET",
+    "nombre": "Bouquet de bienvenida",
+    "tipo": "kit",
+    "ubicacion": "entrada",
+    "repeticiones": 1,
+    "eje_m": null,
+    "total_unidades": 7,
+    "lineas": [
+      { "estructura_id": "EST_05_BOUQUET", "origen": { "kind": "estructura", "id": "EST_05_BOUQUET" }, "product_id": "P-BLANCO", "variant_id": "V-BLANCO-12", "sku": "SKU-V-BLANCO-12", "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50", "color": "blanco", "tamano_codigo": "R-12", "diam_pulg": 12, "diam_cm": 30.5, "forma": "redondo", "acabado": "fashion", "unidades": 3, "imagen": null, "sustitucion": null },
+      { "estructura_id": "EST_05_BOUQUET", "origen": { "kind": "estructura", "id": "EST_05_BOUQUET" }, "product_id": "P-ROSADO", "variant_id": "V-ROSADO-12", "sku": "SKU-V-ROSADO-12", "titulo": "Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50", "color": "rosado", "tamano_codigo": "R-12", "diam_pulg": 12, "diam_cm": 30.5, "forma": "redondo", "acabado": "fashion", "unidades": 3, "imagen": null, "sustitucion": null },
+      { "estructura_id": "EST_05_BOUQUET", "origen": { "kind": "estructura", "id": "EST_05_BOUQUET" }, "product_id": "P-CORAZON-DORADO", "variant_id": "V-CORAZON-DORADO-18", "sku": "SKU-V-CORAZON-DORADO-18", "titulo": "Globo Metalizado Corazón Dorado — 18\" / UNIDAD", "color": "dorado", "tamano_codigo": "18\"", "diam_pulg": 18, "diam_cm": 45.7, "forma": "corazon", "acabado": "metalizado", "unidades": 1, "imagen": null, "sustitucion": null }
+    ],
+    "mezcla_real": [
+      { "diam_pulg": 12, "forma": "redondo", "unidades": 6, "pct": 85.7 },
+      { "diam_pulg": 18, "forma": "corazon", "unidades": 1, "pct": 14.3 }
+    ],
+    "supuestos": []
+  },
+  "armado": {
+    "estructura_id": "EST_05_BOUQUET",
+    "armado": {
+      "version": "armado-bouquet.v1",
+      "origen": "sugerido",
+      "variante": "helio_apilado",
+      "niveles": [
+        { "rol": "base", "unidad": "trio", "cantidad": 1, "posiciones": [0, 1, 0] },
+        { "rol": "cuerpo", "unidad": "trio", "cantidad": 1, "posiciones": [1, 0, 1] }
+      ],
+      "remate": [2]
+    },
+    "grupos": 1,
+    "repeticiones": 1,
+    "leyenda": [
+      { "codigo": 1, "material": 0, "product_id": "P-BLANCO", "variant_id": "V-BLANCO-12", "descripcion": "R-12 blanco fashion", "tipo_globo": "latex", "color": "blanco", "acabado": "fashion", "tamano_pulg": 12, "digito": null, "unidades_por_grupo": 3, "unidades_total": 3 },
+      { "codigo": 2, "material": 1, "product_id": "P-ROSADO", "variant_id": "V-ROSADO-12", "descripcion": "R-12 rosado fashion", "tipo_globo": "latex", "color": "rosado", "acabado": "fashion", "tamano_pulg": 12, "digito": null, "unidades_por_grupo": 3, "unidades_total": 3 },
+      { "codigo": 3, "material": 2, "product_id": "P-CORAZON-DORADO", "variant_id": "V-CORAZON-DORADO-18", "descripcion": "Corazón dorado 18\"", "tipo_globo": "metalizado", "color": "dorado", "acabado": "metalizado", "tamano_pulg": 18, "digito": null, "unidades_por_grupo": 1, "unidades_total": 1 }
+    ],
+    "niveles": [
+      { "rol": "base", "unidad": "trio", "cantidad": 1, "codigos": [1, 2, 1] },
+      { "rol": "cuerpo", "unidad": "trio", "cantidad": 1, "codigos": [2, 1, 2] }
+    ],
+    "remate": [3],
+    "numero": null,
+    "insumos": [
+      { "insumo": "pesa", "cantidad": 1, "unidad": "pesas", "detalle": "de 80 g o más cada una (suma del peso de cada globo)", "estimado": false },
+      { "insumo": "cinta", "cantidad": 7, "unidad": "cintas", "detalle": "una por globo, de largos distintos si el bouquet es escalonado", "estimado": false },
+      { "insumo": "helio", "cantidad": 0.106, "unidad": "m³", "detalle": "según la capacidad de gas de cada globo", "estimado": true }
+    ],
+    "duracion_estimada": { "horas_min": 18, "horas_max": 24 },
+    "nombre": "Bouquet de helio apilado",
+    "descripcion": "Capas de globos con helio a la misma altura, una encima de otra, con el remate arriba.",
+    "pasos": [
+      "Nivel 1 (base): 1 trío de R-12 blanco fashion (1), R-12 rosado fashion (2).",
+      "Nivel 2 (cuerpo): 1 trío de R-12 rosado fashion (2), R-12 blanco fashion (1).",
+      "Remate: Corazón dorado 18\" (3).",
+      "Ata cada globo a su cinta y todas las cintas a la pesa."
+    ],
+    "avisos": [],
+    "prompt_gemini": "BOUQUET ASSEMBLY — a helium balloon bouquet stacked in level layers (fixture).",
+    "prompt_lora": "a helium balloon bouquet stacked in level layers of white and pink balloons topped by gold heart"
+  }
+}

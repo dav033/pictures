@@ -1,0 +1,102 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000136-1",
+  "image_sha256": "d0fcb3bb002eb05f2598c5fa28f4b13f5588763e74d8fb0959c079e60c3f018f",
+  "idempotency_key": "c7c68f6c8cadd0f35766f4ed79eb438968a9cb709d466bf3e4d5db9d95e9f8ad",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000136/foto-1.jpg",
+    "orden": "950000136"
+  },
+  "anotacion": {
+    "image_id": "950000136-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_matte.melon"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.melon",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense rectangular balloon wall in melon and dusk cream tones, with cream balloon flower details."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.melon"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000136-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from muted Pastel Dusk cream round latex balloons and Pastel Matte melon round latex balloons, all at a single 9-inch size, set against white wall and white floor.",
+    "palabras": 38,
+    "caracteres": 239,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.melon"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:11:49.073Z",
+    "recompilado_en": "2026-09-03T14:45:24.517Z"
+  }
+}

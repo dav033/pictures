@@ -1,0 +1,129 @@
+{
+  "id": "deco-real-31-arco-futbol-balones-gigantes",
+  "titulo": "Arco de fútbol con balones gigantes",
+  "tematica": "Fútbol verde lima, negro y blanco",
+  "eventos": [
+    "Cumpleaños",
+    "Fiesta de fútbol",
+    "Celebración deportiva"
+  ],
+  "edad": {
+    "min": 3,
+    "max": 40
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-31-arco-futbol-balones-gigantes.jpg",
+      "fuente": "sempertex-11.png",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "arco_asimetrico",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594213118247",
+      "sku": "B2B-20000462",
+      "cantidad": 13,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+      "origenCantidad": "plan_python_y_foto",
+      "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) + 6 de pata izquierda, estimado a partir de la foto: 2 grupitos de tres entre los balones gigantes [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "46594213314855",
+      "sku": "B2B-20000748",
+      "cantidad": 28,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50 · R-12 · verde lima",
+      "origenCantidad": "plan_python_y_foto",
+      "detalleCantidad": "20 de lado orgánico (plan resuelto por Python) + 8 de base de la pata izquierda, estimado a partir de la foto: 2 grupos de cuatro [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "46594221146407",
+      "sku": "B2B-20000437",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "46594221343015",
+      "sku": "B2B-20000723",
+      "cantidad": 17,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "17 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "46594235040039",
+      "sku": "B2B-20000493",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50 · R-5 · negro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "46594235269415",
+      "sku": "B2B-20000781",
+      "cantidad": 17,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "17 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+    },
+    {
+      "variantId": "51021065683239",
+      "sku": "B2B-20020823",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Infinity® Balón De Futbol Fashion Blanco — R-24 / PAQUETE X 3 · R-24 · blanco con balón de fútbol",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 3 balones gigantes contados en la foto (pata izquierda)"
+    },
+    {
+      "variantId": "51128339235111",
+      "sku": "B2B-20020874",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Infinity® Futbol Tricolor Fashion Blanco — R-12 / PAQUETE X 12 · R-12 · blanco con balones de fútbol",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: 7 impresos a la vista y 1 detrás"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Arma la estructura del arco y fíjala al piso con dos bases pesadas."
+    },
+    {
+      "orden": 2,
+      "texto": "Pata izquierda: haz una base con dos grupos de cuatro globos verde lima de 12 pulgadas y apila encima los tres balones de fútbol gigantes de 24 pulgadas, con un grupito de tres globos verde lima de 5 pulgadas entre balón y balón."
+    },
+    {
+      "orden": 3,
+      "texto": "Lado derecho: infla globos de 12 y de 5 pulgadas en verde lima, negro y blanco, y arma racimos de varios tamaños."
+    },
+    {
+      "orden": 4,
+      "texto": "Cubre la parte de arriba con verde lima, sigue hacia abajo con negro y termina en el piso con blanco, en bloques de color como en la foto."
+    },
+    {
+      "orden": 5,
+      "texto": "Reparte los globos impresos con balones de fútbol en el borde de arriba y entre el negro y el blanco."
+    },
+    {
+      "orden": 6,
+      "texto": "Rellena los huecos con globos chicos y revisa que todo quede firme antes de la fiesta."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#e5e6de",
+    "#7ce207",
+    "#1a1f18",
+    "#bbf75f"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

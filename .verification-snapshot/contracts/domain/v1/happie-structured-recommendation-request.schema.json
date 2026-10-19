@@ -1,0 +1,41 @@
+{
+  "$id": "happie-structured-recommendation-request.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v1"
+    },
+    "tipoEvento": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "invitados": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 100000
+    },
+    "ubicacion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "necesidades": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    }
+  },
+  "required": [
+    "tipoEvento",
+    "invitados",
+    "ubicacion"
+  ],
+  "additionalProperties": false
+}

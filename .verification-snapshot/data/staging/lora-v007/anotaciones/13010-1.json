@@ -1,0 +1,124 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13010-1",
+  "image_sha256": "f556105a4643132e2cf093b3306b1694a1131fcb6037f7af0034f4be7549a796",
+  "idempotency_key": "d84117e132332c77ea8aa477fb80633ac8bfb20144663018d55cfab3be7ff7ed",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13010/foto-1.jpg",
+    "orden": "13010"
+  },
+  "anotacion": {
+    "image_id": "13010-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls and a gold-covered table",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of sage green, gold and white balloons of varying sizes running along the wall-ceiling corner."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Gold foil script balloon phrase reading a birthday greeting mounted on the wall beneath the garland."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Gold spotted giraffe-shaped foil balloon mounted on the wall to the right of the script sign."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Brown/copper monkey-shaped foil balloon attached at the left edge of the garland."
+      }
+    ],
+    "non_purchased_elements": [
+      "a gold tablecloth",
+      "jungle-print party favor bags",
+      "a toy car"
+    ],
+    "uncertainties": [
+      "No product list was provided for this image so no concept ids could be confirmed.",
+      "Cannot confirm whether the monkey and giraffe foils are part of the same order or additional decor."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "KIT DIY GUIRNALDA LEAFY GREEN"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "13010-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:06.206Z",
+    "recompilado_en": "2026-09-03T14:45:22.137Z"
+  }
+}

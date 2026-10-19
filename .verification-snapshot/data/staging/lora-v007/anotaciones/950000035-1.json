@@ -1,0 +1,144 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000035-1",
+  "image_sha256": "41bda260a225f7a6dd9d8c6cdb2f3cface4fee30f5d620d5f7cfbb0705585b40",
+  "idempotency_key": "d464ade7cba7454bdb55943b37c5134e9fea9dd6a39b1927a51f3ac67ebd325d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000035/foto-1.jpg",
+    "orden": "950000035"
+  },
+  "anotacion": {
+    "image_id": "950000035-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.white",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.modeling.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+            "size_code": "C-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.pink",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "graded",
+        "evidence": "vertical assembly with red printed heart balloons at the base, a pink and white round balloon collar, and twisted red/pink stems rising to a foil topper"
+      }
+    ],
+    "non_purchased_elements": [
+      "a foil heart balloon topper",
+      "a pearl bead garland trim"
+    ],
+    "uncertainties": [
+      "the foil heart balloon and pearl garland at the top are not part of the allowed product list, so their exact material could not be confirmed"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "C-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000035-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 12-inch matte Fashion red heart-shaped latex balloons with printed greeting lettering, 2-inch matte Fashion modeling latex balloons in pink and red, 5-inch matte Fashion round latex balloons in pink and white, graded from 12-inch down to 2-inch, alongside a foil heart balloon topper and a pearl bead garland trim, set against plain white studio background, no floor or wall visible.",
+    "palabras": 70,
+    "caracteres": 460,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+        "size_code": "C-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:04:26.454Z",
+    "recompilado_en": "2026-09-03T14:45:23.558Z"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10083-1",
+  "image_sha256": "4c49e7134a5cf96d38378c8b999ccdb7a9d5b770f1bf5096f15b37c74466be2c",
+  "idempotency_key": "95e005708fa99950f9cb5f2b47bfe018c6bd9f1c59f53f91576feaaffddfc320",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10083/foto-1.jpg",
+    "orden": "10083"
+  },
+  "anotacion": {
+    "image_id": "10083-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dark tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.pastel_matte.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-18"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-18"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Full 3D balloon frame in white and light blue wrapping all four sides around a portrait poster, standing on the floor against the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed poster",
+      "a round plinth stand",
+      "bottled water bottles",
+      "soccer print balloons"
+    ],
+    "uncertainties": [
+      "Silver/chrome balloons and soccer-print balloons visible are not in the allowed product list, so excluded from visible_concept_ids.",
+      "Could not confirm exact proportion of R-18 vs R-12 vs R-5 balls, so size_relation marked mixed_organic rather than graded."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-36",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "GLOBO LATEX REDONDO INFINITY BALÓN DE FUTBOL FASHION BLANCO",
+      "GLOBO LATEX REDONDO INFINITY BALÓN DE FUTBOL FASHION BLANCO"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "10083-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, installed against the rear wall, built from matte Fashion white round latex balloons and Pastel Matte blue round latex balloons, all in 18-inch and 12-inch, mixed organically rather than graded, alongside a printed poster, a round plinth stand, bottled water bottles and soccer print balloons, set against white walls and a dark tiled floor.",
+    "palabras": 59,
+    "caracteres": 387,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:41.497Z",
+    "recompilado_en": "2026-09-03T14:45:21.822Z"
+  }
+}

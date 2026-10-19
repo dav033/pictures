@@ -1,0 +1,186 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15797-1",
+  "image_sha256": "f3c46e0919933ab81061347fcb43b74def897c458c94c6d10a992a3c1736b7c2",
+  "idempotency_key": "442c7972afa0d514403c0705f1cc1180676390ae8674a67165a201545ca8999d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15797/foto-1.jpg",
+    "orden": "15797"
+  },
+  "anotacion": {
+    "image_id": "15797-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls and dark green patterned tiled flooring",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.yellow",
+          "balloon.modeling.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.yellow",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large flower shapes twisted from modeling balloons (yellow and pink blooms with green stems) standing in a twisted-balloon vase on a black stand."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s3"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.peach"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of round balloons in yellow, green, terracotta/peach, and cream tones climbing up a mesh stand."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Bare black mesh panel stand with an arch-shaped silhouette, used as a support for the garland, not itself made of balloons."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "accesorio",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s3"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Two matching black metal plinths flanking the mesh stand, each topped with small cream/gold balloon clusters."
+      }
+    ],
+    "non_purchased_elements": [
+      "a framed art print",
+      "hanging potted plants",
+      "a small pearl-topped ornament",
+      "a wall sign"
+    ],
+    "uncertainties": [
+      "A metallic ball in the garland could be silver or gold; not confident enough to tag as reflex_gold.",
+      "Balloon clusters on the two plinths may include peach or gold tones but could not be confidently matched to a specific allowed concept.",
+      "Pink flower petals in the bouquet do not match any allowed concept color and were left untagged."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "15797-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, standing to one side, built from matte Fashion modeling latex balloons in eucalyptus green and yellow, all at a single 2-inch size, an organic balloon garland, anchored to the decorative accessory, built from matte Fashion peach round latex balloons, all in 18-inch and 12-inch, mixed organically rather than graded, a decorative accessory, centred on the main display area, with two matching decorative accessorys, one at each end, alongside a framed art print, hanging potted plants, a small pearl-topped ornament and a wall sign, set against white walls and dark green patterned tiled flooring.",
+    "palabras": 97,
+    "caracteres": 637,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.peach"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-18",
+        "inches": 18
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:12.760Z",
+    "recompilado_en": "2026-09-03T14:45:22.683Z"
+  }
+}

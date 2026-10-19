@@ -1,0 +1,156 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000189-1",
+  "image_sha256": "e19d53f1603022f086aa44daaa87a7cbcd3db81ac30df0a215770841021f1772",
+  "idempotency_key": "9d819514b4944710e59c1dca8e08666acf6255d88c8bd1c06570c50f81ded547",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000189/foto-1.jpg",
+    "orden": "950000189"
+  },
+  "anotacion": {
+    "image_id": "950000189-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.blue",
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.blue",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall freestanding vertical arrangement with twisted blue and silver modeling balloons, round metallic balloons, printed clear balloons, bows, and star balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a clear support stand"
+    ],
+    "uncertainties": [
+      "The exact product identity of the large central balloon is unclear from the image."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000189-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch high-shine Reflex modeling latex balloons in blue and silver, 12-inch matte Fashion clear round latex balloons with a printed pattern and matte Fashion clear round latex balloons with a printed pattern, 5-inch high-shine Reflex round latex balloons in blue and silver, mixed organically rather than graded, alongside a clear support stand, set against off-white walls and a light floor.",
+    "palabras": 70,
+    "caracteres": 470,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T20:01:01.897Z",
+    "recompilado_en": "2026-09-03T14:45:25.249Z"
+  }
+}

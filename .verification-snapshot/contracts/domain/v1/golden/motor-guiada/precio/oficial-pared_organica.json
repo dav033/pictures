@@ -1,0 +1,17 @@
+{
+ "caso": "oficial-pared_organica",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "ed69396ca13faddf28c68ffbb2356b2534397babdac652687493cc0df0ce4798",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 0,
+  "cubierta": 0,
+  "sinCubrir": 0
+ },
+ "pedido": []
+}

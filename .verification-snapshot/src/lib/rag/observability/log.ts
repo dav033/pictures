@@ -1,0 +1,251 @@
+import type { Pool } from "pg";
+import type { ObservabilidadBusqueda, PiezaObservabilidad, ResultadoBusquedaObservabilidad } from "./types";
+
+const pendientes = new Set<Promise<void>>();
+
+/**
+ * Fase 3.8: saca una escritura de observabilidad de la ruta crítica del
+ * turno sin perder el resultado si falla. Solo es seguro usarla con
+ * escrituras que NO tengan una lectura/actualización posterior en el mismo
+ * turno esperando que ya hayan terminado — `actualizarResultadoBusqueda`,
+ * `registrarSeleccion` y `registrarPlanAudit` encajan porque nunca compiten
+ * con el INSERT que crea la fila que actualizan: ese INSERT
+ * (`registrarBusqueda`) sigue esperándose exactamente igual que antes, así
+ * que para cuando el modelo puede llamar a la herramienta que dispara
+ * cualquiera de estas tres, la fila ya existe de forma durable. Los errores
+ * ya los atrapan estas funciones internamente (nunca tumban la
+ * conversación); esto solo evita bloquear el turno en el I/O de Postgres.
+ */
+export function encolarEscrituraObservabilidad(tarea: Promise<unknown>): void {
+  const normalizada = Promise.resolve(tarea).then(() => undefined, () => undefined);
+  pendientes.add(normalizada);
+  void normalizada.finally(() => pendientes.delete(normalizada));
+}
+
+/** Útil para cierre ordenado y pruebas; los fallos ya quedaron aislados arriba. */
+export async function esperarObservabilidadPendiente(): Promise<void> {
+  await Promise.all([...pendientes]);
+}
+
+function metadataAuditable(value: unknown, depth = 0): unknown {
+  if (depth > 4 || value == null) return value == null ? null : "[truncated]";
+  if (typeof value === "string") return value.length > 1200 ? `${value.slice(0, 1200)}…` : value;
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.slice(0, 80).map((item) => metadataAuditable(item, depth + 1));
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).slice(0, 80).flatMap(([key, item]) => {
+      if (/(base64|image|secret|api.?key|token|payload|prompt)/i.test(key)) return [];
+      return [[key, metadataAuditable(item, depth + 1)]];
+    }));
+  }
+  return "[unsupported]";
+}
+
+/**
+ * Trazabilidad (plan §6.1/§6.2): cada búsqueda y cada selección quedan en
+ * Postgres, no solo en logs de consola que se pierden al reiniciar. Un fallo
+ * al escribir el log NUNCA debe tumbar la conversación — por eso todo esto
+ * atrapa sus propios errores en vez de dejarlos subir al caller.
+ */
+export async function registrarBusqueda(
+  pool: Pool,
+  datos: {
+    requestId: string;
+    mensaje: string;
+    intent: unknown;
+    retrievedProductIds: string[];
+    retrievalScores: unknown;
+    status: string;
+    latencyParseMs: number;
+    latencyRetrievalMs: number;
+    latencyTotalMs: number;
+    observabilidad?: ObservabilidadBusqueda;
+  },
+): Promise<string | null> {
+  try {
+    const result = await pool.query<{ id: string }>(
+      `INSERT INTO rag_query_log
+         (request_id, tipo, mensaje, intent, retrieved_product_ids, retrieval_scores, status,
+          latency_parse_ms, latency_retrieval_ms, latency_total_ms,
+            event_label, closed_occasion_recognized, component_queries,
+            candidate_counts_by_tier, selected_match_levels, outcome, latency_planning_ms,
+            rerank_status)
+         VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9,
+                 $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING id`,
+      [
+        datos.requestId,
+         datos.mensaje.slice(0, 2000),
+         JSON.stringify(metadataAuditable(datos.intent)),
+        datos.retrievedProductIds,
+         JSON.stringify(metadataAuditable(datos.retrievalScores)),
+        datos.status,
+        datos.latencyParseMs,
+        datos.latencyRetrievalMs,
+        datos.latencyTotalMs,
+        datos.observabilidad?.eventLabel?.slice(0, 240) ?? null,
+        datos.observabilidad?.closedOccasionRecognized ?? null,
+        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.componentQueries)) : null,
+        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.candidateCountsByTier)) : null,
+         datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.selectedPieces)) : null,
+         datos.observabilidad?.outcome ?? null,
+         datos.observabilidad?.planningLatencyMs ?? null,
+         datos.observabilidad?.rerankStatus ?? null,
+        ],
+    );
+    return result.rows[0]?.id ?? null;
+  } catch (error) {
+    console.error("[rag-log] no se pudo registrar búsqueda:", error);
+    return null;
+  }
+}
+
+/** Actualiza resultado de búsqueda cuando el turno posterior confirma plan o pide aclaración. */
+export async function actualizarResultadoBusqueda(
+  pool: Pool,
+  requestId: string,
+  outcome: ResultadoBusquedaObservabilidad,
+  planningLatencyMs?: number,
+  selectedPieces?: PiezaObservabilidad[],
+): Promise<void> {
+  try {
+    await pool.query(
+      `UPDATE rag_query_log
+          SET outcome = $2,
+              latency_planning_ms = COALESCE($3, latency_planning_ms),
+              selected_match_levels = COALESCE($4, selected_match_levels)
+        WHERE request_id = $1 AND tipo = 'busqueda'`,
+      [requestId, outcome, planningLatencyMs ?? null, selectedPieces ? JSON.stringify(metadataAuditable(selectedPieces)) : null],
+    );
+  } catch (error) {
+    console.error("[rag-log] no se pudo actualizar resultado de búsqueda:", error);
+  }
+}
+
+export async function registrarSeleccion(
+  pool: Pool,
+  datos: {
+    requestId: string;
+    selectedProductIds: string[];
+    rejected: unknown;
+    status: string;
+    latencyTotalMs: number;
+  },
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO rag_query_log
+         (request_id, tipo, selected_product_ids, rejected, status, latency_total_ms)
+       VALUES ($1, 'seleccion', $2, $3, $4, $5)`,
+       [datos.requestId, datos.selectedProductIds, JSON.stringify(metadataAuditable(datos.rejected)), datos.status, datos.latencyTotalMs],
+    );
+  } catch (error) {
+    console.error("[rag-log] no se pudo registrar selección:", error);
+  }
+}
+
+/**
+ * Trazabilidad del plan determinista. Se guardan decisiones y hashes, nunca
+ * prompts completos de proveedor, imágenes ni secretos; así el incidente se
+ * puede reconstruir sin convertir la tabla de observabilidad en un almacén
+ * de contenido sensible.
+ */
+/** Request facts stored in their own plan_audit_log columns (migration 024, Plan A §A0.1). */
+export type DiagnosticoGeneracion = {
+  hashesEntrada: string[];
+  semilla: number | null;
+  slot: { slug: string; artifactId: string; evaluationStatus: string } | null;
+  captionHash: string | null;
+  captionLongitud: number | null;
+  preflightOk: boolean | null;
+  preflightErrores: string[];
+  tallasOmitidas: string[];
+};
+
+export type HechosPeticionPlan = {
+  tieneReferencia?: boolean;
+  tieneFotoEspacio?: boolean;
+  loraMode?: string;
+  motorImagenPrevisto?: string;
+  claseRechazo?: string;
+  rechazosTurno?: number;
+  superficie?: string;
+  diagnosticoGeneracion?: DiagnosticoGeneracion;
+};
+
+export async function registrarPlanAudit(
+  pool: Pick<Pool, "query">,
+  datos: {
+    requestId: string;
+    planHash?: string;
+    solicitudOriginal?: string;
+    restricciones?: unknown;
+    ragQueryIds?: string[];
+    candidateProductIds?: string[];
+    selectedProductIds?: string[];
+    geometry?: unknown;
+    costMinCop?: number;
+    costChosenCop?: number;
+    ceilingCop?: number;
+    deltaCop?: number;
+    packages?: unknown;
+    instances?: unknown;
+    status: string;
+    error?: string;
+    quoteHash?: string;
+    sceneSpecHash?: string;
+    qaHash?: string;
+    flagSnapshot?: unknown;
+    hechos?: HechosPeticionPlan;
+  },
+): Promise<boolean> {
+  const hechos = datos.hechos ?? {};
+  try {
+    await pool.query(
+      `INSERT INTO plan_audit_log
+         (request_id, plan_hash, solicitud_original, restricciones, rag_query_ids,
+           rag_query_refs, candidate_product_ids, selected_product_ids, geometry, cost_min_cop,
+           cost_chosen_cop, ceiling_cop, delta_cop, packages, instances, status, error,
+           quote_hash, scene_spec_hash, qa_hash, flag_snapshot,
+           tiene_referencia, tiene_foto_espacio, lora_mode, motor_imagen_previsto, clase_rechazo, rechazos_turno, superficie,
+           diagnostico_generacion)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
+          $22, $23, $24, $25, $26, $27, $28, $29)`,
+      [
+        datos.requestId,
+        datos.planHash ?? null,
+        datos.solicitudOriginal?.slice(0, 2000) ?? null,
+         datos.restricciones != null ? JSON.stringify(metadataAuditable(datos.restricciones)) : null,
+         datos.ragQueryIds ?? [],
+         datos.ragQueryIds ?? [],
+        datos.candidateProductIds ?? [],
+        datos.selectedProductIds ?? [],
+         datos.geometry != null ? JSON.stringify(metadataAuditable(datos.geometry)) : null,
+        datos.costMinCop ?? null,
+        datos.costChosenCop ?? null,
+        datos.ceilingCop ?? null,
+        datos.deltaCop ?? null,
+         datos.packages != null ? JSON.stringify(metadataAuditable(datos.packages)) : null,
+         datos.instances != null ? JSON.stringify(metadataAuditable(datos.instances)) : null,
+         datos.status,
+         datos.error?.slice(0, 1000) ?? null,
+         datos.quoteHash ?? null,
+         datos.sceneSpecHash ?? null,
+         datos.qaHash ?? null,
+         datos.flagSnapshot != null ? JSON.stringify(metadataAuditable(datos.flagSnapshot)) : null,
+         hechos.tieneReferencia ?? null,
+         hechos.tieneFotoEspacio ?? null,
+         hechos.loraMode?.slice(0, 64) || null,
+         hechos.motorImagenPrevisto?.slice(0, 64) || null,
+         hechos.claseRechazo?.slice(0, 64) || null,
+         hechos.rechazosTurno !== undefined && Number.isInteger(hechos.rechazosTurno) ? Math.min(99, Math.max(0, hechos.rechazosTurno)) : null,
+         hechos.superficie?.slice(0, 200) ?? null,
+         hechos.diagnosticoGeneracion != null ? JSON.stringify(metadataAuditable(hechos.diagnosticoGeneracion)) : null,
+      ],
+    );
+    return true;
+  } catch (error) {
+    console.error("[rag-log] no se pudo registrar auditoría de plan:", error);
+    return false;
+  }
+}

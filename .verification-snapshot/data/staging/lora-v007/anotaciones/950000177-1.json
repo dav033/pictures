@@ -1,0 +1,131 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000177-1",
+  "image_sha256": "a13eea8fca5c8097758677603017cc63eafd1ab83b19d25295f0e3d8d8028591",
+  "idempotency_key": "ead269c601902deff69aa7bb0175bdb7a9c19be7ac3f1e3f6733b1b2cae9d1d0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000177/foto-1.png",
+    "orden": "950000177"
+  },
+  "anotacion": {
+    "image_id": "950000177-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick walls and a light tiled floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A large three-dimensional red balloon-letter installation spans the wall."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching organic balloon bouquets sit on the floor beside the table."
+      }
+    ],
+    "non_purchased_elements": [
+      "white balloons",
+      "printed balloons",
+      "a dessert table",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "The printed-heart pattern on the hanging paper strips is not clear enough to confirm the listed streamer."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red",
+      "streamer.premium_paper.printed_hearts"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 2",
+      "PAQUETE X 8",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "Vaso Corazones Polka",
+      "Plato Corazones Polka"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000177-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, installed against the rear wall, built from matte Fashion red round latex balloons, all at a single 5-inch size, two matching balloon bouquets, one at each end of the coordinated decoration kit, built from matte Fashion red round latex balloons, all 5-inch, alongside white balloons, printed balloons, a dessert table and a printed sign, set against off-white brick walls and a light tiled floor.",
+    "palabras": 69,
+    "caracteres": 447,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.red"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:23:38.150Z",
+    "recompilado_en": "2026-09-03T14:45:25.114Z"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-060",
+  "image_sha256": "d2b99b72f7ba133474eb824a5580e815eff9a77a403ceb7ff61bf7b968a54cc5",
+  "idempotency_key": "60feee7cb08713224ff4b29284a583417059a3cb64f793d121882854ffab13a0",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-060.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/decoracion-organica_121d9ea5-58a2-425d-a89a-aae55bf20c33.jpg?v=1743711238",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-060",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "an off-white brick wall and a light wood tabletop",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "centerpiece-1",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.silver",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.fuchsia",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Tabletop balloon arrangement with a silver number foil, clustered latex balloons, a clear balloon, and a balloon flower."
+      },
+      {
+        "structure_id": "upper-bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "centerpiece-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.fuchsia",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Elevated cluster of silver and fuchsia balloons attached to the tabletop arrangement."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden table"
+    ],
+    "uncertainties": [
+      "Exact latex balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.silver",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.fuchsia",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-060",
+    "caption": "eventdecor_style_v3, a low balloon centerpiece, placed on the main table, built from Metallic silver number foil balloons, matte Fashion clear round latex balloons, Pastel Matte pastel pink round latex balloons and high-shine Reflex round latex balloons in fuchsia and silver, a balloon bouquet, anchored to the low balloon centerpiece, built from high-shine Reflex round latex balloons in fuchsia and silver, alongside a wooden table, set against an off-white brick wall and a light wood tabletop.",
+    "palabras": 75,
+    "caracteres": 498,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.silver",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.fuchsia",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:28:09.171Z"
+  }
+}

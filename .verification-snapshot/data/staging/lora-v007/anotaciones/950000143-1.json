@@ -1,0 +1,139 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000143-1",
+  "image_sha256": "44dafaaf92e9dee178b1c5080a843936caec828dc58aae15bb903863a29d1f50",
+  "idempotency_key": "e1d3926c3981e45f2ad6f455c8c4b960d8c1bae321a587d579806ff79309efef",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000143/foto-1.jpg",
+    "orden": "950000143"
+  },
+  "anotacion": {
+    "image_id": "950000143-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_dusk.laurel_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.mustard",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense balloon wall with organic clusters, varied sizes, and floral balloon details."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000143-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch matte Fashion round latex balloons in latte and merlot and muted Pastel Dusk round latex balloons in cream and laurel green, 12-inch matte Fashion mustard round latex balloons, mixed organically rather than graded, set against white background and no visible floor.",
+    "palabras": 53,
+    "caracteres": 353,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:17:55.467Z",
+    "recompilado_en": "2026-09-03T14:45:24.620Z"
+  }
+}

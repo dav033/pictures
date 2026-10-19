@@ -1,0 +1,87 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-050",
+  "image_sha256": "f9dccafb60e00b9734200f0ff1d26b5dfac82064b0c80f749ccabf3579729352",
+  "idempotency_key": "78891aa964aec48691fcd5ee34f70d18b50797ac553ba2c85e9355d94b0956d6",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-050.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Topiario-Reflex-Dorado-Rosa-Plata_50629c25-324f-46c6-8f7c-2171d63c0e6b.jpg?v=1642706953",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-050",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet_1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.reflex.rose_gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A compact bouquet-like cluster combines rose-gold and silver round balloons with curled silver modeling balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact physical placement is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-050",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from high-shine Reflex silver modeling latex balloons and high-shine Reflex round latex balloons in rose gold and silver, set against a white background.",
+    "palabras": 32,
+    "caracteres": 226,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:16:08.961Z"
+  }
+}

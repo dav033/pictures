@@ -1,0 +1,154 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000013-1",
+  "image_sha256": "03cb7185ead4001fda0207498bfac2ecc9399589d697f3a75db7a069a2dfda42",
+  "idempotency_key": "1c2558ad281154c6fedb0977ccfef303f93bea42795b9f684a7afc4845f4eec7",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000013/foto-1.png",
+    "orden": "950000013"
+  },
+  "anotacion": {
+    "image_id": "950000013-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white paneled wall with a doorway, floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.metal.gold",
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.star.foil.matte_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.metal.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.star.foil.matte_gold",
+            "size_code": "18 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large organic garland of round balloons in gold, champagne, latte and cream tones spans the top of a doorway and cascades down its center, with matte gold star foil balloons scattered through it."
+      }
+    ],
+    "non_purchased_elements": [
+      "white pedestal stands",
+      "a printed balloon",
+      "gold fringe skirt",
+      "a dessert display"
+    ],
+    "uncertainties": [
+      "Silver-toned balloons are clearly visible on the left of the garland but no matching silver concept exists in the allowed list.",
+      "Exact boundary between latte and pastel-dusk cream tones is hard to distinguish visually.",
+      "Unclear whether this is best described as a wall backdrop or an entrance decoration."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.latte",
+      "balloon.modeling.latex.pastel_dusk.cream",
+      "balloon.modeling.latex.reflex.champagne",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.star.foil.matte_gold",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000013-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 9-inch matte Fashion latte round latex balloons and muted Pastel Dusk cream round latex balloons, 5-inch Metallic gold round latex balloons and high-shine Reflex champagne round latex balloons, 18-inch Metallic matte gold star-shaped foil balloons, mixed organically rather than graded, alongside white pedestal stands, a printed balloon, gold fringe skirt and a dessert display, set against white paneled wall with a doorway, floor not visible.",
+    "palabras": 77,
+    "caracteres": 538,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.star.foil.matte_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.metal.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.star.foil.matte_gold",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:52:42.011Z",
+    "recompilado_en": "2026-09-03T14:45:23.323Z"
+  }
+}

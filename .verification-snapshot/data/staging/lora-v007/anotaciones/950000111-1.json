@@ -1,0 +1,182 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000111-1",
+  "image_sha256": "77ebcbe4f58aac7fc2e32bed9616c062723e9ccb9548c7d30ad6b77f0ea4871a",
+  "idempotency_key": "ec180aa355cbba420781319a6f661d584c6d0f2775d73951b482d9de1d518690",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000111/foto-1.png",
+    "orden": "950000111"
+  },
+  "anotacion": {
+    "image_id": "950000111-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and a pale floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "wall-main",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.grey",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense black and grey balloon wall with two rounded sections."
+      },
+      {
+        "structure_id": "floor-garland",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Low organic balloon garland spread across the floor."
+      },
+      {
+        "structure_id": "left-bouquet",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Floating balloon bouquet on the left side."
+      },
+      {
+        "structure_id": "right-bouquet",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Floating balloon bouquet on the right side."
+      }
+    ],
+    "non_purchased_elements": [
+      "wrapped gift boxes",
+      "Halloween props",
+      "a printed sign",
+      "a pumpkin figure"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000111-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in black and grey, all at a single 5-inch size, an organic balloon garland, grounded across the front, built from Pastel Matte round latex balloons in green and yellow, all 9-inch, a balloon bouquet, standing to one side, a balloon bouquet, standing to one side, alongside wrapped gift boxes, Halloween props, a printed sign and a pumpkin figure, set against off-white brick wall and a pale floor.",
+    "palabras": 83,
+    "caracteres": 513,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.grey",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:04:15.221Z",
+    "recompilado_en": "2026-09-03T14:45:24.302Z"
+  }
+}

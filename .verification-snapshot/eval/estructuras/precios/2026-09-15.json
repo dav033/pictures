@@ -1,0 +1,31 @@
+{
+  "version": "precios-2026-09-15",
+  "consultado_en": "2026-09-15",
+  "nota": "Tabla única de precios de Fundamentos §8.6 para estimar costo de corridas. Estimado, nunca facturado. La migración scripts/migrations/025_precios_gemini_flash.sql carga los mismos valores en ai_model_pricing (paridad verificada por eval:test-estructuras-costo).",
+  "precios": [
+    {
+      "proveedor": "gemini",
+      "modelo": "gemini-3.6-flash",
+      "tipo_unidad": "millon_tokens",
+      "vigente_desde": "2026-01-01T00:00:00Z",
+      "vigente_hasta": "2027-01-01T00:00:00Z",
+      "precio_entrada": 0.75,
+      "precio_salida": 3.75,
+      "precio_cacheado": 0.075,
+      "moneda": "USD",
+      "fuente": "https://ai.google.dev/gemini-api/docs/pricing (Last updated 2026-09-15 UTC; nivel pago estándar, no batch; vigente_desde es convención)"
+    },
+    {
+      "proveedor": "gemini",
+      "modelo": "gemini-3.6-flash",
+      "tipo_unidad": "millon_tokens",
+      "vigente_desde": "2027-01-01T00:00:00Z",
+      "vigente_hasta": null,
+      "precio_entrada": 1.5,
+      "precio_salida": 7.5,
+      "precio_cacheado": 0.15,
+      "moneda": "USD",
+      "fuente": "https://ai.google.dev/gemini-api/docs/pricing (Last updated 2026-09-15 UTC; cambio anunciado desde 2027-01-01)"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+import { z } from "zod";
+import { DecoracionSempertexSchema, ProveedorSempertexSchema } from "@/lib/biblioteca-sempertex/esquemas";
+import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { MOTOR_POR_DEFECTO, MotorGuiadaSchema } from "@/lib/guiada-motor/tipos";
+import { GuiaArmadoSchema } from "./guias-armado";
+
+const PasoPlanSchema = z.object({ orden: z.number().int().positive(), texto: z.string().min(1), globos: z.string().optional() }).strict();
+
+/** Acciones del widget «Tu plan». `cambiar` solo se marca como hecha; las otras cinco también las puede abrir el modelo. */
+export const AccionPlanGuiadaSchema = z.enum(["ver", "costear", "comprar", "aprender", "contratar", "cambiar"]);
+export type AccionPlanGuiada = z.infer<typeof AccionPlanGuiadaSchema>;
+const UsoSchema = z.enum(["negocio", "personal"]);
+
+// Los campos de «lo que el cliente ya eligió» son opcionales y aditivos: las sesiones guardadas antes siguen siendo válidas.
+export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
+  z.object({ tipo: z.literal("decoraciones"), decoraciones: z.array(DecoracionSempertexSchema), elegidaId: z.string().optional() }).strict(),
+  z.object({ tipo: z.literal("seleccion"), decoracion: DecoracionSempertexSchema }).strict(),
+  z.object({ tipo: z.literal("opciones"), elegida: z.enum(["contratar", "costear", "comprar", "aprender"]).optional() }).strict(),
+  z.object({ tipo: z.literal("pregunta-propuesta"), alcance: z.enum(["tipo", "pieza"]), elegida: z.string().optional() }).strict(),
+  z.object({ tipo: z.literal("uso"), elegido: UsoSchema.optional() }).strict(),
+  z.object({ tipo: z.literal("cotizacion"), cotizacion: CotizacionGuiadaSchema.nullable(), uso: UsoSchema, decoracion: DecoracionSempertexSchema }).strict(),
+  z.object({ tipo: z.literal("pasos"), decoracion: DecoracionSempertexSchema }).strict(),
+  z.object({ tipo: z.literal("pasos-plan"), pasos: z.array(PasoPlanSchema).min(1), guias: z.array(z.object({ estructura_id: z.string(), nombre: z.string(), medidas: z.object({ ancho_m: z.number().optional(), alto_m: z.number().optional(), largo_m: z.number().optional() }).passthrough(), globos: z.array(z.object({ color: z.string(), tamano: z.string(), cantidad: z.number().int().nonnegative() }).strict()), guia: GuiaArmadoSchema }).strict()) }).strict(),
+  z.object({ tipo: z.literal("proveedores"), proveedores: z.array(ProveedorSempertexSchema), solicitadoId: z.string().optional(), ciudad: z.string().optional(), ciudadesDisponibles: z.array(z.string()).optional() }).strict(),
+  z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
+  /** `en_espera` (P-045): el plan pide recalcular el del cliente y espera su «Recalcular mi plan»; al recargar pasa a `fallo`. */
+  z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo", "en_espera"]).optional() }).strict(),
+  z.object({
+    tipo: z.literal("plan"), plan: PlanGuiadoSchema,
+    /**
+     * La propuesta que armó este plan DEL 3D: «Recalcular mi plan» (P-049) la repite con Python. Un plan de Python no la guarda
+     * (un despliegue anterior descartaría la conversación entera por una clave que no conoce) y los guardados antes no la traen.
+     * Con `.catch`, como `motor`: si ya no cumple el esquema (otro tope de piezas, un color retirado) se descarta ella sola.
+     */
+    propuesta: PropuestaComposicionSchema.optional().catch(undefined),
+    /** Qué motor armó este plan (REQ-007): se decide al crearlo y sus ediciones e imágenes siguen con él. Los guardados antes de la bandera no lo traen: son de Python. */
+    motor: MotorGuiadaSchema.catch(MOTOR_POR_DEFECTO), cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
+    /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */
+    referenciaId: z.string().min(1).max(80).optional(),
+    imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(),
+    /** Por qué falló la imagen, en palabras de cliente, y si repetir la petición puede servir (`mensaje-error-imagen.ts`). Sin él, el fallo es el genérico y se puede reintentar. */
+    falloImagen: z.object({ texto: z.string().min(1).max(300), reintentable: z.boolean() }).strict().optional(),
+    compraAbierta: z.boolean().optional(),
+    /**
+     * Lo que la imagen muestra y no se cotiza (mesa, torta, regalos, luces del entorno del evento, o lo que conserva de
+     * la foto): el `avisoNoCotizado` de /api/generate, el mismo que ve la clásica junto a su imagen.
+     */
+    avisoImagen: z.string().min(1).max(300).optional(),
+    usoCosteo: UsoSchema.optional(), reemplazado: z.boolean().optional(), totalAnterior: z.number().int().nonnegative().optional(), hechas: z.array(AccionPlanGuiadaSchema).optional(),
+    /** Un plan del 3D rehecho entero con Python (P-045): la tarjeta dice que las cantidades y el precio pueden cambiar (`NotasPlan`). */
+    recalculado: z.literal(true).optional(),
+    /** Ajustes hechos con «Ajustar mi plan» sobre esta tarjeta («más rosado en el semiarco orgánico»), los últimos primero al final. */
+    ajustes: z.array(z.string().min(1).max(160)).max(8).optional(),
+    /** Ideas de la biblioteca que el cliente sumó a este plan con «Agregar al plan» (la idea dice «Está en tu plan»). */
+    ideas: z.array(z.string().regex(/^(?:deco|ej)-[a-z0-9-]+$/)).max(12).optional(),
+    /** La idea que trajo esta versión del plan: «Agregué «Columnas negras y doradas» a tu plan: ahora tiene 188 globos». */
+    agregada: z.object({
+      titulo: z.string().min(1).max(160), total: z.number().int().nonnegative(),
+      /** Si el plan de la idea NO salió exacto, por qué (`avisos-plan-idea.ts`): «Ajustamos un tamaño que no había: 36″ por 24″.». */
+      avisos: z.array(z.string().min(1).max(300)).max(4).optional(),
+    }).strict().optional(),
+  }).strict(),
+]);
+export type WidgetGuiado = z.infer<typeof WidgetGuiadoSchema>;

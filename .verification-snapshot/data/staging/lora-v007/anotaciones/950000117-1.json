@@ -1,0 +1,144 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000117-1",
+  "image_sha256": "62aa3222f5d75fdfde981e5f09018f265ad4c937644c25acdc0a0f59a7aab002",
+  "idempotency_key": "1f3d7b475ec0bd099e0b9b7cce66f0a08db93d1d19d4ed8dcebcf28819d09fc3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000117/foto-1.png",
+    "orden": "950000117"
+  },
+  "anotacion": {
+    "image_id": "950000117-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white wall and a dark floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.white",
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.violet",
+          "garland.spiderweb.glittered_paper.printed_spiderweb"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.white",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "garland.spiderweb.glittered_paper.printed_spiderweb",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding Halloween balloon installation with a clustered base, witch-themed balloon figure, rising balloons, white modeling loops, violet and gold accents, and a printed spiderweb garland."
+      }
+    ],
+    "non_purchased_elements": [
+      "a witch hat",
+      "unlisted colored balloons",
+      "unlisted printed balloons"
+    ],
+    "uncertainties": [
+      "The sizes of the larger unlisted balloons are unclear."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.white",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.violet",
+      "garland.spiderweb.glittered_paper.printed_spiderweb"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Araña Transparente"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000117-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from 2-inch matte Fashion white modeling latex balloons, 5-inch matte Fashion black round latex balloons and high-shine Reflex round latex balloons in gold and violet, glittered paper spiderweb garlands with printed spiderweb pattern, mixed organically rather than graded, alongside a witch hat, unlisted colored balloons and unlisted printed balloons, set against a plain white wall and a dark floor.",
+    "palabras": 69,
+    "caracteres": 485,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.white",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.violet",
+      "garland.spiderweb.glittered_paper.printed_spiderweb"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.white",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:11:17.890Z",
+    "recompilado_en": "2026-09-03T14:45:24.369Z"
+  }
+}

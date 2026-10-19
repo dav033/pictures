@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-065",
+  "image_sha256": "a9e77f35c83372c1f437a1255ec290d7dd3636f4fb497a882a404ffca6572d56",
+  "idempotency_key": "f0c4c6c6b7c1b05c4c8d875c6e796ce95feca7f7ac7d36bbdb8475d407bc4955",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-065.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Semiarco-Organico-Combinaciones-con-Reflex_26bbcc5b-3c4b-46ac-9c75-63909164c307.jpg?v=1642706950",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-065",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Diagonal organic balloon garland with mixed pink, fuchsia, gold, rose-gold, and printed clear balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact installation surface and placement are unclear."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-065",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from matte Fashion round latex balloons in fuchsia and pink, high-shine Reflex round latex balloons in gold and rose gold and matte Fashion clear round latex balloons with a printed pattern, set against white background and no visible floor.",
+    "palabras": 50,
+    "caracteres": 329,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:52.445Z"
+  }
+}

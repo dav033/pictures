@@ -1,0 +1,124 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000042-1",
+  "image_sha256": "0d92a5832e27d0c61a3ae539cfb3a8fa6583442f942dde8b2a5c0c0f41116767",
+  "idempotency_key": "d068b2ccc2b88e17a44da0a71151c5ed52006a262be6a4408e69d0e1370a7bac",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000042/foto-1.jpg",
+    "orden": "950000042"
+  },
+  "anotacion": {
+    "image_id": "950000042-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.deep_turquoise",
+          "balloon.round.latex.reflex.gold",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "vertical twisted column of round deep-turquoise and round/elongated gold balloons topped with a cluster of gold round balloons"
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed topper balloon"
+    ],
+    "uncertainties": [
+      "cannot confirm if a thin turquoise 260 modeling balloon is twisted into the column spine, distinct from the round turquoise balloons",
+      "actual venue placement unknown, this is a studio product shot"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.deep_turquoise",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.reflex.gold",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Reflex Feliz Dia Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000042-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch high-shine Reflex gold modeling latex balloons, 9-inch matte Fashion deep turquoise round latex balloons, 5-inch high-shine Reflex gold round latex balloons, alongside a printed topper balloon, set against plain white studio background, no floor or wall visible.",
+    "palabras": 48,
+    "caracteres": 346,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:25.333Z",
+    "recompilado_en": "2026-09-03T14:45:23.630Z"
+  }
+}

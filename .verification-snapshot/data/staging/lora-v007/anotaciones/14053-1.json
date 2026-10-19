@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14053-1",
+  "image_sha256": "f1bf9eb9f540689b5307bcdc3ff6c80ee27a5fa8cbe6b9c422029ec8cedf94cf",
+  "idempotency_key": "5222a17d779bdcbc4a2b46f5fc967f8a617b618dc2b59cceebfbd70fe564ddd0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14053/foto-1.jpg",
+    "orden": "14053"
+  },
+  "anotacion": {
+    "image_id": "14053-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white ceiling and a blue fabric drape wall",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.satin.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.white",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland along the ceiling-wall line alternating navy, white, and small silver accent clusters, above giant silver foil letter balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "silver foil letter balloons",
+      "blue fabric backdrop drape",
+      "ceiling light fixtures"
+    ],
+    "uncertainties": [
+      "Exact boundary between R-12 navy and white clusters partly cut off at frame edges."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.satin.white"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14053-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 12-inch matte Fashion navy blue round latex balloons and Satin white round latex balloons, 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside silver foil letter balloons, blue fabric backdrop drape and ceiling light fixtures, set against off-white ceiling and a blue fabric drape wall.",
+    "palabras": 61,
+    "caracteres": 429,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.satin.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.white",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:13.741Z",
+    "recompilado_en": "2026-09-03T14:45:22.330Z"
+  }
+}

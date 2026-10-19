@@ -1,0 +1,821 @@
+{
+ "_comentario": "Salida real del motor de columnas organicas (via /api/plan-armado-columna-organica sobre la columna EST_01_COLUMNA de scripts/fixtures/patron-color-ui/plan-con-patrones.json): los rangos vivos de limites_de y los avisos por grosor de la base, que globos caben sobre la punta segun su grosor, la correccion del motor a un globo grande sin proporcion y el rechazo de un color que la pieza no lleva. Regenerar solo a proposito cuando el motor cambie, nunca para que pase una prueba de TypeScript.",
+ "base": {
+  "version": "armado-columna-organica.v1",
+  "origen": "sugerido",
+  "forma": {
+   "altoM": 2.2,
+   "inclinacionM": 0.12,
+   "serpenteoM": 0.1,
+   "ondulacion": 0.3,
+   "suelo": true,
+   "persona": true
+  },
+  "volumen": {
+   "grosorPatasM": 0.85,
+   "grosorCimaM": 0.45,
+   "irregularidad": 0.4,
+   "relleno": 0.72,
+   "racimo": 4,
+   "salientes": 0.35
+  },
+  "tamanos": {
+   "mezcla": {
+    "5": 32,
+    "12": 42,
+    "18": 20,
+    "24": 6
+   },
+   "grandesAbajo": 0.8,
+   "inflado": 1,
+   "variacion": 0.1
+  },
+  "colores": {
+   "paleta": [
+    {
+     "material": 0,
+     "peso": 50,
+     "acabado": "mate",
+     "rol": "normal"
+    },
+    {
+     "material": 1,
+     "peso": 25,
+     "acabado": "mate",
+     "rol": "normal"
+    },
+    {
+     "material": 2,
+     "peso": 25,
+     "acabado": "mate",
+     "rol": "normal"
+    }
+   ],
+   "reparto": "azar",
+   "mezcla": 0.5
+  },
+  "adornos": {
+   "follaje": 0.6,
+   "flores": 0
+  },
+  "aspecto": {
+   "brillo": 0.6,
+   "sombra": 0.2,
+   "contorno": 0.8,
+   "profundidad": 0.5,
+   "semilla": 11
+  },
+  "corona": {
+   "activa": true,
+   "tamano": 24,
+   "material": 2
+  }
+ },
+ "colores": [
+  "#ffffff",
+  "#111111",
+  "#1f4fbf"
+ ],
+ "por_grosor": {
+  "0.4": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.4,
+     "grosorCimaM": 0.3,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": true,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "limites": {
+    "altoMin": 0.8,
+    "altoMax": 4,
+    "grosorBaseMin": 0.35,
+    "grosorBaseMax": 1.6,
+    "grosorPuntaMin": 0.35,
+    "grosorPuntaMax": 0.6,
+    "inclinacionMax": 0.65,
+    "serpenteoMax": 0.4,
+    "coronaTamanos": [
+     18,
+     24,
+     36
+    ]
+   },
+   "avisos": [
+    "El grosor de la punta se ajustó a 0,35 m: no puede ser muy distinto al de la base.",
+    "R24 no cabe en ese grosor: se quitó de la mezcla."
+   ],
+   "globos": 41
+  },
+  "0.8": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.8,
+     "grosorCimaM": 0.48,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": true,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "limites": {
+    "altoMin": 0.8,
+    "altoMax": 4.5,
+    "grosorBaseMin": 0.35,
+    "grosorBaseMax": 1.6,
+    "grosorPuntaMin": 0.35,
+    "grosorPuntaMax": 1.25,
+    "inclinacionMax": 0.65,
+    "serpenteoMax": 0.4,
+    "coronaTamanos": [
+     24,
+     36
+    ]
+   },
+   "avisos": [],
+   "globos": 54
+  },
+  "1.2": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 1.2,
+     "grosorCimaM": 0.72,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": true,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "limites": {
+    "altoMin": 1.05,
+    "altoMax": 4.5,
+    "grosorBaseMin": 0.35,
+    "grosorBaseMax": 1.6,
+    "grosorPuntaMin": 0.45,
+    "grosorPuntaMax": 1.6,
+    "inclinacionMax": 0.65,
+    "serpenteoMax": 0.4,
+    "coronaTamanos": [
+     36
+    ]
+   },
+   "avisos": [
+    "Un globo de R24 no guarda proporción con una punta de 0,72 m: se cambió a R36."
+   ],
+   "globos": 110
+  }
+ },
+ "por_punta": {
+  "0.35": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.85,
+     "grosorCimaM": 0.35,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": false,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "coronaTamanos": [
+    18,
+    24,
+    36
+   ]
+  },
+  "0.6": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.85,
+     "grosorCimaM": 0.6,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": false,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "coronaTamanos": [
+    24,
+    36
+   ]
+  },
+  "0.9": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.85,
+     "grosorCimaM": 0.9,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": false,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "coronaTamanos": [
+    36
+   ]
+  },
+  "1.3": {
+   "armado": {
+    "version": "armado-columna-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "altoM": 2.2,
+     "inclinacionM": 0.12,
+     "serpenteoM": 0.1,
+     "ondulacion": 0.3,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.85,
+     "grosorCimaM": 1.3,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32,
+      "12": 42,
+      "18": 20,
+      "24": 6
+     },
+     "grandesAbajo": 0.8,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 50,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 2,
+       "peso": 25,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.6,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    },
+    "corona": {
+     "activa": false,
+     "tamano": 24,
+     "material": 2
+    }
+   },
+   "coronaTamanos": []
+  }
+ },
+ "globo_sin_proporcion": {
+  "armado": {
+   "version": "armado-columna-organica.v1",
+   "origen": "sugerido",
+   "forma": {
+    "altoM": 2.2,
+    "inclinacionM": 0.12,
+    "serpenteoM": 0.1,
+    "ondulacion": 0.3,
+    "suelo": true,
+    "persona": true
+   },
+   "volumen": {
+    "grosorPatasM": 0.85,
+    "grosorCimaM": 1.3,
+    "irregularidad": 0.4,
+    "relleno": 0.72,
+    "racimo": 4,
+    "salientes": 0.35
+   },
+   "tamanos": {
+    "mezcla": {
+     "5": 32,
+     "12": 42,
+     "18": 20,
+     "24": 6
+    },
+    "grandesAbajo": 0.8,
+    "inflado": 1,
+    "variacion": 0.1
+   },
+   "colores": {
+    "paleta": [
+     {
+      "material": 0,
+      "peso": 50,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 1,
+      "peso": 25,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 2,
+      "peso": 25,
+      "acabado": "mate",
+      "rol": "normal"
+     }
+    ],
+    "reparto": "azar",
+    "mezcla": 0.5
+   },
+   "adornos": {
+    "follaje": 0.6,
+    "flores": 0
+   },
+   "aspecto": {
+    "brillo": 0.6,
+    "sombra": 0.2,
+    "contorno": 0.8,
+    "profundidad": 0.5,
+    "semilla": 11
+   },
+   "corona": {
+    "activa": true,
+    "tamano": 5,
+    "material": 1
+   }
+  },
+  "status": 200,
+  "avisos": [
+   "Ningún globo queda bien sobre una punta tan delgada: se quitó el globo grande de arriba."
+  ],
+  "globo_de_arriba": {
+   "x": 0.42132394637355536,
+   "y": 0.12071329927673097,
+   "r": 0.12071329927673097,
+   "capa": 3,
+   "tamano": 12,
+   "material": 1,
+   "acabado": "mate"
+  }
+ },
+ "rechazo": {
+  "armado": {
+   "version": "armado-columna-organica.v1",
+   "origen": "sugerido",
+   "forma": {
+    "altoM": 2.2,
+    "inclinacionM": 0.12,
+    "serpenteoM": 0.1,
+    "ondulacion": 0.3,
+    "suelo": true,
+    "persona": true
+   },
+   "volumen": {
+    "grosorPatasM": 0.85,
+    "grosorCimaM": 0.45,
+    "irregularidad": 0.4,
+    "relleno": 0.72,
+    "racimo": 4,
+    "salientes": 0.35
+   },
+   "tamanos": {
+    "mezcla": {
+     "5": 32,
+     "12": 42,
+     "18": 20,
+     "24": 6
+    },
+    "grandesAbajo": 0.8,
+    "inflado": 1,
+    "variacion": 0.1
+   },
+   "colores": {
+    "paleta": [
+     {
+      "material": 0,
+      "peso": 50,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 1,
+      "peso": 25,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 2,
+      "peso": 25,
+      "acabado": "mate",
+      "rol": "normal"
+     }
+    ],
+    "reparto": "azar",
+    "mezcla": 0.5
+   },
+   "adornos": {
+    "follaje": 0.6,
+    "flores": 0
+   },
+   "aspecto": {
+    "brillo": 0.6,
+    "sombra": 0.2,
+    "contorno": 0.8,
+    "profundidad": 0.5,
+    "semilla": 11
+   },
+   "corona": {
+    "activa": true,
+    "tamano": 24,
+    "material": 9
+   }
+  },
+  "motivo": "material_fuera_de_rango",
+  "mensaje": "El armado nombra un color que la columna no lleva."
+ }
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-049",
+  "image_sha256": "deb0d27f553875443a76b042aef0348bf45932a661f4e95ebb12e9ed1dde8b8b",
+  "idempotency_key": "21984dcaa06d6c86799695cf1bbb2182ac23a727578d0d3f30bac02e47e10dc3",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-049.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/DSC_1461_cc1bbf61-365e-4132-b7a2-f6c640ce897e.jpg?v=1743711205",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-049",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red",
+          "balloon.modeling.latex.fashion.sand"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Coordinated balloon gift arrangement with red and sand balloon-animal forms."
+      }
+    ],
+    "non_purchased_elements": [
+      "a teddy bear",
+      "a plush heart",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.jungle_green",
+      "balloon.modeling.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Bolsa Regalo Trapecio Corazones"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-049",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from matte Fashion modeling latex balloons in imperial red and sand, alongside a teddy bear, a plush heart and a printed sign, set against white background.",
+    "palabras": 36,
+    "caracteres": 240,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:15:29.002Z"
+  }
+}

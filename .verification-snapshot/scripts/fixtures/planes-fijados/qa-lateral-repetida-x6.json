@@ -1,0 +1,483 @@
+{
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "concepto": {
+        "titulo": "Cumpleaños rojo y dorado",
+        "descripcion": "Piezas de globos en el salón.",
+        "paleta": [
+          "rojo",
+          "dorado"
+        ]
+      },
+      "espacio": {
+        "tipo": "salón",
+        "fuente": "supuesto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco principal",
+          "tipo": "arco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 3,
+            "alto_m": 2.6
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-GLOBOS",
+              "color": "rojo",
+              "participacion": 0.6,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "P-GLOBOS",
+              "color": "dorado",
+              "participacion": 0.4,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Pieza focal."
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "nombre": "Columnas laterales",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "alto_m": 1.8
+          },
+          "repeticiones": 6,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-GLOBOS",
+              "color": "rojo",
+              "participacion": 0.6,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "P-GLOBOS",
+              "color": "dorado",
+              "participacion": 0.4,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Columnas a los dos lados."
+        }
+      ],
+      "supuestos": [],
+      "referencia_omitida": []
+    },
+    "plan_hash": "402d1108b5338a29cedaa9f3d749673b268ee63284e444b1f84969cbd53ed795",
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco principal",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 6.56,
+        "total_unidades": 140,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "P-GLOBOS",
+            "variant_id": "V-R-12-ROJO",
+            "sku": "SKU-R-12-ROJO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo rojo — R-12",
+            "color": "rojo",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 84,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "P-GLOBOS",
+            "variant_id": "V-R-12-DORADO",
+            "sku": "SKU-R-12-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo dorado — R-12",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 56,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 140,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COLUMNAS",
+        "nombre": "Columnas laterales",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 6,
+        "eje_m": 1.8,
+        "total_unidades": 234,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COLUMNAS",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNAS"
+            },
+            "product_id": "P-GLOBOS",
+            "variant_id": "V-R-12-ROJO",
+            "sku": "SKU-R-12-ROJO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo rojo — R-12",
+            "color": "rojo",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 138,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNAS",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNAS"
+            },
+            "product_id": "P-GLOBOS",
+            "variant_id": "V-R-12-DORADO",
+            "sku": "SKU-R-12-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo dorado — R-12",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 96,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 234,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "compras": [
+      {
+        "variant_id": "V-R-12-DORADO",
+        "product_id": "P-GLOBOS",
+        "sku": "SKU-R-12-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo dorado — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 152,
+        "design_quantity": 152,
+        "waste_reserve": 30,
+        "required_quantity": 182,
+        "unidades_con_merma": 182,
+        "unidades_paquete": 50,
+        "paquetes": 4,
+        "purchase_quantity": 200,
+        "used": 152,
+        "leftover_inventory": 18,
+        "consumption_cost": 38220,
+        "purchase_cost": 42000,
+        "additional_package_for_waste": false,
+        "sobrante": 48,
+        "precio_paquete": 10500,
+        "subtotal": 42000,
+        "estructuras": [
+          "EST_01_ARCO",
+          "EST_02_COLUMNAS"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          }
+        ]
+      },
+      {
+        "variant_id": "V-R-12-ROJO",
+        "product_id": "P-GLOBOS",
+        "sku": "SKU-R-12-ROJO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo rojo — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rojo",
+        "unidades_necesarias": 222,
+        "design_quantity": 222,
+        "waste_reserve": 0,
+        "required_quantity": 222,
+        "unidades_con_merma": 222,
+        "unidades_paquete": 50,
+        "paquetes": 5,
+        "purchase_quantity": 250,
+        "used": 222,
+        "leftover_inventory": 28,
+        "consumption_cost": 44400,
+        "purchase_cost": 50000,
+        "additional_package_for_waste": false,
+        "sobrante": 28,
+        "precio_paquete": 10000,
+        "subtotal": 50000,
+        "estructuras": [
+          "EST_01_ARCO",
+          "EST_02_COLUMNAS"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          }
+        ]
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 374
+      },
+      "total_unidades": 374,
+      "total_cop": 92000,
+      "design_quantity": 374,
+      "target_waste_reserve": 30,
+      "covered_waste_reserve": 30,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 76,
+      "purchase_cost": 92000,
+      "consumption_cost": 82620,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [
+      {
+        "familia_id": "P-GLOBOS",
+        "titulo": "Globo rojo + Globo dorado",
+        "total_cop": 92000,
+        "ahorro_cop": 0,
+        "etiqueta": "economica"
+      }
+    ],
+    "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 374\nTarget waste reserve: 30\nNatural package surplus: 76\nUsable waste coverage: 30\nAdditional packages required for waste: 0\nGlobo dorado — R-12: design=152, required=182, package=50, packages=4, purchased=200, natural surplus=48, waste reserve=30, leftover inventory=18\nGlobo rojo — R-12: design=222, required=222, package=50, packages=5, purchased=250, natural surplus=28, waste reserve=0, leftover inventory=28",
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 28560
+      },
+      {
+        "estructura_id": "EST_02_COLUMNAS",
+        "consumo_cop": 47760
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 3,
+        "height": 2.6,
+        "length": null
+      },
+      "installation_length_m": 17.36,
+      "density": "media",
+      "visual_density": "medium",
+      "visual_scale": "very_large",
+      "cluster_count": 7
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-ROJO",
+        "color": "rojo",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 84,
+        "waste_reserve": 0,
+        "required_quantity": 84,
+        "waste_adjusted_quantity": 84
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 56,
+        "waste_reserve": 0,
+        "required_quantity": 56,
+        "waste_adjusted_quantity": 56
+      },
+      {
+        "structure_id": "EST_02_COLUMNAS",
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-ROJO",
+        "color": "rojo",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 138,
+        "waste_reserve": 0,
+        "required_quantity": 138,
+        "waste_adjusted_quantity": 138
+      },
+      {
+        "structure_id": "EST_02_COLUMNAS",
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 96,
+        "waste_reserve": 0,
+        "required_quantity": 96,
+        "waste_adjusted_quantity": 96
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-DORADO",
+        "design_quantity": 152,
+        "waste_reserve": 30,
+        "required_quantity": 182,
+        "waste_adjusted_quantity": 182,
+        "units_per_package": 50,
+        "package_count": 4,
+        "purchase_quantity": 200,
+        "used": 152,
+        "leftover_inventory": 18,
+        "consumption_cost": 38220,
+        "purchase_cost": 42000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 18,
+        "potential_surplus": 48
+      },
+      {
+        "product_id": "P-GLOBOS",
+        "variant_id": "V-R-12-ROJO",
+        "design_quantity": 222,
+        "waste_reserve": 0,
+        "required_quantity": 222,
+        "waste_adjusted_quantity": 222,
+        "units_per_package": 50,
+        "package_count": 5,
+        "purchase_quantity": 250,
+        "used": 222,
+        "leftover_inventory": 28,
+        "consumption_cost": 44400,
+        "purchase_cost": 50000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 28,
+        "potential_surplus": 28
+      }
+    ],
+    "totals": {
+      "design_quantity": 374,
+      "target_waste_reserve": 30,
+      "covered_waste_reserve": 30,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 76,
+      "required_quantity": 404,
+      "consumption_cost": 82620,
+      "purchase_cost": 92000,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 404,
+      "purchase_quantity": 450,
+      "operational_surplus": 46,
+      "potential_surplus": 76
+    },
+    "warnings": []
+  }
+}

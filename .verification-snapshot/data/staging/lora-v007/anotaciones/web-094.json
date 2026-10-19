@@ -1,0 +1,87 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-094",
+  "image_sha256": "2f22a3255e634cf972d34daf86b15dde1145c3e4e75729cdcdcfc5de033cf82a",
+  "idempotency_key": "5482edaa0fe302b404d602c623f0375b0f843d9adc7c4046320fbb4ce064657b",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-094.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/59115b6b087497d7cf16ada3b83cc2cb_c897ce42-4621-4b36-b15a-7095b673289c.jpg?v=1642705653",
+    "product_breakdown_status": "not_found_in_source_blog_page",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-094",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Rectangular three-dimensional green balloon arch with a clear open center."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching vertical orange-and-black balloon columns flank the central arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "Halloween figures",
+      "decorative pumpkins"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "web-094",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:27:36.882Z"
+  }
+}

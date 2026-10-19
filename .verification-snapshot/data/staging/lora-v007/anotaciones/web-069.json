@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-069",
+  "image_sha256": "3f31c9d1ffbb2557d4b5ecc32576b2d1070c4b0f116134f93abf88012012045a",
+  "idempotency_key": "06bba77c6e2666e2175b1a678e0bffe0d989bdfa6e1f288671219ffcf44bbacc",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-069.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/635c6f020c0712b9aad59fd615c89429_92c36245-8bf2-492a-be80-ab21e2d7375c.jpg?v=1642706360",
+    "product_breakdown_status": "partial_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-069",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.fuchsia",
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.modeling.latex.fashion.yellow",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Unicorn-shaped balloon arrangement with dense white round balloons and colored modeling balloons forming the horn, mane, and decorative details."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon size codes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Tubito Fashion Lila"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-069",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion modeling latex balloons in fuchsia, pink and yellow and matte Fashion white round latex balloons, set against white wall and white floor.",
+    "palabras": 34,
+    "caracteres": 229,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:12:58.238Z"
+  }
+}

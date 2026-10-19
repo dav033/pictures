@@ -1,0 +1,140 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000180-1",
+  "image_sha256": "6851fa2b513351edbe03e08d67a75b84976434bf18179a405ac8164c1c7e3ff9",
+  "idempotency_key": "6eb9b18f0eab0824c2668d1d995b86608dd7852742ec908e5c7f0eb762cb88fe",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000180/foto-1.jpg",
+    "orden": "950000180"
+  },
+  "anotacion": {
+    "image_id": "950000180-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white wall; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": "accessory-plinth-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical balloon bouquet with metallic heart balloons, red round balloons, and small fuchsia and silver round balloons."
+      },
+      {
+        "structure_id": "accessory-hoop-1",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": "accessory-plinth-1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Silver heart-shaped metal hoop surrounding the central balloon."
+      },
+      {
+        "structure_id": "accessory-plinth-1",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "White display plinth supporting the balloon arrangement."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "Exact sizes of the large foil balloons are not identifiable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000180-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, resting on the decorative accessory, built from matte Fashion fuchsia round latex balloons and high-shine Reflex silver round latex balloons, all 5-inch, a decorative accessory, resting on the decorative accessory, a decorative accessory, grounded across the front, alongside a printed sign, set against off-white wall; floor not visible.",
+    "palabras": 52,
+    "caracteres": 378,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:25:42.498Z",
+    "recompilado_en": "2026-09-03T14:45:25.147Z"
+  }
+}

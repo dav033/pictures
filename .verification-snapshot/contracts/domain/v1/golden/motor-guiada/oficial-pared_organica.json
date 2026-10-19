@@ -1,0 +1,27 @@
+{
+ "caso": "oficial-pared_organica",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "ed69396ca13faddf28c68ffbb2356b2534397babdac652687493cc0df0ce4798",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_01_PARED_ORGANICA",
+   "motivo": "No hay un constructor de pared orgánica con racimos irregulares."
+  }
+ ],
+ "piezas": {},
+ "total": {
+  "lineas": [],
+  "unidades": 0
+ },
+ "caja": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

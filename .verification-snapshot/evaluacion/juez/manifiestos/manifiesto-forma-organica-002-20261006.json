@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002",
+    "grupo": "organica-v3-r1",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/forma-organica-002-20261006-v3/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "organica-v3-r2",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/forma-organica-002-20261006-v3/caso-2/corrida-2/imagen-flux/final.png"
+  }
+]

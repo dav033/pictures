@@ -1,0 +1,135 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000181-1",
+  "image_sha256": "4892ecc3b0a1f93bedf206a1948af4d2afaf41dcd362806de83809f7a56b60a8",
+  "idempotency_key": "1ca80f34b5a4c3abb4c4a4866292194e9850c5ddcfe6f440369ddb9575f3cfd3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000181/foto-1.jpg",
+    "orden": "950000181"
+  },
+  "anotacion": {
+    "image_id": "950000181-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a wooden fence and a brick tile floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch framing the teepee with red, rose, sand, and pink clusters."
+      }
+    ],
+    "non_purchased_elements": [
+      "a teepee tent",
+      "a picnic table",
+      "floral arrangements",
+      "a decorated cake"
+    ],
+    "uncertainties": [
+      "The printed pattern on the red balloons is not clearly distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000181-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 5-inch matte Fashion round latex balloons in dusty rose and red, 9-inch matte Fashion sand round latex balloons and Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, alongside a teepee tent, a picnic table, floral arrangements and a decorated cake, set against a wooden fence and a brick tile floor.",
+    "palabras": 67,
+    "caracteres": 425,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T20:00:49.163Z",
+    "recompilado_en": "2026-09-03T14:45:25.158Z"
+  }
+}

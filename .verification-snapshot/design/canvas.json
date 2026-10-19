@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 1420, "title": "Flujo chat — resultados" },
+    { "file": "Wizard.dc.html", "x": 1560, "y": 0, "w": 1440, "h": 900, "title": "Flujo por pasos" },
+    { "file": "Temas.dc.html", "x": 0, "y": 1560, "w": 1200, "h": 880, "title": "Sistema de temas" }
+  ],
+  "annotations": [
+    {
+      "id": "nota-jerarquia",
+      "x": -330,
+      "y": 40,
+      "w": 290,
+      "text": "La #1 de la IA se lleva el escenario: tarjeta horizontal, arte grande, badge \"Mejor opción\", y el detalle completo de qué incluye.\n\nLas alternativas van abajo en grilla — presentes, pero claramente secundarias.\n\nHoy las tres tarjetas se ven idénticas y el orden de relevancia se pierde."
+    },
+    {
+      "id": "nota-wizard",
+      "x": 1560,
+      "y": -180,
+      "w": 340,
+      "text": "Es clicable: elige tipo, sube/baja invitados, cambia ubicación, avanza y retrocede.\n\nCada decisión se ve antes de tomarla — las figuras crecen con los invitados, y el lugar se ilustra. Nada de botones de texto plano."
+    },
+    {
+      "id": "nota-temas",
+      "x": -330,
+      "y": 1600,
+      "w": 290,
+      "text": "Esto es lo que reemplaza a \"no hay imágenes\".\n\nEl arte sale del nombre del paquete por código. Cuesta $0, no hay assets que mantener, y funciona para paquetes que Happia todavía no ha creado."
+    },
+    {
+      "id": "nota-hero",
+      "x": 1560,
+      "y": 990,
+      "w": 340,
+      "text": "El hero sí es imagen de IA (ya generada, en public/happie/hero.jpg).\n\nEs una sola pieza fija, así que una foto real aquí sí se justifica: da calidez que el SVG no alcanza, y no crece con el catálogo."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,130 @@
+{
+ "caso": "idea-deco-real-18-sddefault",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "236859d6908299125d1005135128b9dff61d6294a8415eb87bbc7dd9705d8ffe",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "609",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "609",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "609",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "609",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 34,
+   "caja": [
+    -110,
+    200,
+    -250,
+    110,
+    269,
+    -198
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "609",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "609",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "609",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "609",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 34
+ },
+ "caja": [
+  -110,
+  200,
+  -250,
+  110,
+  269,
+  -198
+ ],
+ "referenciaPython": {
+  "globos": 37
+ }
+}

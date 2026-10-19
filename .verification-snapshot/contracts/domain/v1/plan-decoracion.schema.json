@@ -1,0 +1,4690 @@
+{
+  "$id": "plan-decoracion.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "plan_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "plan_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "concepto": {
+      "type": "object",
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "descripcion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "paleta": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "estilo": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "ocasion": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "momento_dia": {
+          "type": "string",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "titulo",
+        "descripcion",
+        "paleta"
+      ],
+      "additionalProperties": false
+    },
+    "espacio": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "ancho_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "alto_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "largo_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "fuente": {
+          "type": "string",
+          "enum": [
+            "cliente",
+            "supuesto",
+            "foto"
+          ]
+        }
+      },
+      "required": [
+        "tipo",
+        "fuente"
+      ],
+      "additionalProperties": false
+    },
+    "estructuras": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "pattern": "^EST_\\d{2}_[A-Z_]+$"
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "arco",
+              "semiarco",
+              "guirnalda",
+              "columna",
+              "pared",
+              "centro_mesa",
+              "backdrop",
+              "kit",
+              "accesorio"
+            ]
+          },
+          "rol_escena": {
+            "type": "string",
+            "enum": [
+              "focal",
+              "soporte",
+              "relleno",
+              "acento",
+              "servicio"
+            ]
+          },
+          "ubicacion": {
+            "type": "string",
+            "enum": [
+              "fondo_pared",
+              "sobre_mesa_principal",
+              "lateral_izquierdo",
+              "lateral_derecho",
+              "piso_frontal",
+              "mesas_invitados",
+              "entrada",
+              "techo",
+              "arco_central"
+            ]
+          },
+          "medidas": {
+            "type": "object",
+            "properties": {
+              "ancho_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "alto_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "largo_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          "repeticiones": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          },
+          "densidad": {
+            "type": "string",
+            "enum": [
+              "sencilla",
+              "media",
+              "lujosa"
+            ]
+          },
+          "mezcla": {
+            "type": "string",
+            "enum": [
+              "clasica",
+              "organica_fina",
+              "organica_gruesa",
+              "solo_grandes"
+            ]
+          },
+          "materiales": {
+            "minItems": 1,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "acabado": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "participacion": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                },
+                "rol_material": {
+                  "type": "string",
+                  "enum": [
+                    "principal",
+                    "secundario",
+                    "acento"
+                  ]
+                }
+              },
+              "required": [
+                "product_id",
+                "participacion",
+                "rol_material"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "unidades_declaradas": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 999
+          },
+          "porque": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "variant_overrides": {
+            "maxItems": 24,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objetivo_variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                }
+              },
+              "required": [
+                "objetivo_variant_id",
+                "product_id",
+                "variant_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "estructura_oficial": {
+            "type": "string",
+            "enum": [
+              "arco",
+              "arco_asimetrico",
+              "arco_no_denso",
+              "semiarco",
+              "semiarco_asimetrico",
+              "columna",
+              "columna_asimetrica",
+              "columna_no_densa",
+              "pared_densa",
+              "pared_no_densa",
+              "pared_organica",
+              "guirnalda",
+              "centro_mesa",
+              "bouquet",
+              "figura",
+              "aro_circular",
+              "techo_globos",
+              "racimo_pared"
+            ]
+          },
+          "forma": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "colores_referencia": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "patron_color": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "patron-color.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "globos_por_racimo": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "base": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "espiral"
+                      },
+                      "racimo": {
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "trazo": {
+                        "type": "string",
+                        "enum": [
+                          "espiral",
+                          "zigzag",
+                          "recto"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "racimo",
+                      "trazo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "anillos"
+                      },
+                      "secuencia": {
+                        "minItems": 1,
+                        "maxItems": 12,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "largo": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "secuencia",
+                      "largo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "bloques"
+                      },
+                      "bloques": {
+                        "minItems": 2,
+                        "maxItems": 12,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "material": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            },
+                            "peso": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            }
+                          },
+                          "required": [
+                            "material",
+                            "peso"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "bloques"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "degradado"
+                      },
+                      "paradas": {
+                        "minItems": 2,
+                        "maxItems": 6,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "transicion": {
+                        "type": "string",
+                        "enum": [
+                          "suave",
+                          "escalonada"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "paradas",
+                      "transicion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "aleatorio"
+                      },
+                      "pesos": {
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "material": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            },
+                            "peso": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            }
+                          },
+                          "required": [
+                            "material",
+                            "peso"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "semilla": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "pesos",
+                      "semilla"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "flor"
+                      },
+                      "fondo": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "petalo": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "centro": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "separacion": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 6
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "fondo",
+                      "petalo",
+                      "centro",
+                      "separacion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "damero"
+                      },
+                      "secuencia": {
+                        "minItems": 2,
+                        "maxItems": 4,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "tamano": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 4
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "secuencia",
+                      "tamano"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "zonas"
+                      },
+                      "fondo": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "zonas": {
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "material": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            },
+                            "ancla": {
+                              "type": "string",
+                              "enum": [
+                                "superior_izquierda",
+                                "superior_centro",
+                                "superior_derecha",
+                                "media_izquierda",
+                                "centro",
+                                "media_derecha",
+                                "inferior_izquierda",
+                                "inferior_centro",
+                                "inferior_derecha"
+                              ]
+                            },
+                            "extension": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 60
+                            }
+                          },
+                          "required": [
+                            "material",
+                            "ancla",
+                            "extension"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "fondo",
+                      "zonas"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "acentos": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "material": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    },
+                    "cada": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 24
+                    },
+                    "desde": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 24
+                    },
+                    "posiciones": {
+                      "minItems": 1,
+                      "maxItems": 64,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3999
+                      }
+                    }
+                  },
+                  "required": [
+                    "material",
+                    "cada",
+                    "desde"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "pintados": {
+                "maxItems": 512,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fila": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3999
+                    },
+                    "columna": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3999
+                    },
+                    "material": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    }
+                  },
+                  "required": [
+                    "fila",
+                    "material"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "simetria": {
+                "type": "string",
+                "const": "espejo"
+              },
+              "direccion": {
+                "type": "string",
+                "enum": [
+                  "longitudinal",
+                  "transversal",
+                  "diagonal"
+                ]
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "base"
+            ],
+            "additionalProperties": false
+          },
+          "armado_bouquet": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-bouquet.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "variante": {
+                "type": "string",
+                "enum": [
+                  "base_aire",
+                  "helio_apilado",
+                  "helio_escalonado"
+                ]
+              },
+              "niveles": {
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "base",
+                        "cuerpo",
+                        "capa",
+                        "alrededor",
+                        "acento",
+                        "relleno"
+                      ]
+                    },
+                    "unidad": {
+                      "type": "string",
+                      "enum": [
+                        "suelto",
+                        "pareja",
+                        "trio",
+                        "cuarteto",
+                        "quinteto",
+                        "sexteto"
+                      ]
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 24
+                    },
+                    "posiciones": {
+                      "minItems": 1,
+                      "maxItems": 6,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      }
+                    }
+                  },
+                  "required": [
+                    "rol",
+                    "unidad",
+                    "cantidad",
+                    "posiciones"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "remate": {
+                "minItems": 1,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 11
+                }
+              },
+              "numero": {
+                "type": "object",
+                "properties": {
+                  "digitos": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    }
+                  },
+                  "disposicion": {
+                    "type": "string",
+                    "enum": [
+                      "centro",
+                      "lados",
+                      "arriba",
+                      "abajo"
+                    ]
+                  }
+                },
+                "required": [
+                  "digitos",
+                  "disposicion"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "variante",
+              "niveles"
+            ],
+            "additionalProperties": false
+          },
+          "armado_guirnalda": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-guirnalda.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "soporte": {
+                "type": "string",
+                "enum": [
+                  "pared",
+                  "colgada",
+                  "piso",
+                  "mesa",
+                  "sobre_estructura"
+                ]
+              },
+              "estructura_id": {
+                "type": "string",
+                "pattern": "^EST_\\d{2}_[A-Z_]+$"
+              },
+              "forma": {
+                "type": "string",
+                "enum": [
+                  "recta",
+                  "curva",
+                  "ondulada",
+                  "u_invertida",
+                  "arco_caido"
+                ]
+              },
+              "caida_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 5
+              },
+              "arqueo_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 5
+              },
+              "desnivel_m": {
+                "type": "number",
+                "minimum": -5,
+                "maximum": 5
+              },
+              "puntos_de_anclaje": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 6
+              },
+              "racimo": {
+                "type": "object",
+                "properties": {
+                  "unidad": {
+                    "type": "string",
+                    "enum": [
+                      "trio",
+                      "cuarteto",
+                      "quinteto"
+                    ]
+                  },
+                  "tamano_pulg_base": {
+                    "type": "number",
+                    "enum": [
+                      9,
+                      11,
+                      12
+                    ]
+                  }
+                },
+                "required": [
+                  "unidad",
+                  "tamano_pulg_base"
+                ],
+                "additionalProperties": false
+              },
+              "relleno": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "material": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "proporcion": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.5
+                      }
+                    },
+                    "required": [
+                      "material",
+                      "proporcion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "remates": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "material": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    },
+                    "posicion": {
+                      "type": "string",
+                      "enum": [
+                        "extremo_izq",
+                        "extremo_der",
+                        "centro",
+                        "cada_n"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "material",
+                    "posicion"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "soporte",
+              "forma",
+              "racimo",
+              "relleno",
+              "remates"
+            ],
+            "additionalProperties": false
+          },
+          "armado_arco": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-arco.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "patron": {
+                "type": "string",
+                "enum": [
+                  "solido",
+                  "bloques",
+                  "apilado",
+                  "espiral",
+                  "espiralPunteada",
+                  "zigzag",
+                  "chevron",
+                  "diamante",
+                  "punteado",
+                  "franjas",
+                  "floral",
+                  "ombre",
+                  "arcoiris",
+                  "doslados"
+                ]
+              },
+              "opciones": {
+                "type": "object",
+                "properties": {
+                  "ancho": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 6
+                  },
+                  "inclinacion": {
+                    "type": "number",
+                    "minimum": -3,
+                    "maximum": 4
+                  },
+                  "inversion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 20
+                  },
+                  "espejo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "largo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 20
+                  },
+                  "mezcla": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "invertir": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "cadaN": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "amplitud": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 8
+                  },
+                  "periodo": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "radio": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 5
+                  },
+                  "aspecto": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 1.8
+                  },
+                  "sepFilas": {
+                    "type": "number",
+                    "minimum": 2,
+                    "maximum": 16
+                  },
+                  "sepAncho": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 4
+                  },
+                  "tamanoPunto": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.8
+                  },
+                  "escalonar": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "escalaPetalo": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 1.8
+                  },
+                  "alternar": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "modo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "suavidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "corte": {
+                    "type": "number",
+                    "minimum": 0.2,
+                    "maximum": 0.8
+                  }
+                },
+                "additionalProperties": false
+              },
+              "geometria": {
+                "type": "object",
+                "properties": {
+                  "forma": {
+                    "type": "string",
+                    "enum": [
+                      "alto",
+                      "semi",
+                      "herradura"
+                    ]
+                  },
+                  "anchoM": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 10
+                  },
+                  "altoM": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 6
+                  },
+                  "globosAncho": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16
+                  },
+                  "suelo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "forma",
+                  "anchoM",
+                  "altoM",
+                  "globosAncho",
+                  "suelo"
+                ],
+                "additionalProperties": false
+              },
+              "globo": {
+                "type": "object",
+                "properties": {
+                  "nominal": {
+                    "type": "number",
+                    "enum": [
+                      5,
+                      9,
+                      12,
+                      18,
+                      24,
+                      36
+                    ]
+                  },
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "tamano": {
+                    "type": "number",
+                    "minimum": 0.9,
+                    "maximum": 1.5
+                  },
+                  "ovalo": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 1.4
+                  },
+                  "separacion": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 1.4
+                  },
+                  "compensacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "variacionTam": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  },
+                  "variacionTono": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.25
+                  },
+                  "desorden": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.4
+                  },
+                  "brillo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "sombra": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  },
+                  "contorno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "profundidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "nominal",
+                  "inflado",
+                  "tamano",
+                  "ovalo",
+                  "separacion",
+                  "compensacion",
+                  "variacionTam",
+                  "variacionTono",
+                  "desorden",
+                  "brillo",
+                  "sombra",
+                  "contorno",
+                  "profundidad",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              },
+              "capas": {
+                "maxItems": 16,
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "minItems": 1,
+                      "maxItems": 16,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "secciones": {
+                "maxItems": 40,
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "minItems": 1,
+                      "maxItems": 16,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "materiales": {
+                "minItems": 1,
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 11
+                }
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "patron",
+              "opciones",
+              "geometria",
+              "globo",
+              "capas",
+              "secciones",
+              "materiales"
+            ],
+            "additionalProperties": false
+          },
+          "armado_columna": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-columna.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "modo": {
+                "type": "string",
+                "enum": [
+                  "altura",
+                  "capas"
+                ]
+              },
+              "patron": {
+                "type": "string",
+                "enum": [
+                  "solido",
+                  "apilado",
+                  "espiral",
+                  "rayas",
+                  "zigzag",
+                  "diamante",
+                  "punteado",
+                  "ombre",
+                  "aleatorio"
+                ]
+              },
+              "opciones": {
+                "type": "object",
+                "properties": {
+                  "vueltas": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 3
+                  },
+                  "inclinacion": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2
+                  },
+                  "grosor": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "periodo": {
+                    "type": "number",
+                    "minimum": 2,
+                    "maximum": 12
+                  },
+                  "amplitud": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 2
+                  },
+                  "repet": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 3
+                  },
+                  "alto": {
+                    "type": "number",
+                    "minimum": 4,
+                    "maximum": 16
+                  },
+                  "grueso": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 0.9
+                  },
+                  "sepCapas": {
+                    "type": "number",
+                    "minimum": 2,
+                    "maximum": 8
+                  },
+                  "puntos": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 3
+                  },
+                  "suavidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "invertir": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "additionalProperties": false
+              },
+              "cuerpo": {
+                "type": "object",
+                "properties": {
+                  "alto_m": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 6
+                  },
+                  "globos_capa": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 6
+                  },
+                  "abajo": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 5
+                      },
+                      {
+                        "type": "number",
+                        "const": 9
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      },
+                      {
+                        "type": "number",
+                        "const": 18
+                      },
+                      {
+                        "type": "number",
+                        "const": 24
+                      },
+                      {
+                        "type": "number",
+                        "const": 36
+                      }
+                    ]
+                  },
+                  "arriba": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 5
+                      },
+                      {
+                        "type": "number",
+                        "const": 9
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      },
+                      {
+                        "type": "number",
+                        "const": 18
+                      },
+                      {
+                        "type": "number",
+                        "const": 24
+                      },
+                      {
+                        "type": "number",
+                        "const": 36
+                      }
+                    ]
+                  },
+                  "escalonado": {
+                    "type": "boolean"
+                  },
+                  "base": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "alto_m",
+                  "globos_capa",
+                  "abajo",
+                  "arriba",
+                  "escalonado",
+                  "base"
+                ],
+                "additionalProperties": false
+              },
+              "inflado": {
+                "type": "object",
+                "properties": {
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "tamano": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 1.4
+                  },
+                  "compresion": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 1
+                  },
+                  "variacion_tam": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  },
+                  "variacion_tono": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.25
+                  },
+                  "desorden": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.4
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "inflado",
+                  "tamano",
+                  "compresion",
+                  "variacion_tam",
+                  "variacion_tono",
+                  "desorden",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              },
+              "remate": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "ninguno",
+                      "globo",
+                      "racimo",
+                      "estrella",
+                      "corazon"
+                    ]
+                  },
+                  "tamano": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 5
+                      },
+                      {
+                        "type": "number",
+                        "const": 9
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      },
+                      {
+                        "type": "number",
+                        "const": 18
+                      },
+                      {
+                        "type": "number",
+                        "const": 24
+                      },
+                      {
+                        "type": "number",
+                        "const": 36
+                      }
+                    ]
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 5
+                  },
+                  "foil_m": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 2.5
+                  },
+                  "material": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 11
+                  }
+                },
+                "required": [
+                  "tipo",
+                  "tamano",
+                  "cantidad",
+                  "foil_m",
+                  "material"
+                ],
+                "additionalProperties": false
+              },
+              "capas": {
+                "maxItems": 60,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tamano": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 5
+                        },
+                        {
+                          "type": "number",
+                          "const": 9
+                        },
+                        {
+                          "type": "number",
+                          "const": 12
+                        },
+                        {
+                          "type": "number",
+                          "const": 18
+                        },
+                        {
+                          "type": "number",
+                          "const": 24
+                        },
+                        {
+                          "type": "number",
+                          "const": 36
+                        }
+                      ]
+                    },
+                    "materiales": {
+                      "minItems": 3,
+                      "maxItems": 6,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      }
+                    }
+                  },
+                  "required": [
+                    "tamano",
+                    "materiales"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "materiales": {
+                "minItems": 1,
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 11
+                }
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "modo",
+              "patron",
+              "opciones",
+              "cuerpo",
+              "inflado",
+              "remate",
+              "capas",
+              "materiales"
+            ],
+            "additionalProperties": false
+          },
+          "armado_guirnalda_organica": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-guirnalda-organica.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "forma": {
+                "type": "object",
+                "properties": {
+                  "largoM": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 10
+                  },
+                  "alturaM": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 4.5
+                  },
+                  "pendienteM": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2
+                  },
+                  "ondaM": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.8
+                  },
+                  "ondas": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 6
+                  },
+                  "colgadoM": {
+                    "type": "number",
+                    "minimum": -1.5,
+                    "maximum": 1.5
+                  },
+                  "festones": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "carga": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                  },
+                  "suelo": {
+                    "type": "boolean"
+                  },
+                  "persona": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "largoM",
+                  "alturaM",
+                  "pendienteM",
+                  "ondaM",
+                  "ondas",
+                  "colgadoM",
+                  "festones",
+                  "carga",
+                  "suelo",
+                  "persona"
+                ],
+                "additionalProperties": false
+              },
+              "volumen": {
+                "type": "object",
+                "properties": {
+                  "grosorPatasM": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 1.4
+                  },
+                  "grosorCimaM": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 1.4
+                  },
+                  "irregularidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "relleno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "racimo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "salientes": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "grosorPatasM",
+                  "grosorCimaM",
+                  "irregularidad",
+                  "relleno",
+                  "racimo",
+                  "salientes"
+                ],
+                "additionalProperties": false
+              },
+              "tamanos": {
+                "type": "object",
+                "properties": {
+                  "mezcla": {
+                    "type": "object",
+                    "properties": {
+                      "5": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "9": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "12": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "18": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "24": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "36": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "grandesAbajo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "variacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  }
+                },
+                "required": [
+                  "mezcla",
+                  "grandesAbajo",
+                  "inflado",
+                  "variacion"
+                ],
+                "additionalProperties": false
+              },
+              "colores": {
+                "type": "object",
+                "properties": {
+                  "paleta": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        },
+                        "peso": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "enum": [
+                            "mate",
+                            "cromado",
+                            "confeti",
+                            "transparente"
+                          ]
+                        },
+                        "rol": {
+                          "type": "string",
+                          "enum": [
+                            "normal",
+                            "acento"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "peso",
+                        "acabado",
+                        "rol"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "reparto": {
+                    "type": "string",
+                    "enum": [
+                      "azar",
+                      "tramos",
+                      "racimos"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "paleta",
+                  "reparto",
+                  "mezcla"
+                ],
+                "additionalProperties": false
+              },
+              "adornos": {
+                "type": "object",
+                "properties": {
+                  "follaje": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "flores": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "follaje",
+                  "flores"
+                ],
+                "additionalProperties": false
+              },
+              "aspecto": {
+                "type": "object",
+                "properties": {
+                  "brillo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "sombra": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  },
+                  "contorno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "profundidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "brillo",
+                  "sombra",
+                  "contorno",
+                  "profundidad",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "forma",
+              "volumen",
+              "tamanos",
+              "colores",
+              "adornos",
+              "aspecto"
+            ],
+            "additionalProperties": false
+          },
+          "armado_columna_organica": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-columna-organica.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "forma": {
+                "type": "object",
+                "properties": {
+                  "altoM": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 6
+                  },
+                  "inclinacionM": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2
+                  },
+                  "serpenteoM": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "ondulacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "suelo": {
+                    "type": "boolean"
+                  },
+                  "persona": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "altoM",
+                  "inclinacionM",
+                  "serpenteoM",
+                  "ondulacion",
+                  "suelo",
+                  "persona"
+                ],
+                "additionalProperties": false
+              },
+              "volumen": {
+                "type": "object",
+                "properties": {
+                  "grosorPatasM": {
+                    "type": "number",
+                    "minimum": 0.2,
+                    "maximum": 3
+                  },
+                  "grosorCimaM": {
+                    "type": "number",
+                    "minimum": 0.2,
+                    "maximum": 3
+                  },
+                  "irregularidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "relleno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "racimo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "salientes": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "grosorPatasM",
+                  "grosorCimaM",
+                  "irregularidad",
+                  "relleno",
+                  "racimo",
+                  "salientes"
+                ],
+                "additionalProperties": false
+              },
+              "tamanos": {
+                "type": "object",
+                "properties": {
+                  "mezcla": {
+                    "type": "object",
+                    "properties": {
+                      "5": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "9": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "12": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "18": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "24": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "36": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "grandesAbajo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "variacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  }
+                },
+                "required": [
+                  "mezcla",
+                  "grandesAbajo",
+                  "inflado",
+                  "variacion"
+                ],
+                "additionalProperties": false
+              },
+              "colores": {
+                "type": "object",
+                "properties": {
+                  "paleta": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        },
+                        "peso": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "enum": [
+                            "mate",
+                            "cromado",
+                            "confeti",
+                            "transparente"
+                          ]
+                        },
+                        "rol": {
+                          "type": "string",
+                          "enum": [
+                            "normal",
+                            "acento"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "peso",
+                        "acabado",
+                        "rol"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "reparto": {
+                    "type": "string",
+                    "enum": [
+                      "azar",
+                      "tramos",
+                      "racimos"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "paleta",
+                  "reparto",
+                  "mezcla"
+                ],
+                "additionalProperties": false
+              },
+              "adornos": {
+                "type": "object",
+                "properties": {
+                  "follaje": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "flores": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "follaje",
+                  "flores"
+                ],
+                "additionalProperties": false
+              },
+              "aspecto": {
+                "type": "object",
+                "properties": {
+                  "brillo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "sombra": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  },
+                  "contorno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "profundidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "brillo",
+                  "sombra",
+                  "contorno",
+                  "profundidad",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              },
+              "corona": {
+                "type": "object",
+                "properties": {
+                  "activa": {
+                    "type": "boolean"
+                  },
+                  "tamano": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 5
+                      },
+                      {
+                        "type": "number",
+                        "const": 9
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      },
+                      {
+                        "type": "number",
+                        "const": 18
+                      },
+                      {
+                        "type": "number",
+                        "const": 24
+                      },
+                      {
+                        "type": "number",
+                        "const": 36
+                      }
+                    ]
+                  },
+                  "material": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 11
+                  }
+                },
+                "required": [
+                  "activa",
+                  "tamano",
+                  "material"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "forma",
+              "volumen",
+              "tamanos",
+              "colores",
+              "adornos",
+              "aspecto",
+              "corona"
+            ],
+            "additionalProperties": false
+          },
+          "armado_arco_organico": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-arco-organico.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "forma": {
+                "type": "object",
+                "properties": {
+                  "anchoM": {
+                    "type": "number",
+                    "minimum": 1.5,
+                    "maximum": 10
+                  },
+                  "altoM": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "cima": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 0.7
+                  },
+                  "curva": {
+                    "type": "number",
+                    "minimum": 1.7,
+                    "maximum": 3.4
+                  },
+                  "ondulacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "carga": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                  },
+                  "corte": {
+                    "type": "number",
+                    "minimum": 0.55,
+                    "maximum": 1
+                  },
+                  "espejo": {
+                    "type": "boolean"
+                  },
+                  "suelo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "anchoM",
+                  "altoM",
+                  "cima",
+                  "curva",
+                  "ondulacion",
+                  "carga",
+                  "corte",
+                  "espejo",
+                  "suelo"
+                ],
+                "additionalProperties": false
+              },
+              "volumen": {
+                "type": "object",
+                "properties": {
+                  "grosorPatasM": {
+                    "type": "number",
+                    "minimum": 0.35,
+                    "maximum": 1.6
+                  },
+                  "grosorCimaM": {
+                    "type": "number",
+                    "minimum": 0.35,
+                    "maximum": 1.6
+                  },
+                  "irregularidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "relleno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "racimo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "salientes": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "grosorPatasM",
+                  "grosorCimaM",
+                  "irregularidad",
+                  "relleno",
+                  "racimo",
+                  "salientes"
+                ],
+                "additionalProperties": false
+              },
+              "tamanos": {
+                "type": "object",
+                "properties": {
+                  "mezcla": {
+                    "type": "object",
+                    "properties": {
+                      "5": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "9": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "12": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "18": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "24": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "36": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "grandesAbajo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "variacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  }
+                },
+                "required": [
+                  "mezcla",
+                  "grandesAbajo",
+                  "inflado",
+                  "variacion"
+                ],
+                "additionalProperties": false
+              },
+              "colores": {
+                "type": "object",
+                "properties": {
+                  "paleta": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        },
+                        "peso": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "enum": [
+                            "mate",
+                            "cromado",
+                            "confeti",
+                            "transparente"
+                          ]
+                        },
+                        "rol": {
+                          "type": "string",
+                          "enum": [
+                            "normal",
+                            "acento"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "peso",
+                        "acabado",
+                        "rol"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "reparto": {
+                    "type": "string",
+                    "enum": [
+                      "azar",
+                      "tramos",
+                      "racimos"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "paleta",
+                  "reparto",
+                  "mezcla"
+                ],
+                "additionalProperties": false
+              },
+              "adornos": {
+                "type": "object",
+                "properties": {
+                  "follaje": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "flores": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "follaje",
+                  "flores"
+                ],
+                "additionalProperties": false
+              },
+              "aspecto": {
+                "type": "object",
+                "properties": {
+                  "brillo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "sombra": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  },
+                  "contorno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "profundidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "brillo",
+                  "sombra",
+                  "contorno",
+                  "profundidad",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "forma",
+              "volumen",
+              "tamanos",
+              "colores",
+              "adornos",
+              "aspecto"
+            ],
+            "additionalProperties": false
+          },
+          "flores": {
+            "type": "object",
+            "properties": {
+              "cantidad": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 24
+              },
+              "petalos": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 6
+              },
+              "petalo": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "centro": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "product_id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "cantidad",
+              "petalo"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "estructura_id",
+          "nombre",
+          "tipo",
+          "rol_escena",
+          "ubicacion",
+          "medidas",
+          "repeticiones",
+          "densidad",
+          "mezcla",
+          "materiales",
+          "porque"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco_asimetrico"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco_no_denso"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "semiarco"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "semiarco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "semiarco_asimetrico"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "semiarco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna_asimetrica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "media",
+                    "lujosa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "media",
+                    "lujosa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "guirnalda"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "guirnalda"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "centro_mesa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "figura"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit",
+                    "escultura"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "guirnalda"
+                  ]
+                },
+                "ubicacion": {
+                  "enum": [
+                    "techo",
+                    "techo_multipunto"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "racimo_pared"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "forma"
+              ]
+            },
+            "then": {
+              "required": [
+                "estructura_oficial"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "base",
+                    "burbuja",
+                    "figura",
+                    "topiario",
+                    "varillas",
+                    "mini-aro"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "piso",
+                    "burbuja",
+                    "con-numero",
+                    "caja",
+                    "relleno"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organico",
+                    "parcial",
+                    "con-fondo",
+                    "clasico",
+                    "doble",
+                    "media-luna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "colgantes",
+                    "nube",
+                    "malla",
+                    "candelabro",
+                    "cortina"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "not": {
+                    "enum": [
+                      "pared_densa",
+                      "pared_no_densa",
+                      "pared_organica",
+                      "centro_mesa",
+                      "bouquet",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "forma"
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco_asimetrico"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "arco_no_denso"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "semiarco"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "semiarco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "semiarco_asimetrico"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "semiarco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna_asimetrica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "columna_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "columna"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "media",
+                    "lujosa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "sencilla"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "pared"
+                  ]
+                },
+                "densidad": {
+                  "enum": [
+                    "media",
+                    "lujosa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "guirnalda"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "guirnalda"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "centro_mesa"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "figura"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit",
+                    "escultura"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "arco"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "guirnalda"
+                  ]
+                },
+                "ubicacion": {
+                  "enum": [
+                    "techo",
+                    "techo_multipunto"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "racimo_pared"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "forma"
+              ]
+            },
+            "then": {
+              "required": [
+                "estructura_oficial"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "base",
+                    "burbuja",
+                    "figura",
+                    "topiario",
+                    "varillas",
+                    "mini-aro"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "piso",
+                    "burbuja",
+                    "con-numero",
+                    "caja",
+                    "relleno"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organico",
+                    "parcial",
+                    "con-fondo",
+                    "clasico",
+                    "doble",
+                    "media-luna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "colgantes",
+                    "nube",
+                    "malla",
+                    "candelabro",
+                    "cortina"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "not": {
+                    "enum": [
+                      "pared_densa",
+                      "pared_no_densa",
+                      "pared_organica",
+                      "centro_mesa",
+                      "bouquet",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "forma"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "supuestos": {
+      "maxItems": 30,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    },
+    "restricciones": {
+      "type": "object",
+      "properties": {
+        "presupuesto": {
+          "type": "object",
+          "properties": {
+            "techo_cop": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "procedencia": {
+              "type": "string",
+              "enum": [
+                "explicito",
+                "inferido",
+                "supuesto"
+              ]
+            },
+            "texto_original": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required": [
+            "techo_cop",
+            "procedencia",
+            "texto_original"
+          ],
+          "additionalProperties": false
+        },
+        "estructuras": {
+          "default": [],
+          "maxItems": 24,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "arco",
+                  "semiarco",
+                  "guirnalda",
+                  "columna",
+                  "pared",
+                  "centro_mesa",
+                  "backdrop",
+                  "kit",
+                  "accesorio"
+                ]
+              },
+              "repeticiones": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 24
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "tipo",
+              "repeticiones",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "colores": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "tamanos": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "acabados": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "estructuras",
+        "colores",
+        "tamanos",
+        "acabados"
+      ],
+      "additionalProperties": false
+    },
+    "referencia_omitida": {
+      "default": [],
+      "maxItems": 40,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "motivo_tipo": {
+            "type": "string",
+            "enum": [
+              "fuera_de_catalogo",
+              "emulacion_propuesta",
+              "emulacion_rechazada",
+              "decision_de_diseno"
+            ]
+          },
+          "propuesta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "element_id",
+          "motivo",
+          "motivo_tipo"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "plan_version",
+    "plan_id",
+    "concepto",
+    "espacio",
+    "estructuras",
+    "supuestos",
+    "referencia_omitida"
+  ],
+  "additionalProperties": false,
+  "x-geometria-estructuras-oficiales": {
+    "arco_asimetrico": {
+      "anchoFinalBanda": 0.4
+    },
+    "semiarco_asimetrico": {
+      "anchoFinalBanda": 0.4
+    },
+    "guirnalda": {
+      "eje": "largo",
+      "formas": {
+        "recta": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "curva": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "ondulada": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "u_invertida": {
+          "factorPerfil": 1,
+          "conCaida": true
+        },
+        "arco_caido": {
+          "factorPerfil": 1,
+          "conCaida": true
+        }
+      }
+    },
+    "aro_circular": {
+      "eje": "circunferencia"
+    }
+  },
+  "x-formas-estructuras-oficiales": {
+    "arco": "simetrica",
+    "arco_asimetrico": "asimetrica",
+    "arco_no_denso": "simetrica",
+    "semiarco": "simetrica",
+    "semiarco_asimetrico": "asimetrica",
+    "columna": "simetrica",
+    "columna_asimetrica": "asimetrica",
+    "columna_no_densa": "simetrica",
+    "pared_densa": "simetrica",
+    "pared_no_densa": "organica",
+    "pared_organica": "asimetrica",
+    "guirnalda": "organica",
+    "centro_mesa": "libre",
+    "bouquet": "libre",
+    "figura": "libre",
+    "aro_circular": "circular",
+    "techo_globos": "libre",
+    "racimo_pared": "libre"
+  },
+  "x-formas-sin-motor": [
+    "circular",
+    "libre"
+  ],
+  "x-formas-pieza": {
+    "pared_densa": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "pared_no_densa": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "pared_organica": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "centro_mesa": [
+      "helio",
+      "base",
+      "burbuja",
+      "figura",
+      "topiario",
+      "varillas",
+      "mini-aro"
+    ],
+    "bouquet": [
+      "helio",
+      "piso",
+      "burbuja",
+      "con-numero",
+      "caja",
+      "relleno"
+    ],
+    "aro_circular": [
+      "organico",
+      "parcial",
+      "con-fondo",
+      "clasico",
+      "doble",
+      "media-luna"
+    ],
+    "techo_globos": [
+      "helio",
+      "colgantes",
+      "nube",
+      "malla",
+      "candelabro",
+      "cortina"
+    ]
+  },
+  "x-reglas-mezclas": {
+    "mezclas": {
+      "clasica": [
+        {
+          "pulgadas": 12,
+          "proporcion": 1
+        }
+      ],
+      "organica_fina": [
+        {
+          "pulgadas": 5,
+          "proporcion": 0.21
+        },
+        {
+          "pulgadas": 9,
+          "proporcion": 0.18
+        },
+        {
+          "pulgadas": 12,
+          "proporcion": 0.54
+        },
+        {
+          "pulgadas": 18,
+          "proporcion": 0.05
+        },
+        {
+          "pulgadas": 24,
+          "proporcion": 0.02
+        }
+      ],
+      "organica_gruesa": [
+        {
+          "pulgadas": 9,
+          "proporcion": 0.25
+        },
+        {
+          "pulgadas": 12,
+          "proporcion": 0.45
+        },
+        {
+          "pulgadas": 18,
+          "proporcion": 0.2
+        },
+        {
+          "pulgadas": 24,
+          "proporcion": 0.1
+        }
+      ],
+      "solo_grandes": [
+        {
+          "pulgadas": 18,
+          "proporcion": 0.6
+        },
+        {
+          "pulgadas": 24,
+          "proporcion": 0.4
+        }
+      ]
+    },
+    "diametros_estandar": [
+      5,
+      9,
+      12,
+      18,
+      24,
+      36
+    ],
+    "razon_maxima_sustitucion": 1.5,
+    "sustituciones_admisibles": {
+      "5": [],
+      "9": [
+        12
+      ],
+      "12": [
+        9,
+        18
+      ],
+      "18": [
+        12,
+        24
+      ],
+      "24": [
+        18,
+        36
+      ],
+      "36": [
+        24
+      ]
+    },
+    "patron_tamano_obligatorio": "^[ \\t\\n\\r\\f\\v]*R?-?(\\d{1,3})[ \\t\\n\\r\\f\\v]*$"
+  },
+  "x-reglas-flores": {
+    "pulgadas": 5,
+    "petalos_por_defecto": 3,
+    "adorno": "flor"
+  },
+  "x-reglas-guirnalda": {
+    "soportesConCaida": [
+      "pared",
+      "colgada"
+    ],
+    "formasConArqueo": [
+      "curva"
+    ]
+  },
+  "x-colores-en": {
+    "rosa": "pink",
+    "rosado": "pink",
+    "rosada": "pink",
+    "rosadofuerte": "pink",
+    "rosado fuerte": "pink",
+    "fucsia": "fuchsia",
+    "dorado": "gold",
+    "dorado rosa": "rose gold",
+    "rosagold": "rose gold",
+    "plateado": "silver",
+    "gris": "grey",
+    "grafito": "charcoal gray",
+    "cafe": "brown",
+    "marron": "brown",
+    "morado": "purple",
+    "lila": "lilac",
+    "violeta": "violet",
+    "menta": "mint",
+    "crema": "cream",
+    "nude": "nude",
+    "burdeos": "burgundy",
+    "azul rey": "royal blue",
+    "azul caribe": "turquoise",
+    "azul naval": "navy blue",
+    "azul galaxy": "navy blue",
+    "blanco nacar": "pearl white",
+    "verde esmeralda": "green",
+    "verde lima": "lime green",
+    "verde menta": "mint green",
+    "rojo": "red",
+    "azul": "blue",
+    "verde": "green",
+    "blanco": "white",
+    "negro": "black",
+    "naranja": "orange",
+    "amarillo": "yellow",
+    "transparente": "clear",
+    "multicolor": "multicolor",
+    "turquesa": "turquoise",
+    "beige": "beige",
+    "champagne": "champagne",
+    "coral": "coral"
+  },
+  "x-paleta-colores": [
+    "dorado",
+    "dorado rosa",
+    "plateado",
+    "rojo",
+    "azul",
+    "rosado",
+    "verde",
+    "blanco",
+    "negro",
+    "morado",
+    "naranja",
+    "amarillo",
+    "fucsia",
+    "transparente",
+    "multicolor",
+    "lila",
+    "turquesa",
+    "beige",
+    "cafe",
+    "champagne",
+    "violeta",
+    "coral",
+    "menta",
+    "crema",
+    "nude",
+    "burdeos"
+  ],
+  "x-acabados-en": {
+    "reflex": "high-shine chrome",
+    "metal": "metallic",
+    "metalizado": "metallic",
+    "cromado": "high-shine chrome",
+    "satin": "satin",
+    "fashion": "matte",
+    "mate": "matte",
+    "perlado": "pearl",
+    "transparente": "translucent"
+  },
+  "x-formas-arco-organico": [
+    "estandar",
+    "simetrico",
+    "entrada",
+    "puerta",
+    "fondo-fotos",
+    "asimetrico",
+    "medio-pila",
+    "medio-corto",
+    "medio-aireado",
+    "focales",
+    "mesa",
+    "herradura",
+    "gigantes",
+    "cascada",
+    "racimos-sueltos"
+  ]
+}

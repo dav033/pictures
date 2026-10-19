@@ -1,0 +1,45 @@
+{
+ "caso": "oficial-bouquet",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "9cac4b5167a1a03c21c87db075ccdbeaab405ddc239122b80f3816e4b1c7020f",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 3,
+  "cubierta": 3,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233860391"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  }
+ ]
+}

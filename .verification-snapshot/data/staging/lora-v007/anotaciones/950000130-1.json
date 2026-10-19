@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000130-1",
+  "image_sha256": "a134ce5ad80ce225e0e54f1f65f056f09a1b6b1d26cea2f523184f53b493ed6a",
+  "idempotency_key": "e8fcc14ef17ed7d9d267e64d8da125633af7caac865e03316db57490b3e1b001",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000130/foto-1.jpg",
+    "orden": "950000130"
+  },
+  "anotacion": {
+    "image_id": "950000130-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white wall and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.pastel_dusk.lavender"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.pink",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense organic balloon garland with pink modeling loops, round pink and fuchsia balloons, and lavender and purple orchid balloon flowers."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact installation placement is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.pastel_dusk.lavender"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000130-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 2-inch matte Fashion pink modeling latex balloons, 5-inch matte Fashion round latex balloons in fuchsia and pink, 12-inch matte Fashion purple orchid round latex balloons, 9-inch muted Pastel Dusk lavender round latex balloons, mixed organically rather than graded, set against a plain white wall and no visible floor.",
+    "palabras": 60,
+    "caracteres": 411,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.pastel_dusk.lavender"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:06:12.060Z",
+    "recompilado_en": "2026-09-03T14:45:24.449Z"
+  }
+}

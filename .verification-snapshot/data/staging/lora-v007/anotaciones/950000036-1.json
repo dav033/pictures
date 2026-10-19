@@ -1,0 +1,149 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000036-1",
+  "image_sha256": "f949ab0f1ca4163a2e858d23fab04d6f7512df3b1d6993d9f110ae53974bc407",
+  "idempotency_key": "53772ef299c5bc759f4ddcf2da13919d1bdeeceda6498e8dcbbf6fb2a25294b3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000036/foto-1.jpg",
+    "orden": "950000036"
+  },
+  "anotacion": {
+    "image_id": "950000036-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+          "balloon.link.latex.fashion.pink",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+            "size_code": "C-12"
+          },
+          {
+            "concept_id": "balloon.link.latex.fashion.pink",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.pearl_white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic cloud-shaped cluster of pink, red, fuchsia and pearl-white round balloons with a red printed heart balloon on the left; a linked pink balloon chain runs along the bottom edge and long metallic fringe streamers hang beneath the whole cluster."
+      }
+    ],
+    "non_purchased_elements": [
+      "foil balloons",
+      "metallic fringe streamers"
+    ],
+    "uncertainties": [
+      "This is a studio catalog photo with no venue context, so placement (fondo_pared) is a best guess, not an observed installation.",
+      "A second, unlisted pink heart-shaped balloon with printed text is visible but has no matching concept id in the allowed list, so it was left untagged."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.link.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.silk.pearl_white",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [
+      "C-12",
+      "LOL-6",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000036-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 12-inch matte Fashion red heart-shaped latex balloons with printed greeting lettering, 6-inch matte Fashion pink Link-O-Loon® linking latex balloons, 5-inch matte Fashion round latex balloons in fuchsia and pink and satin Silk pearl white round latex balloons, mixed organically rather than graded, alongside foil balloons and metallic fringe streamers, set against plain white studio backdrop, no floor visible.",
+    "palabras": 70,
+    "caracteres": 505,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.link.latex.fashion.pink",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+        "size_code": "C-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.link.latex.fashion.pink",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:05:48.881Z",
+    "recompilado_en": "2026-09-03T14:45:23.567Z"
+  }
+}

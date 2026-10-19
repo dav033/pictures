@@ -1,0 +1,122 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000043-1",
+  "image_sha256": "1e5cb06b0b436e9094f02bd0801871fad662e323eac0d20c74e7e7b151b07619",
+  "idempotency_key": "733c25b62d4943ee4f91358cd9ad9454215d0b16d50b65e97bb9ba266e572fd9",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000043/foto-1.jpg",
+    "orden": "950000043"
+  },
+  "anotacion": {
+    "image_id": "950000043-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical column stacking alternating clusters of navy, printed light-blue, mint, and gold balloons, topped by a large printed balloon."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Large printed 'PAPA' topper balloon and the light-blue mustache/bowtie printed balloons are not in the allowed concept list, so left unmatched.",
+      "Mint and gold balloons show a glossy chrome-like sheen that could be mistaken for a metallic finish rather than silk.",
+      "No plain solid arctic_blue balloon could be confidently distinguished, so that concept was omitted."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Bigotes Y Corbatines Cristal"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000043-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 9-inch matte Fashion navy blue round latex balloons, 5-inch satin Silk round latex balloons in gold and mint green, mixed organically rather than graded, set against plain white studio backdrop, no floor visible.",
+    "palabras": 43,
+    "caracteres": 289,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:03:37.522Z",
+    "recompilado_en": "2026-09-03T14:45:23.640Z"
+  }
+}

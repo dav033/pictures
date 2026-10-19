@@ -1,0 +1,144 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-087",
+  "image_sha256": "bfe4ce11640b5c1ce3f469a26421d8d3815adecff2bb4947e39a77467f5d2151",
+  "idempotency_key": "1cf65c99f324e91979417005e41791fab4a64c46c5fff506448dca90bcf5f971",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-087.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Escenario_Halloween_2.jpg?v=1739828055",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-087",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large three-dimensional mint-green balloon arrangement framing the display across the top and down both sides."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange_and_black"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Broad orange-and-black balloon panel covering the wall behind the table."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical arrangement of large colored balloons with mint-green balloon clusters."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_halloween_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster of printed Halloween balloons at the right side with strings and a floor base."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dessert table",
+      "Halloween figures",
+      "a number marquee",
+      "a printed sign"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.orange_and_black",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Infinity® Araña Metalink"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-087",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, centred on the main display area, built from satin Silk mint green round latex balloons, a balloon wall, behind the asymmetrical balloon half-arch, built from matte Fashion orange and black round latex balloons, a balloon column, standing to one side, built from satin Silk mint green round latex balloons, with a balloon bouquet, standing to one side, built from round latex balloons with printed Halloween lettering, alongside a dessert table, Halloween figures, a number marquee and a printed sign, set against off-white brick wall and light tiled floor.",
+    "palabras": 93,
+    "caracteres": 613,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.orange_and_black",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:21:25.804Z"
+  }
+}

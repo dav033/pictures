@@ -1,0 +1,130 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-027",
+  "image_sha256": "c82925248998733f23f9e0a799d5afb22544a6c6cce83ab5d454dacc89c60db6",
+  "idempotency_key": "0c81b23e59d3fa7ff15baae6c03f7a775b86fb848437011d130a7faa006cfa77",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-027.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Showroom_FC_Silk-FC_mariposas_encantadas.png?v=1759333577",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-027",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a tan floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.amethyst",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.assorted_colors",
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.mint_green",
+          "balloon.round.latex.silk.spring_pink",
+          "balloon.modeling.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional circular balloon arch with mixed-size pastel balloons and an integrated balloon butterfly."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.foil.muted_pastel.printed_birthday_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster of round pastel foil balloons with printed birthday lettering beside the table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dessert table",
+      "a birthday cake",
+      "flower arrangements",
+      "a printed curtain"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.foil.muted_pastel.printed_birthday_lettering",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.assorted_colors",
+      "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-027",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from high-shine Reflex gold modeling latex balloons, satin Silk round latex balloons in amethyst, arctic blue, cream pearl, gold, mint green and spring pink and round latex balloons in assorted colors with a Silk satin finish, a balloon bouquet, standing to one side, built from Metallic muted pastel round foil balloons with printed birthday lettering, alongside a dessert table, a birthday cake, flower arrangements and a printed curtain, set against white walls and a tan floor.",
+    "palabras": 88,
+    "caracteres": 567,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.foil.muted_pastel.printed_birthday_lettering",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.assorted_colors",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:54.910Z"
+  }
+}

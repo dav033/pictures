@@ -1,0 +1,155 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000001-1",
+  "image_sha256": "46149e44cf7cb8e986c3ace83731190129dabfa33189cd1d6fd1a14e45b75594",
+  "idempotency_key": "3d713c2468e644dd17c6d6c78bcdd7cc9fbaef45820d470c35e9956970182447",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000001/foto-1.jpg",
+    "orden": "950000001"
+  },
+  "anotacion": {
+    "image_id": "950000001-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "wood-paneled walls and a light pink floor covering",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A large square wall densely covered with balloons in ombré bands of red, pink and fuchsia forms a heart shape, with a 'Feliz día' banner across the middle."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A vertical column of blue balloons with a dotted pattern stands to the right of the balloon wall."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A bunch of balloons on sticks, including a foil heart-shaped 'LOVE' balloon, sits to the left in front of the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a white lattice side table",
+      "a shelving unit with party supplies",
+      "cupcake stands",
+      "a decorative pumpkin"
+    ],
+    "uncertainties": [
+      "No se pudo determinar con certeza a qué producto de la lista corresponden los globos de la columna azul o del ramo en primer plano, ya que sus colores no coinciden con los conceptos permitidos para esta imagen."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Redondo Fashion Rosa"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000001-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in fuchsia, pink and red, all at a single 5-inch size, a balloon column, standing to one side, with a balloon bouquet, standing to one side, alongside a white lattice side table, a shelving unit with party supplies, cupcake stands and a decorative pumpkin, set against wood-paneled walls and a light pink floor covering.",
+    "palabras": 70,
+    "caracteres": 436,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:48:19.987Z",
+    "recompilado_en": "2026-09-03T14:45:23.210Z"
+  }
+}

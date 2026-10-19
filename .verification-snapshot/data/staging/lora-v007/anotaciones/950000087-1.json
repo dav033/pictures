@@ -1,0 +1,219 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000087-1",
+  "image_sha256": "b03fe7b91078b3177707be101e1a3012c408c5b9ab5d5a30f05314464be85b5f",
+  "idempotency_key": "9b7cc578a0592200484d884a0e4469e0207c5bef9c150cc3b610dd996720cb47",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000087/foto-1.jpg",
+    "orden": "950000087"
+  },
+  "anotacion": {
+    "image_id": "950000087-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a light tiled floor in front of a full balloon-covered wall",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "dense balloon wall split into a blue half and a pink half, each with a heart-shaped panel and small four-petal balloon flower clusters"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "chrome gold balloons clustered densely into a large numeral \"2\" mounted over the center of the wall"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic cluster of pink round balloons on the floor at the base of the pink side of the wall"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic cluster of blue round balloons on the floor at the base of the blue side of the wall"
+      }
+    ],
+    "non_purchased_elements": [
+      "a small round table",
+      "paper plates and cups",
+      "two printed foil sign balloons"
+    ],
+    "uncertainties": [
+      "small pastel light-blue balloons scattered in the wall pattern do not clearly match any allowed concept and were left unassigned"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Metalizado Boy And Girl"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000087-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, built from 5-inch matte Fashion round latex balloons in blue and pink, 9-inch Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, an organic balloon garland, anchored to the decorated backdrop, built from high-shine Reflex gold round latex balloons, all at a single 5-inch size, with an organic balloon garland, anchored to the decorated backdrop, built from 5-inch matte Fashion pink round latex balloons, 9-inch Pastel Matte pastel pink round latex balloons, mixed organically rather than graded and an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion blue round latex balloons, all 5-inch, alongside a small round table, paper plates and cups and two printed foil sign balloons, set against a light tiled floor in front of a full balloon-covered wall.",
+    "palabras": 137,
+    "caracteres": 900,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:30:28.979Z",
+    "recompilado_en": "2026-09-03T14:45:24.153Z"
+  }
+}

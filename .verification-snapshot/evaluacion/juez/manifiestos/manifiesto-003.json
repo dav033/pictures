@@ -1,0 +1,14 @@
+[
+  {
+    "id": "003",
+    "grupo": "nude-r1",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/nude-003/caso-3/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "003",
+    "grupo": "nude-r2",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/nude-003/caso-3/corrida-2/imagen-flux/final.png"
+  }
+]

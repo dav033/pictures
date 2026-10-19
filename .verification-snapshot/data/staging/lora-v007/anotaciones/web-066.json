@@ -1,0 +1,108 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-066",
+  "image_sha256": "914111928af5b66146412138ca1a02417c5ad2a4f91c6fd555f873a31dd517ae",
+  "idempotency_key": "48bc2f9587886b186d9aedbaee5ec9213f569ee367a839b75428173b3b5ba770",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-066.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Webinar_Sirenita_Decoracion.jpg?v=1698868329",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-066",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white wall and floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "arch-main",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.metallic.gold",
+          "balloon.round.latex.pastel_dusk.lavender",
+          "balloon.round.latex.pastel_dusk.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large three-dimensional balloon arch with lavender, muted pink, and metallic gold balloons."
+      },
+      {
+        "structure_id": "gold-columns",
+        "structure_type": "columna",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "arch-main"
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.metallic.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching vertical gold balloon columns flank the central arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "mint green balloons",
+      "dark mauve balloons"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.metallic.gold",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Link-O-Loon® Pm Verde"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-066",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from Metallic gold Link-O-Loon® linking latex balloons and muted Pastel Dusk round latex balloons in lavender and pink, two matching balloon columns, one at each end of the organic balloon arch, built from Metallic gold Link-O-Loon® linking latex balloons, alongside mint green balloons and dark mauve balloons, set against plain white wall and floor.",
+    "palabras": 66,
+    "caracteres": 437,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.metallic.gold",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:10:19.581Z"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-005",
+  "image_sha256": "e76bf169d9103f6925e56445f29394e7cdf2b734e5222fe9bcecb74bfcf59f7c",
+  "idempotency_key": "fe4447749e3e8865446abae7a4b5d3d60f61190a06d528330ce510836d037b56",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-005.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/WEB_MADRES_JPG_c304300c-8e86-43e9-a0ac-efcfd0c12b9f.jpg?v=1785361666",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-005",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional pink balloon arch with smaller pale yellow balloon accents."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.eucalyptus_green",
+          "balloon.modeling.latex.fashion.honey_yellow",
+          "balloon.modeling.latex.pastel_matte.yellow",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Balloon flower bouquet with green modeling stems, yellow balloon flowers, and pink round balloon base."
+      }
+    ],
+    "non_purchased_elements": [
+      "a white balloon bow"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.honey_yellow",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-005",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion pink round latex balloons and Pastel Matte yellow round latex balloons, a balloon bouquet, anchored to the organic balloon arch, built from matte Fashion modeling latex balloons in eucalyptus green and honey yellow, Pastel Matte yellow modeling latex balloons, matte Fashion pink round latex balloons and Pastel Matte yellow round latex balloons, alongside a white balloon bow, set against white wall and white floor.",
+    "palabras": 79,
+    "caracteres": 522,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.honey_yellow",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:11:47.937Z"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "_nota": "git archive sustituye los $Format$ (export-subst en .gitattributes): el registro lee aquí el commit desplegado. No editar a mano.",
+  "commit": "$Format:%H$",
+  "fecha": "$Format:%cI$"
+}

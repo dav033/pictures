@@ -1,0 +1,147 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000044-1",
+  "image_sha256": "ffccec1793df10c1cd939d31620c35b7c9972d9d7b97c452ba5edc15a47e614e",
+  "idempotency_key": "2dcea17934571cde0f9fd22954bb05e01056ed292d3227b23bd009eafc6947de",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000044/foto-1.jpg",
+    "orden": "950000044"
+  },
+  "anotacion": {
+    "image_id": "950000044-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.assorted_colors",
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A tall S-curved sculpture on a vertical pole, built from twisted red, blue and yellow tube balloons, with round-balloon flower clusters (black, red, blue, yellow) at the top, middle, and bottom of the curve."
+      }
+    ],
+    "non_purchased_elements": [
+      "soccer-pattern balloons",
+      "a printed balloon",
+      "a metal stand pole"
+    ],
+    "uncertainties": [
+      "Studio product photo with no real venue shown; placement (piso_frontal) is an approximation.",
+      "The soccer-print balloons and the large white printed balloon at top are not in the allowed concept list for this image, so they were recorded only as non-purchased elements."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Balón De Futbol"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000044-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch modeling latex balloons in assorted colors, solid Fashion finish, 5-inch matte Fashion round latex balloons in black, red, royal blue and yellow, mixed organically rather than graded, alongside soccer-pattern balloons, a printed balloon and a metal stand pole, set against plain white studio backdrop, no floor visible.",
+    "palabras": 58,
+    "caracteres": 403,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:05:48.928Z",
+    "recompilado_en": "2026-09-03T14:45:23.650Z"
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10457-1",
+  "image_sha256": "5564467b50feb528595074a2610c51bb5e9d36b8d75fd3a0fb16c6974666cc39",
+  "idempotency_key": "b45d61d2f1c52b640c495f48bac8d71bf32a3a6d24d3cdfdd27a21c3b8449053",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10457/foto-1.jpg",
+    "orden": "10457"
+  },
+  "anotacion": {
+    "image_id": "10457-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "wood-look flooring and floor-to-ceiling windows",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Cascading garland of navy, red, and blue round balloons hanging beside the printed backdrop on the left."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "overhead",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small cluster of red and navy balloons hanging from the ceiling above the tables."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Cluster of navy, red, and blue balloons in the far right corner near the window."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small balloon cluster hanging in the middle window between the two tables."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed backdrop",
+      "a birthday cake",
+      "party tables and chairs",
+      "a foil star balloon"
+    ],
+    "uncertainties": [
+      "Left and right balloon clusters could be an intentional bilateral pair, but the right one carries extra foil balloons not in the product list, so annotated separately.",
+      "Foil balloons (star, character mask) are not in the allowed product list and are treated as non_purchased_elements."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "10457-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from matte Fashion round latex balloons in navy blue and red and high-shine Reflex blue round latex balloons, all at a single 12-inch size, an organic balloon garland, standing to one side, built from matte Fashion round latex balloons in navy blue and red and high-shine Reflex blue round latex balloons, all at a single 12-inch size, with a balloon bouquet, suspended overhead, built from matte Fashion round latex balloons in navy blue and red, all at a single 12-inch size and an organic balloon garland, installed against the rear wall, built from matte Fashion navy blue round latex balloons and high-shine Reflex blue round latex balloons, all at a single 12-inch size, alongside a printed backdrop, a birthday cake, party tables and chairs and a foil star balloon, set against wood-look flooring and floor-to-ceiling windows.",
+    "palabras": 146,
+    "caracteres": 910,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:41.512Z",
+    "recompilado_en": "2026-09-03T14:45:21.869Z"
+  }
+}

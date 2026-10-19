@@ -1,0 +1,1650 @@
+"""Python-owned, read-only commercial catalog retrieval.
+
+This module deliberately owns the SQL predicates that decide which catalog
+rows may be shown to an application caller. Next may proxy the response, but
+it must not reimplement these checks.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import math
+import re
+import time
+from collections.abc import AsyncIterator, Mapping, Sequence
+from contextlib import AbstractAsyncContextManager, AsyncExitStack, asynccontextmanager
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from math import isfinite
+from typing import Annotated, Literal, Protocol, cast
+
+import asyncpg
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StrictInt, field_validator
+
+from app.operational_models import OperationalRequest
+from app.colores_titulo import patron_titulo_sql
+from app.postgres_store import validate_database_url
+from app.generated_models import (
+    CatalogColorsResult,
+    CatalogRecommendationsResult,
+    contract_schema,
+)
+from app.recommendations import (
+    CATALOG_RECOMMENDATIONS_RESULT_SCHEMA_VERSION,
+    CatalogRecommendationError,
+    CatalogRecommendationsRequest,
+)
+from app.selection import CatalogSelectionError, CatalogSelectionRequest, MAX_SAFE_INTEGER
+
+
+logger = logging.getLogger(__name__)
+
+# Neon closes idle connections and suspends compute after about five minutes,
+# which is also asyncpg's default idle lifetime (300 s). Idle connections are
+# closed well before that cut (E2E 2026-09-14: "Connection terminated").
+POOL_MAX_INACTIVE_CONNECTION_LIFETIME_SECONDS = 60.0
+
+CATALOG_SCOPE = "catalog.search"
+CATALOG_SCHEMA_VERSION = "catalog-search.v1"
+CATALOG_RESULT_SCHEMA_VERSION = "catalog-search-result.v1"
+CATALOG_COLORS_SCOPE = "catalog.colors"
+CATALOG_COLORS_SCHEMA_VERSION = "catalog-colors.v1"
+CATALOG_COLORS_RESULT_SCHEMA_VERSION = "catalog-colors-result.v1"
+MAX_CATALOG_LIMIT = 50
+DEFAULT_CATALOG_LIMIT = 15
+TRIGRAM_MIN_SIMILARITY = 0.3
+# Distinct search tokens considered by lexical retrieval; bounds per-row work.
+MAX_LEXICAL_TERMS = 32
+_FILTER_TEXT_MAX_LENGTH = 120
+_FILTER_FACET_MAX_LENGTH = 80
+
+CatalogId = Annotated[str, Field(min_length=1, max_length=160)]
+FilterText = Annotated[str, Field(min_length=1, max_length=_FILTER_TEXT_MAX_LENGTH)]
+FilterFacet = Annotated[str, Field(min_length=1, max_length=_FILTER_FACET_MAX_LENGTH)]
+NonNegativeNumber = Annotated[
+    FiniteFloat,
+    Field(ge=0, le=MAX_SAFE_INTEGER),
+]
+
+# Chromatic-distance table owned by src/lib/rag/catalog/similitud-color.ts and
+# exported into the catalog-search.v1 contract as x-tonos-colores-catalogo
+# (the same pattern _OFFICIAL_GEOMETRY in plan.py uses for the structure
+# geometry table). A requested color the active snapshot does not stock is
+# resolved to the nearest one it does by this table, never by a hand-kept
+# synonym list, so TypeScript and Python cannot drift on what "close enough"
+# means -- one table, read independently by each runtime.
+_TONE_CONTRACT: Mapping[str, object] = cast(
+    Mapping[str, object], contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {})
+)
+_LAB: Mapping[str, Sequence[float]] = cast(
+    Mapping[str, Sequence[float]], _TONE_CONTRACT.get("lab", {})
+)
+# Scale and cut-off travel with the table so both runtimes agree on what
+# "close enough" means; the defaults only matter if the contract is missing.
+_DELTA_E_SCALE: float = cast(float, _TONE_CONTRACT.get("escala", 100))
+_DELTA_E_MAX: float = cast(float, _TONE_CONTRACT.get("delta_e_maximo", 45))
+# Colors a photo can show that the catalog does not sell (today "gris").
+_UNSOLD_COLORS: frozenset[str] = frozenset(
+    cast(list[str], _TONE_CONTRACT.get("colores_sin_venta", []))
+)
+
+
+class SearchFilters(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    available: bool = True
+    price_max: NonNegativeNumber | None = None
+    categories: list[FilterText] = Field(default_factory=list, max_length=32)
+    occasions: list[FilterText] = Field(default_factory=list, max_length=32)
+    colors: list[FilterFacet] = Field(default_factory=list, max_length=16)
+    finishes: list[FilterFacet] = Field(default_factory=list, max_length=16)
+    shapes: list[FilterFacet] = Field(default_factory=list, max_length=16)
+    diameters_inches: list[NonNegativeNumber] = Field(default_factory=list, max_length=16)
+
+    @field_validator("categories", "occasions", "colors", "finishes", "shapes")
+    @classmethod
+    def normalize_text_filters(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value for value in normalized):
+            raise ValueError("filter values must not be blank")
+        return normalized
+
+
+class AllowlistEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: CatalogId
+    variant_ids: list[CatalogId] = Field(min_length=0, max_length=256)
+
+    @field_validator("product_id")
+    @classmethod
+    def normalize_product_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("allowlist product_id must not be blank")
+        return normalized
+
+    @field_validator("variant_ids")
+    @classmethod
+    def normalize_variant_ids(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value for value in normalized):
+            raise ValueError("allowlist variant_ids must not be blank")
+        return normalized
+
+
+class CatalogSearchRequest(OperationalRequest):
+    """Authenticated operation body carried by the operational envelope."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["catalog-search.v1"]
+    message: str = Field(min_length=1, max_length=2000)
+    filters: SearchFilters
+    allowlist: list[AllowlistEntry] = Field(max_length=256)
+    limit: StrictInt = Field(ge=1, le=MAX_CATALOG_LIMIT)
+    catalog_snapshot_id: CatalogId | None = None
+    # Browsing (the editor's catalog explorer with filters and no text): recall
+    # comes from the hard filters alone and ``message`` is only a label. Every
+    # predicate in ``_base_query`` still applies; nothing is widened.
+    browse: bool = False
+
+    @field_validator("message")
+    @classmethod
+    def normalize_message(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("message must not be blank")
+        return normalized
+
+    @field_validator("catalog_snapshot_id")
+    @classmethod
+    def normalize_snapshot_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("catalog_snapshot_id must not be blank")
+        return normalized
+
+
+class CatalogColorsRequest(OperationalRequest):
+    """Authenticated body of ``/internal/v1/catalog/colors`` (read-only)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["catalog-colors.v1"]
+    allowlist: list[AllowlistEntry] = Field(max_length=256)
+    catalog_snapshot_id: CatalogId | None = None
+
+    @field_validator("catalog_snapshot_id")
+    @classmethod
+    def normalize_snapshot_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("catalog_snapshot_id must not be blank")
+        return normalized
+
+
+class CatalogConnection(Protocol):
+    async def fetch(self, query: str, *args: object) -> Sequence[Mapping[str, object]]: ...
+
+    async def fetchval(self, query: str, *args: object) -> object: ...
+
+
+class CatalogPool(Protocol):
+    def acquire(self) -> AbstractAsyncContextManager[CatalogConnection]: ...
+
+    async def close(self) -> None: ...
+
+
+def is_terminated_connection(error: BaseException) -> bool:
+    """A connection the server or the network already closed; the statement never ran to completion."""
+    if isinstance(
+        error,
+        (
+            asyncpg.exceptions.PostgresConnectionError,
+            asyncpg.exceptions.AdminShutdownError,
+            ConnectionResetError,
+            BrokenPipeError,
+        ),
+    ):
+        return True
+    return isinstance(error, asyncpg.exceptions.InterfaceError) and "closed" in str(error).lower()
+
+
+class _ReconnectingConnection:
+    """Runs a read-only catalog statement once more on a fresh connection if its connection was terminated.
+
+    Every statement of this store is a single read without a transaction, so a
+    replay has no effect beyond the read itself. The retry is bounded to one per
+    statement, and the fresh connection stays held until the caller's block ends.
+    """
+
+    def __init__(
+        self, pool: "CatalogPool", connection: CatalogConnection, stack: AsyncExitStack
+    ) -> None:
+        self._pool = pool
+        self._connection = connection
+        self._stack = stack
+
+    async def _reconnect(self, error: Exception) -> CatalogConnection:
+        if not is_terminated_connection(error):
+            raise error
+        logger.warning(
+            "catalog read retried after a terminated connection: %s", type(error).__name__
+        )
+        self._connection = await self._stack.enter_async_context(self._pool.acquire())
+        return self._connection
+
+    async def fetch(self, query: str, *args: object) -> Sequence[Mapping[str, object]]:
+        try:
+            return await self._connection.fetch(query, *args)
+        except Exception as error:
+            connection = await self._reconnect(error)
+        return await connection.fetch(query, *args)
+
+    async def fetchval(self, query: str, *args: object) -> object:
+        try:
+            return await self._connection.fetchval(query, *args)
+        except Exception as error:
+            connection = await self._reconnect(error)
+        return await connection.fetchval(query, *args)
+
+
+class CatalogStore:
+    """Async PostgreSQL store for the published commercial catalog."""
+
+    durable = True
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        pool: CatalogPool | None = None,
+        pool_min_size: int = 1,
+        pool_max_size: int = 10,
+    ) -> None:
+        self.database_url = validate_database_url(database_url)
+        if not 1 <= pool_min_size <= pool_max_size <= 64:
+            raise ValueError("INVALID_CATALOG_POOL_SIZE")
+        self._pool_min_size = pool_min_size
+        self._pool_max_size = pool_max_size
+        self._pool = pool
+        self._owns_pool = pool is None
+
+    async def start(self) -> None:
+        if self._pool is None:
+            self._pool = cast(
+                CatalogPool,
+                await asyncpg.create_pool(
+                    dsn=self.database_url,
+                    min_size=self._pool_min_size,
+                    max_size=self._pool_max_size,
+                    command_timeout=5.0,
+                    max_inactive_connection_lifetime=POOL_MAX_INACTIVE_CONNECTION_LIFETIME_SECONDS,
+                ),
+            )
+
+    async def close(self) -> None:
+        pool = self._pool
+        self._pool = None
+        if pool is not None and self._owns_pool:
+            await pool.close()
+
+    async def check_ready(self) -> bool:
+        pool = self._pool
+        if pool is None:
+            return False
+        try:
+            async with pool.acquire() as connection:
+                result = await connection.fetchval(
+                    """
+                    WITH latest AS (
+                      SELECT source_snapshot_id, published_products, published_variants
+                        FROM rag_source_snapshots
+                       WHERE source_kind = 'products_catalog' AND status = 'published'
+                       ORDER BY published_at DESC NULLS LAST,
+                                fetched_at DESC,
+                                source_snapshot_id DESC
+                       LIMIT 1
+                    )
+                    SELECT to_regclass('public.catalog_products') IS NOT NULL
+                       AND to_regclass('public.catalog_variants') IS NOT NULL
+                       AND to_regclass('public.rag_source_snapshots') IS NOT NULL
+                       AND EXISTS (
+                         SELECT 1
+                           FROM latest s
+                          WHERE s.published_products > 0
+                            AND s.published_variants > 0
+                            AND (
+                              SELECT COUNT(*)
+                                FROM catalog_products p
+                               WHERE p.status = 'ACTIVE'
+                                 AND p.source_snapshot_id = s.source_snapshot_id
+                            ) = s.published_products
+                            AND (
+                              SELECT COUNT(*)
+                                FROM catalog_variants v
+                               WHERE v.source_snapshot_id = s.source_snapshot_id
+                            ) = s.published_variants
+                            AND NOT EXISTS (
+                              SELECT 1
+                                FROM catalog_products p
+                               WHERE p.status = 'ACTIVE'
+                                 AND p.source_snapshot_id IS DISTINCT FROM s.source_snapshot_id
+                            )
+                            AND NOT EXISTS (
+                              SELECT 1
+                                FROM catalog_variants v
+                               WHERE v.source_snapshot_id IS DISTINCT FROM s.source_snapshot_id
+                            )
+                       )
+                    """
+                )
+            return result is True
+        except Exception:
+            return False
+
+    @asynccontextmanager
+    async def _reading(self, pool: CatalogPool) -> AsyncIterator[CatalogConnection]:
+        async with AsyncExitStack() as stack:
+            connection = await stack.enter_async_context(pool.acquire())
+            yield _ReconnectingConnection(pool, connection, stack)
+
+    async def published_snapshot(self, snapshot_id: str) -> str | None:
+        """Return the requested published snapshot, without selecting a fallback."""
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            value = await connection.fetchval(
+                """
+                SELECT source_snapshot_id
+                  FROM rag_source_snapshots
+                 WHERE source_kind = 'products_catalog'
+                   AND status = 'published'
+                   AND source_snapshot_id = $1
+                 LIMIT 1
+                """,
+                snapshot_id,
+            )
+        return str(value) if value is not None else None
+
+    async def fetch_plan_rows(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[Mapping[str, object]]:
+        """Fetch only commercial rows eligible for deterministic plan resolution.
+
+        The snapshot predicate is repeated for both tables. A product or variant
+        from another publication is never allowed to enter the domain resolver.
+        """
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            return await connection.fetch(
+                """
+                SELECT p.product_id,
+                       v.variant_id,
+                       v.sku,
+                       v.sku_original,
+                       v.source_snapshot_id,
+                       v.source_variant_id,
+                       v.inventory_quantity,
+                       v.unidades_inferidas,
+                       p.title AS producto_titulo,
+                       v.title AS variante_titulo,
+                       v.price AS precio,
+                       NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq,
+                       v.available AS disponible,
+                       p.available AS producto_disponible,
+                       v.codigo_tamano,
+                       v.forma,
+                       v.diam_pulg,
+                       COALESCE(p.derived->'colors', '[]'::jsonb) AS colores_producto,
+                       COALESCE(v.derived_colors, ARRAY[]::text[]) AS colores_variante,
+                       COALESCE(p.derived->'finishes', '[]'::jsonb) AS acabados_producto,
+                       p.description_text AS descripcion,
+                       COALESCE(NULLIF(BTRIM(v.image_url), ''),
+                                NULLIF(BTRIM(p.image_urls[1]), '')) AS imagen,
+                       v.currency
+                  FROM catalog_variants v
+                  JOIN catalog_products p ON p.product_id = v.product_id
+                 WHERE (p.product_id = ANY($1::text[])
+                    OR v.variant_id = ANY($2::text[]))
+                   AND p.status = 'ACTIVE'
+                   AND p.source_snapshot_id = $3
+                   AND v.source_snapshot_id = $3
+                   AND p.available = TRUE
+                   AND v.available = TRUE
+                   AND v.currency = 'COP'
+                   AND v.price > 0
+                   AND NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0
+                 ORDER BY v.variant_id
+                """,
+                sorted(set(product_ids)),
+                sorted(set(variant_ids)),
+                snapshot_id,
+            )
+
+    async def fetch_catalog_identity(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[Mapping[str, object]]:
+        """Return product/variant ownership rows for one snapshot.
+
+        Identity only: status, availability, currency, and price are ignored so
+        an ownership decision never depends on stock. ``catalog_variants``
+        keys each variant to exactly one product.
+        """
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            return await connection.fetch(
+                """
+                SELECT v.product_id, v.variant_id
+                  FROM catalog_variants v
+                  JOIN catalog_products p ON p.product_id = v.product_id
+                 WHERE v.variant_id = ANY($2::text[])
+                   AND v.source_snapshot_id = $1
+                   AND p.source_snapshot_id = $1
+                UNION ALL
+                SELECT p.product_id, NULL::text AS variant_id
+                  FROM catalog_products p
+                 WHERE p.product_id = ANY($3::text[])
+                   AND p.source_snapshot_id = $1
+                """,
+                snapshot_id,
+                sorted(set(variant_ids)),
+                sorted(set(product_ids)),
+            )
+
+    async def fetch_current_material_rows(
+        self, variant_ids: Sequence[str]
+    ) -> Sequence[Mapping[str, object]]:
+        """Datos comerciales de variantes activas del snapshot publicado actual."""
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            return await connection.fetch(
+                """
+                WITH snapshot AS (
+                  SELECT source_snapshot_id
+                    FROM rag_source_snapshots
+                   WHERE source_kind = 'products_catalog' AND status = 'published'
+                   ORDER BY published_at DESC NULLS LAST, fetched_at DESC
+                   LIMIT 1
+                )
+                SELECT v.variant_id, v.title AS nombre, v.price AS precio,
+                       NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq
+                  FROM catalog_variants v
+                  JOIN catalog_products p ON p.product_id = v.product_id
+                  JOIN snapshot s ON s.source_snapshot_id = v.source_snapshot_id
+                 WHERE v.variant_id = ANY($1::text[])
+                   AND p.source_snapshot_id = s.source_snapshot_id
+                   AND p.status = 'ACTIVE' AND p.available = TRUE
+                   AND v.available = TRUE AND v.currency = 'COP' AND v.price > 0
+                   AND NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0
+                 ORDER BY v.variant_id
+                """,
+                sorted(set(variant_ids)),
+            )
+
+    async def recommend(self, operation: CatalogRecommendationsRequest) -> dict[str, object]:
+        """Return commercially eligible alternatives for one reference variant.
+
+        The reference must exist in the requested published snapshot with an
+        ACTIVE product. Candidates satisfy the same commercial predicates as
+        plan resolution, so every recommended variant can actually be resolved.
+        """
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            snapshot = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
+            if snapshot is None:
+                raise CatalogRecommendationError("catalog_snapshot_not_found")
+            snapshot_id = str(snapshot)
+            references = await connection.fetch(
+                """
+                SELECT p.product_id,
+                       p.derived->>'category' AS category,
+                       v.codigo_tamano,
+                       v.diam_pulg,
+                       v.forma,
+                       COALESCE(v.derived_colors, ARRAY[]::text[]) AS derived_colors
+                  FROM catalog_variants v
+                  JOIN catalog_products p ON p.product_id = v.product_id
+                 WHERE v.variant_id = $1
+                   AND p.status = 'ACTIVE'
+                   AND p.source_snapshot_id = $2
+                   AND v.source_snapshot_id = $2
+                 LIMIT 1
+                """,
+                operation.reference_variant_id,
+                snapshot_id,
+            )
+            if not references:
+                raise CatalogRecommendationError("reference_variant_not_found")
+            reference = references[0]
+            query, params = _recommendation_query(operation, snapshot_id, reference)
+            rows = await connection.fetch(query, *params)
+
+        result: dict[str, object] = {
+            "operation_schema_version": CATALOG_RECOMMENDATIONS_RESULT_SCHEMA_VERSION,
+            "catalog_snapshot_id": snapshot_id,
+            "reference": {
+                "product_id": str(reference["product_id"]),
+                "variant_id": operation.reference_variant_id,
+                "size_code": _text_or_none(reference.get("codigo_tamano")),
+                "diameter_inches": _number_or_none(reference.get("diam_pulg")),
+                "shape": _text_or_none(reference.get("forma")),
+                "category": _text_or_none(reference.get("category")),
+                "colors": _string_list(reference.get("derived_colors")),
+            },
+            "candidates": _group_recommendations(rows),
+        }
+        CatalogRecommendationsResult.model_validate(result)
+        return result
+
+    async def search(self, operation: CatalogSearchRequest) -> dict[str, object]:
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+
+        parse_started = time.perf_counter()
+        extracted_sku = None if operation.browse else extract_sku(operation.message)
+        parse_ms = round((time.perf_counter() - parse_started) * 1000)
+        retrieval_started = time.perf_counter()
+        sku_status = "not_sku"
+
+        color_substitutions: list[dict[str, str]] = []
+        async with self._reading(pool) as connection:
+            snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
+            if snapshot_id is None:
+                return _empty_result(
+                    "NO_MATCH",
+                    "not_sku" if extracted_sku is None else "not_found",
+                    None,
+                    parse_ms,
+                    _elapsed_ms(retrieval_started),
+                )
+            if operation.browse:
+                # The explorer only offers colors the snapshot stocks (/catalog/colors): a
+                # stale chip is an honest NO_MATCH, not worth a full scan of the colors
+                # per request to look for a nearest one.
+                resolved_colors, color_substitutions = None, []
+            else:
+                resolved_colors, color_substitutions = await _resolve_colors(
+                    connection, operation.filters.colors, str(snapshot_id)
+                )
+            if extracted_sku is not None:
+                rows, sku_status = await self._exact_rows(
+                    connection, operation, extracted_sku, str(snapshot_id), resolved_colors
+                )
+                if sku_status == "ambiguous":
+                    return _empty_result(
+                        "AMBIGUOUS_SKU",
+                        "ambiguous",
+                        snapshot_id,
+                        parse_ms,
+                        _elapsed_ms(retrieval_started),
+                    )
+            elif operation.browse:
+                rows = await self._browse_rows(
+                    connection, operation, str(snapshot_id), resolved_colors
+                )
+            else:
+                rows = await self._lexical_rows(
+                    connection, operation, str(snapshot_id), resolved_colors
+                )
+
+        candidates = _group_candidates(rows, operation.limit)
+        result_status = "OK" if candidates else "NO_MATCH"
+        whitelist = []
+        for candidate in candidates:
+            variants = cast(list[dict[str, object]], candidate["variants"])
+            whitelist.append(
+                {
+                    "product_id": candidate["product_id"],
+                    "variant_ids": [variant["variant_id"] for variant in variants],
+                }
+            )
+        return {
+            "operation_schema_version": CATALOG_RESULT_SCHEMA_VERSION,
+            "status": result_status,
+            "sku_status": sku_status,
+            "candidates": candidates,
+            "whitelist": whitelist,
+            "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
+            "latency_parse_ms": parse_ms,
+            "latency_retrieval_ms": _elapsed_ms(retrieval_started),
+            "color_substitutions": color_substitutions,
+        }
+
+    async def colors(self, operation: CatalogColorsRequest) -> dict[str, object]:
+        """Colors the explorer can offer, with how many products carry each.
+
+        Same commercial predicates as ``search`` (ACTIVE product, published
+        snapshot, available product and variant, allowlist) and the same
+        effective color of a variant as ``_base_query``, so a chip's count is
+        what picking it returns. Read-only; an unknown snapshot answers an empty
+        list with no snapshot id, as ``search`` does.
+        """
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
+            rows: Sequence[Mapping[str, object]] = []
+            if snapshot_id is not None:
+                query, params = _colors_query(operation, str(snapshot_id))
+                rows = await connection.fetch(query, *params)
+        totals: dict[str, int] = {}
+        for row in rows:
+            color = row.get("color")
+            total = _integer_or_none(row.get("total"))
+            if isinstance(color, str) and color.strip() and total is not None:
+                value = color.strip().lower()
+                totals[value] = totals.get(value, 0) + total
+        result: dict[str, object] = {
+            "operation_schema_version": CATALOG_COLORS_RESULT_SCHEMA_VERSION,
+            "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
+            "colors": [
+                {"value": value, "total": total}
+                for value, total in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
+            ],
+        }
+        CatalogColorsResult.model_validate(result)
+        return result
+
+    async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]:
+        """Validate model-selected identifiers against the published catalog."""
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+
+        allowlist: dict[str, set[str]] = {}
+        for entry in operation.allowlist:
+            allowlist.setdefault(entry.product_id, set()).update(entry.variant_ids)
+        rejected: list[dict[str, object]] = []
+        eligible_indices: list[int] = []
+        seen_variant_ids: set[str] = set()
+        for index, item in enumerate(operation.items):
+            if item.variant_id in seen_variant_ids:
+                rejected.append(
+                    _rejection(
+                        item.product_id, item.variant_id, "variant_id duplicado en la selección"
+                    )
+                )
+                continue
+            seen_variant_ids.add(item.variant_id)
+            permitted_variants = allowlist.get(item.product_id)
+            if permitted_variants is None:
+                rejected.append(
+                    _rejection(
+                        item.product_id,
+                        item.variant_id,
+                        "product_id no estaba en los resultados recuperados de este turno",
+                    )
+                )
+            elif item.variant_id not in permitted_variants:
+                rejected.append(
+                    _rejection(
+                        item.product_id,
+                        item.variant_id,
+                        "variant_id no estaba en la whitelist de variantes recuperadas de este turno",
+                    )
+                )
+            else:
+                eligible_indices.append(index)
+
+        async with self._reading(pool) as connection:
+            snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
+            rows: Sequence[Mapping[str, object]] = []
+            if snapshot_id is not None and eligible_indices:
+                rows = await connection.fetch(
+                    """
+                    SELECT v.product_id, v.variant_id,
+                           COALESCE(v.sku_original, v.sku) AS sku,
+                           p.title AS product_title,
+                           COALESCE(v.title, p.title) AS title,
+                           v.price, p.image_urls[1] AS image_url, p.handle,
+                           p.product_type, p.derived->>'category' AS category,
+                           COALESCE(p.derived->'colors', '[]'::jsonb) AS product_colors,
+                           COALESCE(v.derived_colors, ARRAY[]::text[]) AS variant_colors,
+                           p.description_text AS description,
+                           NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS units_per_package,
+                           v.codigo_tamano AS size_code, v.forma AS shape,
+                           v.diam_pulg AS diameter_inches,
+                           v.available AS variant_available,
+                           v.inventory_quantity,
+                           p.available AS product_available
+                      FROM catalog_variants v
+                      JOIN catalog_products p ON p.product_id = v.product_id
+                     WHERE v.variant_id = ANY($1::text[])
+                       AND v.source_snapshot_id = $2
+                       AND p.source_snapshot_id = $2
+                       AND p.status = 'ACTIVE'
+                       AND v.currency = 'COP'
+                       AND v.price > 0
+                    """,
+                    sorted({operation.items[index].variant_id for index in eligible_indices}),
+                    str(snapshot_id),
+                )
+
+        row_by_variant = {str(row["variant_id"]): row for row in rows}
+        validated: list[dict[str, object]] = []
+        total_cop = 0
+        for index in eligible_indices:
+            item = operation.items[index]
+            row = row_by_variant.get(item.variant_id)
+            if row is None:
+                rejected.append(
+                    _rejection(
+                        item.product_id,
+                        item.variant_id,
+                        "variant_id no existe en el snapshot publicado",
+                    )
+                )
+                continue
+            if str(row["product_id"]) != item.product_id:
+                # Only allowlisted pairs reach this point, so the allowlist
+                # itself pairs the variant with a product that does not own it.
+                raise CatalogSelectionError("allowlist_product_mismatch", 422)
+            if row.get("product_available") is not True or row.get("variant_available") is not True:
+                rejected.append(_rejection(item.product_id, item.variant_id, "variante agotada"))
+                continue
+            inventory = _inventory_quantity(row.get("inventory_quantity"))
+            if inventory is not None and inventory > 0 and item.quantity > inventory:
+                rejected.append(
+                    _rejection(
+                        item.product_id,
+                        item.variant_id,
+                        f"cantidad solicitada ({item.quantity}) excede el inventario disponible ({inventory})",
+                    )
+                )
+                continue
+            price = _price_cop(row.get("price"))
+            if price is None:
+                rejected.append(
+                    _rejection(item.product_id, item.variant_id, "precio no disponible")
+                )
+                continue
+            subtotal = price * item.quantity
+            if subtotal > MAX_SAFE_INTEGER:
+                rejected.append(
+                    _rejection(
+                        item.product_id, item.variant_id, "subtotal fuera del rango permitido"
+                    )
+                )
+                continue
+            if total_cop + subtotal > MAX_SAFE_INTEGER:
+                rejected.append(
+                    _rejection(item.product_id, item.variant_id, "total fuera del rango permitido")
+                )
+                continue
+            validated.append(
+                {
+                    "product_id": item.product_id,
+                    "variant_id": item.variant_id,
+                    "sku": row.get("sku") if isinstance(row.get("sku"), str) else None,
+                    "product_title": str(row["product_title"]),
+                    "title": str(row["title"]),
+                    "unit_price_cop": price,
+                    "quantity": item.quantity,
+                    "subtotal_cop": subtotal,
+                    "image_url": row.get("image_url")
+                    if isinstance(row.get("image_url"), str)
+                    else None,
+                    "handle": row.get("handle") if isinstance(row.get("handle"), str) else None,
+                    "product_type": row.get("product_type")
+                    if isinstance(row.get("product_type"), str)
+                    else None,
+                    "category": row.get("category")
+                    if isinstance(row.get("category"), str)
+                    else None,
+                    "colors": _selection_colors(
+                        row.get("variant_colors"), row.get("product_colors")
+                    ),
+                    "description": row.get("description")
+                    if isinstance(row.get("description"), str)
+                    else None,
+                    "units_per_package": _integer_or_none(row.get("units_per_package")),
+                    "size_code": row.get("size_code")
+                    if isinstance(row.get("size_code"), str)
+                    else None,
+                    "shape": row.get("shape") if isinstance(row.get("shape"), str) else None,
+                    "diameter_inches": _number_or_none(row.get("diameter_inches")),
+                }
+            )
+            total_cop += subtotal
+
+        status = "ok" if not rejected else "partial" if validated else "empty"
+        return {
+            "operation_schema_version": "catalog-selection-result.v1",
+            "status": status,
+            "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
+            "validados": validated,
+            "rechazados": rejected,
+            "total_cop": total_cop,
+        }
+
+    async def _selection_snapshot(
+        self, connection: CatalogConnection, requested_snapshot_id: str | None
+    ) -> object | None:
+        if requested_snapshot_id is not None:
+            return await connection.fetchval(
+                """
+                SELECT source_snapshot_id
+                  FROM rag_source_snapshots
+                 WHERE source_kind = 'products_catalog'
+                   AND status = 'published'
+                   AND source_snapshot_id = $1
+                 LIMIT 1
+                """,
+                requested_snapshot_id,
+            )
+        return await connection.fetchval(
+            """
+            SELECT source_snapshot_id
+              FROM rag_source_snapshots
+             WHERE source_kind = 'products_catalog' AND status = 'published'
+             ORDER BY published_at DESC NULLS LAST, fetched_at DESC
+             LIMIT 1
+            """
+        )
+
+    async def _exact_rows(
+        self,
+        connection: CatalogConnection,
+        operation: CatalogSearchRequest,
+        sku: str,
+        snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
+    ) -> tuple[
+        Sequence[Mapping[str, object]], Literal["unique", "ambiguous", "not_found", "filtered_out"]
+    ]:
+        original_values = [sku.upper()]
+        canonical_values = [canonicalize_sku(sku)]
+        identity_rows, identity_kind = await self._exact_identity_rows(
+            connection, snapshot_id, original_values, canonical_values
+        )
+        if not identity_rows or identity_kind is None:
+            return [], "not_found"
+        if _sku_result(identity_rows) == "ambiguous":
+            return [], "ambiguous"
+
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
+        sku_position = len(params) + 1
+        sku_expression = (
+            "UPPER(COALESCE(v.sku_original, v.sku, ''))"
+            if identity_kind == "original"
+            else "UPPER(COALESCE(v.sku_canonical, v.sku, ''))"
+        )
+        sku_values = original_values if identity_kind == "original" else canonical_values
+        exact_sql = f"""
+            SELECT {CATALOG_COLUMNS}, 1.0::float8 AS score
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+             {base}
+               AND {sku_expression} = ANY(${sku_position}::text[])
+             ORDER BY p.product_id, v.diam_pulg ASC NULLS LAST
+        """
+        exact_rows = await connection.fetch(exact_sql, *params, sku_values)
+        if not exact_rows:
+            return [], "filtered_out"
+        return exact_rows, _sku_result(exact_rows)
+
+    async def _exact_identity_rows(
+        self,
+        connection: CatalogConnection,
+        snapshot_id: str,
+        original_values: list[str],
+        canonical_values: list[str],
+    ) -> tuple[Sequence[Mapping[str, object]], Literal["original", "canonical"] | None]:
+        identity_where = """
+            WHERE p.status = 'ACTIVE'
+              AND p.source_snapshot_id = $1
+              AND v.source_snapshot_id = $1
+        """
+        columns = "v.variant_id, v.sku_ambiguous"
+        original_rows = await connection.fetch(
+            f"""
+            SELECT {columns}
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+             {identity_where}
+               AND UPPER(COALESCE(v.sku_original, v.sku, '')) = $2
+            """,
+            snapshot_id,
+            original_values[0],
+        )
+        if original_rows:
+            return original_rows, "original"
+        canonical_rows = await connection.fetch(
+            f"""
+            SELECT {columns}
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+             {identity_where}
+               AND UPPER(COALESCE(v.sku_canonical, v.sku, '')) = $2
+            """,
+            snapshot_id,
+            canonical_values[0],
+        )
+        return canonical_rows, "canonical" if canonical_rows else None
+
+    async def _lexical_rows(
+        self,
+        connection: CatalogConnection,
+        operation: CatalogSearchRequest,
+        snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
+    ) -> Sequence[Mapping[str, object]]:
+        """Rank rows that match ANY meaningful query term, or the whole message by trigram.
+
+        Recall only: every commercial predicate stays in ``_base_query``. A
+        customer message is prose ("arco de globos rosados"), so requiring every
+        token (``plainto_tsquery`` ANDs them) returned NO_MATCH for products that
+        exist. Each term goes through ``spanish_unaccent`` (the configuration of
+        the generated ``p.search_tsv`` column used by the TypeScript retrieval),
+        which drops stop words, removes accents and stems. The full-text score is
+        the fraction of distinct meaningful terms a product matches, so a product
+        covering more of the request ranks first.
+
+        Ties break by how close the TITLE is to the message, not by product id:
+        every printed "2 Caras ... Reflex Dorado" matches all the terms of
+        "globo latex redondo reflex dorado" as the plain balloon does, and the id
+        order left the plain one out of the first 15 (2026-10-05 photo tests).
+        The title and not ``search_text``: the plain balloon is the base of the
+        printed designs and carries their whole tag list, which sinks its
+        trigram similarity with any short message.
+        """
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
+        params.append(lexical_terms(operation.message))
+        terms_position = len(params)
+        params.append(operation.message.strip().lower())
+        similarity_position = len(params)
+        params.append(operation.limit * 16)
+        limit_position = len(params)
+        return await connection.fetch(
+            f"""
+            WITH query_terms AS (
+              SELECT DISTINCT term_query
+                FROM unnest(${terms_position}::text[]) AS term
+               CROSS JOIN LATERAL plainto_tsquery('spanish_unaccent', term) AS term_query
+               WHERE numnode(term_query) > 0
+            ), term_total AS (
+              SELECT count(*)::float8 AS total FROM query_terms
+            )
+            SELECT {CATALOG_COLUMNS},
+                   GREATEST(
+                     COALESCE(
+                       (SELECT count(*) FROM query_terms t WHERE p.search_tsv @@ t.term_query)::float8
+                         / NULLIF((SELECT total FROM term_total), 0),
+                       0
+                     ),
+                     similarity(LOWER(COALESCE(p.search_text, '')), ${similarity_position})
+                   )::float8 AS score,
+                   similarity(LOWER(p.title), ${similarity_position})::float8 AS title_similarity
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+             {base}
+               AND (
+                 EXISTS (SELECT 1 FROM query_terms t WHERE p.search_tsv @@ t.term_query)
+                 OR similarity(LOWER(COALESCE(p.search_text, '')), ${similarity_position})
+                   >= {TRIGRAM_MIN_SIMILARITY}
+               )
+             ORDER BY score DESC, title_similarity DESC, p.product_id, v.diam_pulg ASC NULLS LAST,
+                      v.variant_id
+             LIMIT ${limit_position}
+            """,
+            *params,
+        )
+
+    async def _browse_rows(
+        self,
+        connection: CatalogConnection,
+        operation: CatalogSearchRequest,
+        snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
+    ) -> Sequence[Mapping[str, object]]:
+        """Every variant that satisfies the hard filters, products in title order.
+
+        Used when the caller has filters and no text: ``_lexical_rows`` needs a
+        textual hit, which would silently drop products whose name lacks the
+        word. The first ``limit`` products by title are picked in SQL (so a
+        product with many variants cannot crowd the others out) and the score
+        is their descending rank, which keeps ``_group_candidates`` in title
+        order. Recall only: every commercial predicate stays in ``_base_query``.
+        """
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
+        params.append(operation.limit)
+        limit_position = len(params)
+        return await connection.fetch(
+            f"""
+            WITH picked AS (
+              SELECT product_id,
+                     row_number() OVER (ORDER BY title, product_id) AS rank
+                FROM (
+                  SELECT DISTINCT p.product_id, p.title
+                    FROM catalog_products p
+                    JOIN catalog_variants v ON v.product_id = p.product_id
+                   {base}
+                ) matching
+               ORDER BY rank
+               LIMIT ${limit_position}
+            )
+            SELECT {CATALOG_COLUMNS}, (1.0 / picked.rank)::float8 AS score
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+              JOIN picked ON picked.product_id = p.product_id
+             {base}
+             ORDER BY picked.rank, v.diam_pulg ASC NULLS LAST, v.variant_id
+            """,
+            *params,
+        )
+
+
+CATALOG_COLUMNS = """
+    p.product_id, p.title, p.derived, p.available AS product_available,
+    p.image_urls[1] AS image,
+    v.variant_id, COALESCE(v.sku_original, v.sku) AS sku, v.title AS variant_title,
+    v.price, v.available AS variant_available, v.sku_ambiguous, v.codigo_tamano,
+    v.diam_pulg, v.forma, v.derived_colors
+""".strip()
+
+
+def extract_sku(value: str) -> str | None:
+    text = value.strip()
+    if _looks_like_sku(text):
+        return text
+    b2b = re.search(r"\bB2B[-:][A-Z0-9][A-Z0-9._/-]{4,}\b", text, re.IGNORECASE)
+    if b2b:
+        return b2b.group(0)
+    labeled_b2b = re.search(
+        r"\b(?:SKU|REF|COD(?:IGO|IGO)|CÓDIGO)\s*[:#-]?\s*B2B\s+([A-Z0-9][A-Z0-9._/-]{4,})\b",
+        text,
+        re.IGNORECASE,
+    )
+    if labeled_b2b is not None:
+        return f"B2B-{labeled_b2b.group(1)}"
+    labeled = re.search(
+        r"\b(?:SKU|REF|COD(?:IGO|IGO)|CÓDIGO)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{5,})\b",
+        text,
+        re.IGNORECASE,
+    )
+    if labeled is not None:
+        return labeled.group(1)
+    return text if re.fullmatch(r"\d{8,}", text) else None
+
+
+def lexical_terms(message: str) -> list[str]:
+    """Distinct word tokens of a search message, in order, bounded.
+
+    Tokens are passed as a bound array and each one becomes its own
+    ``plainto_tsquery``, so no tsquery syntax from the message is interpreted.
+    Stop words are filtered by PostgreSQL's ``spanish_unaccent`` configuration.
+    """
+    terms: list[str] = []
+    for token in re.findall(r"[^\W_]+", message.casefold()):
+        if token not in terms:
+            terms.append(token)
+        if len(terms) >= MAX_LEXICAL_TERMS:
+            break
+    return terms
+
+
+def canonicalize_sku(value: str) -> str:
+    normalized = re.sub(r"\s+", " ", value.strip().upper())
+    return re.sub(r"^B2B\s*[-:]\s*", "", normalized)
+
+
+def _looks_like_sku(value: str) -> bool:
+    return bool(
+        re.fullmatch(r"SKU[-_].*", value, re.IGNORECASE)
+        or (re.fullmatch(r"[A-Z0-9._/-]{8,}", value, re.IGNORECASE) and re.search(r"\d", value))
+    )
+
+
+def _base_query(
+    operation: CatalogSearchRequest,
+    snapshot_id: str,
+    resolved_colors: Sequence[str] | None = None,
+) -> tuple[str, list[object]]:
+    filters = operation.filters
+    clauses = ["p.status = 'ACTIVE'", "p.source_snapshot_id = $1", "v.source_snapshot_id = $1"]
+    params: list[object] = [snapshot_id]
+
+    if filters.available:
+        clauses.extend(["p.available = TRUE", "v.available = TRUE"])
+    if filters.price_max is not None:
+        params.append(filters.price_max)
+        clauses.append(f"v.price <= ${len(params)}")
+    if filters.categories:
+        params.append(_normalized_values(filters.categories))
+        clauses.append(f"p.derived->>'category' = ANY(${len(params)}::text[])")
+    if filters.occasions:
+        params.append(_normalized_values(filters.occasions))
+        clauses.append(f"p.derived->'occasions' ?| ${len(params)}::text[]")
+    if filters.shapes:
+        params.append(_normalized_values(filters.shapes))
+        clauses.append(f"v.forma = ANY(${len(params)}::text[])")
+    if filters.diameters_inches:
+        params.append(filters.diameters_inches)
+        clauses.append(f"v.diam_pulg = ANY(${len(params)}::numeric[])")
+        if not filters.shapes:
+            clauses.append("v.forma = 'redondo'")
+    if filters.finishes:
+        params.append(_normalized_values(filters.finishes))
+        clauses.append(f"p.derived->'finishes' ?| ${len(params)}::text[]")
+    # resolved_colors is filters.colors with every color the snapshot does not
+    # stock replaced by the nearest one it does (_resolve_colors): the filter
+    # a customer's exact word never matches still returns the closest catalog
+    # reality instead of NO_MATCH.
+    colors = filters.colors if resolved_colors is None else resolved_colors
+    if colors:
+        params.append(_normalized_values(colors))
+        position = len(params)
+        # A color only a title says (app.colores_titulo) is also found by the title.
+        patrones = sorted(
+            {p for p in (patron_titulo_sql(color) for color in colors) if p is not None}
+        )
+        por_titulo = ""
+        if patrones:
+            params.append("|".join(patrones))
+            por_titulo = f" OR p.title ~* ${len(params)}"
+        clauses.append(
+            "((cardinality(v.derived_colors) > 0 AND v.derived_colors && "
+            f"${position}::text[]) OR (cardinality(v.derived_colors) = 0 "
+            "AND jsonb_array_length(p.derived->'colors') = 1 "
+            f"AND p.derived->'colors' ?| ${position}::text[]){por_titulo})"
+        )
+
+    variant_ids = [variant_id for entry in operation.allowlist for variant_id in entry.variant_ids]
+    if variant_ids:
+        params.append(sorted(set(variant_ids)))
+        clauses.append(f"v.variant_id = ANY(${len(params)}::text[])")
+    elif operation.allowlist:
+        params.append(sorted({entry.product_id for entry in operation.allowlist}))
+        clauses.append(f"p.product_id = ANY(${len(params)}::text[])")
+
+    return "WHERE " + " AND ".join(clauses), params
+
+
+# Distance at or above which nothing is substituted: the request is either a
+# word the table does not know, or a color too far from anything in stock to
+# offer honestly.
+_UNRELATED_DISTANCE = _DELTA_E_MAX / _DELTA_E_SCALE
+
+
+def _chromatic_distance(requested: str, candidate: str) -> float:
+    """Mirrors ``puntuacionCromatica`` (similitud-color.ts) for a single pair.
+
+    Euclidean deltaE (CIE76) over the CIELAB values the contract carries,
+    normalised by the same scale TypeScript uses. Lower is closer; an exact
+    match is 0. A color the table does not know has no distance to measure and
+    scores ``_UNRELATED_DISTANCE``.
+
+    This replaced a hue-angle model that had no lightness axis, under which
+    ``naranja`` and ``cafe`` scored 0.011 apart and grey resolved to black.
+    """
+    if requested == candidate:
+        return 0.0
+    lab_requested = _LAB.get(requested)
+    lab_candidate = _LAB.get(candidate)
+    if lab_requested is None or lab_candidate is None:
+        return _UNRELATED_DISTANCE
+    delta = math.sqrt(sum((a - b) ** 2 for a, b in zip(lab_requested, lab_candidate, strict=True)))
+    return min(delta / _DELTA_E_SCALE, 1.0)
+
+
+def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None:
+    """The color of ``present`` closest to ``requested`` by ``_chromatic_distance``.
+
+    Ties break alphabetically for a deterministic result. ``None`` when
+    ``present`` is empty, and also when nothing is chromatically related: a word
+    the tone table does not know (the analyser invents some, e.g. "frambuesa")
+    scores the same against every color, so the winner would be whichever sorts
+    first -- that is how a raspberry photo resolved to yellow. Substituting
+    needs a distance; without one there is nothing to measure and the request is
+    left alone so the search reports NO_MATCH honestly.
+    """
+    if not present:
+        return None
+    best = min(
+        present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate)
+    )
+    if _chromatic_distance(requested, best) >= _UNRELATED_DISTANCE:
+        return None
+    return best
+
+
+def purchase_color_for_unsold(color: str) -> str | None:
+    """The catalog color an unsold photo color is bought as ("gris" -> "plateado").
+
+    Mirrors ``colorDeCompraSinVenta`` (similitud-color.ts). ``None`` when the
+    color is sold -- it needs no stand-in -- or when nothing is close enough. A
+    structure that carries this color has not lost the photo color.
+    """
+    normalized = color.strip().lower()
+    if normalized not in _UNSOLD_COLORS:
+        return None
+    return _nearest_present_color(normalized, [name for name in _LAB if name not in _UNSOLD_COLORS])
+
+
+async def _resolve_colors(
+    connection: CatalogConnection,
+    requested_colors: Sequence[str],
+    snapshot_id: str,
+) -> tuple[list[str] | None, list[dict[str, str]]]:
+    """Requested colors the snapshot does not stock, resolved to the nearest it does.
+
+    Presence is checked against the published snapshot's active, available
+    rows -- never against the static vocabulary table (``_HUES``), which only
+    says what color WORDS the catalog taxonomy knows, not what is actually in
+    stock. ``None`` (not an empty list) when nothing was requested, so callers
+    can tell "no color filter" apart from "every requested color is exact".
+    """
+    normalized_requested = [value.strip().lower() for value in requested_colors if value.strip()]
+    if not normalized_requested:
+        return None, []
+    rows = await connection.fetch(
+        """
+        SELECT DISTINCT color
+          FROM catalog_variants v
+          JOIN catalog_products p ON p.product_id = v.product_id
+         CROSS JOIN LATERAL unnest(v.derived_colors) AS color
+         WHERE p.status = 'ACTIVE'
+           AND p.source_snapshot_id = $1
+           AND v.source_snapshot_id = $1
+           AND p.available = TRUE
+           AND v.available = TRUE
+        """,
+        snapshot_id,
+    )
+    present: set[str] = set()
+    for row in rows:
+        color = row.get("color")
+        if isinstance(color, str) and color.strip():
+            present.add(color.strip().lower())
+    # A color only a title says (the wine balloons are filed as "rojo", app.colores_titulo) is present when a
+    # product with that title is: without it "burdeos" was replaced by another hue (CASE-006, 2026-10-05).
+    for requested in normalized_requested:
+        patron = patron_titulo_sql(requested)
+        if requested in present or patron is None:
+            continue
+        hay = await connection.fetchval(
+            """
+            SELECT EXISTS (
+              SELECT 1
+                FROM catalog_variants v
+                JOIN catalog_products p ON p.product_id = v.product_id
+               WHERE p.status = 'ACTIVE'
+                 AND p.source_snapshot_id = $1
+                 AND v.source_snapshot_id = $1
+                 AND p.available = TRUE
+                 AND v.available = TRUE
+                 AND p.title ~* $2)
+            """,
+            snapshot_id,
+            patron,
+        )
+        if hay:
+            present.add(requested)
+    resolved: list[str] = []
+    substitutions: list[dict[str, str]] = []
+    seen_substitutions: set[str] = set()
+    for requested in normalized_requested:
+        if requested in present:
+            resolved.append(requested)
+            continue
+        nearest = _nearest_present_color(requested, sorted(present))
+        if nearest is None:
+            # No substitute exists either: keep the request as-is so the
+            # search still reports NO_MATCH honestly instead of silently
+            # dropping the filter.
+            resolved.append(requested)
+            continue
+        resolved.append(nearest)
+        if requested not in seen_substitutions:
+            seen_substitutions.add(requested)
+            substitutions.append({"pedido": requested, "entregado": nearest})
+    return resolved, substitutions
+
+
+def _colors_query(operation: CatalogColorsRequest, snapshot_id: str) -> tuple[str, list[object]]:
+    """Distinct products per effective color, most stocked first.
+
+    The effective color of a variant is the one ``_base_query`` filters by: its
+    own ``derived_colors`` or, when it has none, the product's single color.
+    """
+    clauses = [
+        "p.status = 'ACTIVE'",
+        "p.source_snapshot_id = $1",
+        "v.source_snapshot_id = $1",
+        "p.available = TRUE",
+        "v.available = TRUE",
+    ]
+    params: list[object] = [snapshot_id]
+    variant_ids = [variant_id for entry in operation.allowlist for variant_id in entry.variant_ids]
+    if variant_ids:
+        params.append(sorted(set(variant_ids)))
+        clauses.append(f"v.variant_id = ANY(${len(params)}::text[])")
+    elif operation.allowlist:
+        params.append(sorted({entry.product_id for entry in operation.allowlist}))
+        clauses.append(f"p.product_id = ANY(${len(params)}::text[])")
+    return (
+        f"""
+        WITH eligible AS (
+          SELECT p.product_id,
+                 CASE
+                   WHEN cardinality(v.derived_colors) > 0 THEN v.derived_colors
+                   WHEN jsonb_array_length(COALESCE(p.derived->'colors', '[]'::jsonb)) = 1
+                     THEN ARRAY(SELECT jsonb_array_elements_text(p.derived->'colors'))
+                   ELSE ARRAY[]::text[]
+                 END AS colors
+            FROM catalog_variants v
+            JOIN catalog_products p ON p.product_id = v.product_id
+           WHERE {" AND ".join(clauses)}
+        )
+        SELECT LOWER(BTRIM(color)) AS color, COUNT(DISTINCT product_id)::int AS total
+          FROM eligible
+         CROSS JOIN LATERAL unnest(colors) AS color
+         WHERE BTRIM(color) <> ''
+         GROUP BY 1
+         ORDER BY total DESC, color ASC
+        """,
+        params,
+    )
+
+
+def _recommendation_query(
+    operation: CatalogRecommendationsRequest,
+    snapshot_id: str,
+    reference: Mapping[str, object],
+) -> tuple[str, list[object]]:
+    """Build the candidate query for recommendations.
+
+    Size code is preferred over diameter; a reference with neither adds no size
+    clause. The LoRA restriction is applied before ``LIMIT`` so it cannot starve
+    the result.
+    """
+    reference_product = str(reference["product_id"])
+    params: list[object] = [snapshot_id, operation.reference_variant_id]
+    clauses = [
+        "p.status = 'ACTIVE'",
+        "p.source_snapshot_id = $1",
+        "v.source_snapshot_id = $1",
+        "p.available = TRUE",
+        "v.available = TRUE",
+        "v.currency = 'COP'",
+        "v.price > 0",
+        "NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0",
+        "v.variant_id <> $2",
+    ]
+    size_code = _text_or_none(reference.get("codigo_tamano"))
+    diameter = reference.get("diam_pulg")
+    if size_code is not None:
+        params.append(size_code)
+        clauses.append(f"v.codigo_tamano = ${len(params)}::text")
+    elif diameter is not None:
+        params.append(diameter)
+        clauses.append(f"v.diam_pulg = ${len(params)}::numeric")
+    shape = _text_or_none(reference.get("forma"))
+    if shape is not None:
+        params.append(shape)
+        clauses.append(f"v.forma = ${len(params)}::text")
+    params.append(reference_product)
+    product_position = len(params)
+    category = _text_or_none(reference.get("category"))
+    if category is not None:
+        params.append(category)
+        clauses.append(
+            f"(p.product_id = ${product_position}::text "
+            f"OR p.derived->>'category' = ${len(params)}::text)"
+        )
+    else:
+        clauses.append(f"p.product_id = ${product_position}::text")
+    params.append(operation.limit)
+    limit_position = len(params)
+    query = f"""
+        SELECT {CATALOG_COLUMNS}
+          FROM catalog_variants v
+          JOIN catalog_products p ON p.product_id = v.product_id
+         WHERE {" AND ".join(clauses)}
+         ORDER BY CASE WHEN p.product_id = ${product_position}::text THEN 0 ELSE 1 END,
+                  p.title ASC, v.price ASC, v.variant_id ASC
+         LIMIT ${limit_position}
+    """
+    return query, params
+
+
+def _group_recommendations(rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    """Group candidate rows by product, preserving SQL order.
+
+    A variant whose whole-COP price is not positive is skipped so the result
+    stays valid under ``price > 0``; a product left without variants is omitted.
+    """
+    grouped: dict[str, dict[str, object]] = {}
+    for row in rows:
+        price = _price_cop(row.get("price"))
+        if price is None or price <= 0:
+            continue
+        product_id = str(row["product_id"])
+        candidate = grouped.setdefault(
+            product_id,
+            {
+                "product_id": product_id,
+                "title": str(row["title"]),
+                "category": _text_or_none(_derived_value(row.get("derived"), "category")),
+                "colors": _string_list(_derived_value(row.get("derived"), "colors")),
+                "finishes": _string_list(_derived_value(row.get("derived"), "finishes")),
+                "occasions": _string_list(_derived_value(row.get("derived"), "occasions")),
+                "available": row.get("product_available") is True,
+                "image": row.get("image") if isinstance(row.get("image"), str) else None,
+                "variants": [],
+            },
+        )
+        cast(list[dict[str, object]], candidate["variants"]).append(
+            {
+                "variant_id": str(row["variant_id"]),
+                "sku": row.get("sku") if isinstance(row.get("sku"), str) else None,
+                "title": row.get("variant_title")
+                if isinstance(row.get("variant_title"), str)
+                else None,
+                "price": price,
+                "available": row.get("variant_available") is True,
+                "size_code": _text_or_none(row.get("codigo_tamano")),
+                "diameter_inches": _number_or_none(row.get("diam_pulg")),
+                "shape": _text_or_none(row.get("forma")),
+                "colors": _string_list(row.get("derived_colors")),
+            }
+        )
+    return list(grouped.values())
+
+
+def _text_or_none(value: object) -> str | None:
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def _normalized_values(values: Sequence[str]) -> list[str]:
+    return sorted({value.strip().lower() for value in values if value.strip()})
+
+
+def _sku_result(rows: Sequence[Mapping[str, object]]) -> Literal["unique", "ambiguous"]:
+    variant_ids = {str(row["variant_id"]) for row in rows}
+    return (
+        "ambiguous"
+        if len(variant_ids) > 1 or any(row.get("sku_ambiguous") is True for row in rows)
+        else "unique"
+    )
+
+
+def _group_candidates(rows: Sequence[Mapping[str, object]], limit: int) -> list[dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    # The lexical tie-break (``_lexical_rows``): kept aside because a candidate's keys are the
+    # result contract. Rows of the other queries do not carry it and keep their order.
+    title_similarity: dict[str, float] = {}
+    for row in rows:
+        product_id = str(row["product_id"])
+        title_similarity[product_id] = max(
+            title_similarity.get(product_id, 0.0), _number_or_zero(row.get("title_similarity"))
+        )
+        candidate = grouped.setdefault(
+            product_id,
+            {
+                "product_id": product_id,
+                "title": str(row["title"]),
+                "category": _derived_value(row.get("derived"), "category"),
+                "colors": _string_list(_derived_value(row.get("derived"), "colors")),
+                "finishes": _string_list(_derived_value(row.get("derived"), "finishes")),
+                "occasions": _string_list(_derived_value(row.get("derived"), "occasions")),
+                "available": bool(row["product_available"]),
+                "image": row.get("image") if isinstance(row.get("image"), str) else None,
+                "score": _number_or_zero(row.get("score")),
+                "variants": [],
+            },
+        )
+        candidate["score"] = max(
+            _number_or_zero(candidate.get("score")), _number_or_zero(row.get("score"))
+        )
+        cast(list[dict[str, object]], candidate["variants"]).append(
+            {
+                "variant_id": str(row["variant_id"]),
+                "sku": row.get("sku") if isinstance(row.get("sku"), str) else None,
+                "title": row.get("variant_title")
+                if isinstance(row.get("variant_title"), str)
+                else None,
+                "price": _price_cop(row.get("price")) or 0,
+                "available": bool(row["variant_available"]),
+                "size_code": row.get("codigo_tamano")
+                if isinstance(row.get("codigo_tamano"), str)
+                else None,
+                "diameter_inches": _number_or_none(row.get("diam_pulg")),
+                "shape": row.get("forma") if isinstance(row.get("forma"), str) else None,
+                "colors": _string_list(row.get("derived_colors")),
+            }
+        )
+    return list(
+        sorted(
+            grouped.values(),
+            key=lambda item: (
+                -_number_or_zero(item.get("score")),
+                -title_similarity.get(str(item["product_id"]), 0.0),
+                str(item["product_id"]),
+            ),
+        )
+    )[:limit]
+
+
+def _derived_value(value: object, key: str) -> object:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    return value.get(key) if isinstance(value, Mapping) else None
+
+
+def _string_list(value: object) -> list[str]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item.strip()]
+
+
+def _number_or_none(value: object) -> float | None:
+    if isinstance(value, (Decimal, int, float)) and not isinstance(value, bool):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _number_or_zero(value: object) -> float:
+    return _number_or_none(value) or 0.0
+
+
+def _integer_or_none(value: object) -> int | None:
+    number = _number_or_none(value)
+    return int(number) if number is not None and number.is_integer() and number > 0 else None
+
+
+def _inventory_quantity(value: object) -> float | None:
+    number = _number_or_none(value)
+    return number if number is not None and isfinite(number) and number >= 0 else None
+
+
+def _price_cop(value: object) -> int | None:
+    try:
+        price = Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    return int(price) if price >= 0 else None
+
+
+def _selection_colors(variant_value: object, product_value: object) -> list[str]:
+    variant_colors = _string_list(variant_value)
+    if variant_colors:
+        return variant_colors
+    product_colors = _string_list(product_value)
+    return product_colors if len(product_colors) == 1 else []
+
+
+def _rejection(product_id: str, variant_id: str, reason: str) -> dict[str, object]:
+    return {"product_id": product_id, "variant_id": variant_id, "reason": reason}
+
+
+def _empty_result(
+    status: Literal["OK", "NO_MATCH", "AMBIGUOUS_SKU"],
+    sku_status: str,
+    snapshot_id: object,
+    parse_ms: int,
+    retrieval_ms: int,
+) -> dict[str, object]:
+    return {
+        "operation_schema_version": CATALOG_RESULT_SCHEMA_VERSION,
+        "status": status,
+        "sku_status": sku_status,
+        "candidates": [],
+        "whitelist": [],
+        "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
+        "latency_parse_ms": parse_ms,
+        "latency_retrieval_ms": retrieval_ms,
+        "color_substitutions": [],
+    }
+
+
+def _elapsed_ms(started: float) -> int:
+    return max(0, round((time.perf_counter() - started) * 1000))
+
+
+__all__ = [
+    "CATALOG_COLORS_SCOPE",
+    "CATALOG_SCOPE",
+    "CatalogColorsRequest",
+    "CatalogRecommendationsRequest",
+    "CatalogSearchRequest",
+    "CatalogSelectionRequest",
+    "CatalogStore",
+    "extract_sku",
+]

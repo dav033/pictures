@@ -1,0 +1,6 @@
+{
+  "schema_version": "catalog-recommendations.v1",
+  "catalog_snapshot_id": "products_catalog:fixture",
+  "reference_variant_id": "var-rojo-12",
+  "limit": 100
+}

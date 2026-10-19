@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-011",
+  "image_sha256": "181b352216fa587d1af4ba58eb8a2ef75fdb5bb01a117c6af7539b74810a96f0",
+  "idempotency_key": "d647b57f4069ba13a0374c59ddbeca9dba24811d1b6a9c92d7ef8abb9f9c4ed5",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-011.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/HEARTH_CENTER_PIECE_-_CENTRO_DE_MESA_CORAZON.jpg?v=1746721750",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-011",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding balloon bouquet with red and silver round balloons, a printed red heart balloon, and a red printed round balloon."
+      }
+    ],
+    "non_purchased_elements": [
+      "a support rod",
+      "a printed round balloon"
+    ],
+    "uncertainties": [
+      "The small red balloons may include modeling balloons, but their construction cannot be distinguished."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-011",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion imperial red round latex balloons, high-shine Reflex silver round latex balloons and matte Fashion red heart-shaped latex balloons with a printed pattern, alongside a support rod and a printed round balloon, set against white wall and white floor.",
+    "palabras": 50,
+    "caracteres": 339,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:16:12.637Z"
+  }
+}

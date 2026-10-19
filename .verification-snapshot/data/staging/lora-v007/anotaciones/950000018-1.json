@@ -1,0 +1,172 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000018-1",
+  "image_sha256": "42d8443e0f4c7e707798a2e62e2e7493112dfa32d216cc034dfc2626406936bd",
+  "idempotency_key": "a384fd38d99bbb5c1372bb445798712b7c035f5e86720ff37885a0fefb6a9a20",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000018/foto-1.png",
+    "orden": "950000018"
+  },
+  "anotacion": {
+    "image_id": "950000018-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "not visible (isolated image, no venue floor or wall shown)",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.green_tea",
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.fashion.navy_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.aurora_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense wide balloon panel behind the tables, banded from pale mint at the top through teal, silvery blue and dark navy at the bottom, mixing round balloon sizes throughout."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A tied balloon bouquet to the left of the wall, including printed birthday-lettering balloons among plain silver/blue balloons at varied heights."
+      }
+    ],
+    "non_purchased_elements": [
+      "three round pedestal tables",
+      "a birthday cake",
+      "party plates and cutlery"
+    ],
+    "uncertainties": [
+      "Wall classified as pared rather than arco since its silhouette is a flat rectangular gradient panel, not a closing 3D arch.",
+      "Silvery-blue balloons in the mid band of the wall and bouquet could not be confidently matched to a specific listed color."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.navy_blue",
+      "balloon.modeling.latex.pastel_dusk.green_tea",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.mint_green",
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000018-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch matte Fashion navy blue round latex balloons and muted Pastel Dusk green tea round latex balloons, 5-inch high-shine Reflex aurora green round latex balloons and satin Silk arctic blue round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering, all 12-inch, alongside three round pedestal tables, a birthday cake and party plates and cutlery, set against not visible (isolated image, no venue floor or wall shown).",
+    "palabras": 100,
+    "caracteres": 654,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:54:10.904Z",
+    "recompilado_en": "2026-09-03T14:45:23.378Z"
+  }
+}

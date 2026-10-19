@@ -1,0 +1,130 @@
+{
+ "caso": "idea-deco-real-13-images-28",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "581cbab1fc7f650c862e8c1afd81690bc5ac1cd4b12713ee8112b4a4f98c46e6",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "406",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "968",
+     "cantidad": 19
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "406",
+     "cantidad": 27
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "406",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "968",
+     "cantidad": 24
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "406",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "968",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "406",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "968",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 112,
+   "caja": [
+    -145,
+    0,
+    -196,
+    145,
+    288,
+    -124
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "406",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "968",
+    "cantidad": 19
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "406",
+    "cantidad": 27
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "406",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "968",
+    "cantidad": 24
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "406",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "968",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "406",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "968",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 112
+ },
+ "caja": [
+  -145,
+  0,
+  -196,
+  145,
+  288,
+  -124
+ ],
+ "referenciaPython": {
+  "globos": 102
+ }
+}

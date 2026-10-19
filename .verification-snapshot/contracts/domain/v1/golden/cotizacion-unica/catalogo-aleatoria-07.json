@@ -1,0 +1,192 @@
+{
+ "caso": "catalogo-aleatoria-07",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "T-260",
+   "codigo": "060",
+   "cantidad": 129,
+   "productId": "8634261111079",
+   "color": "durazno",
+   "diamPulg": 2,
+   "presentaciones": [
+    {
+     "variantId": "46594276491559",
+     "unidadesPaq": 20,
+     "precio": 4818
+    },
+    {
+     "variantId": "46594276524327",
+     "unidadesPaq": 50,
+     "precio": 10815
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "968",
+   "cantidad": 349,
+   "productId": "8634249838887",
+   "color": "dorado rosa",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594251489575",
+     "unidadesPaq": 6,
+     "precio": 17704
+    },
+    {
+     "variantId": "46594251522343",
+     "unidadesPaq": 50,
+     "precio": 140622
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "909",
+   "cantidad": 65,
+   "productId": "8634278183207",
+   "color": "rosado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594309226791",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594309259559",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "620",
+   "cantidad": 1,
+   "productId": "8634249937191",
+   "color": "amarillo",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594251686183",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "46594251718951",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "029",
+   "cantidad": 45,
+   "productId": "8901798396199",
+   "color": "verde",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "47317943648551",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  },
+  {
+   "formatoId": "T-360",
+   "codigo": "020",
+   "cantidad": 216,
+   "productId": "8634271793447",
+   "color": "amarillo",
+   "diamPulg": 3,
+   "presentaciones": [
+    {
+     "variantId": "46594294382887",
+     "unidadesPaq": 50,
+     "precio": 16141
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 1385773,
+  "reserva": {
+   "objetivo": 68,
+   "cubierta": 64,
+   "sinCubrir": 4,
+   "excedenteNatural": 96
+  },
+  "compras": [
+   {
+    "variantId": "46594251489575",
+    "paquetes": 5,
+    "cantidad": 30,
+    "reserva": 0,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594251522343",
+    "paquetes": 7,
+    "cantidad": 319,
+    "reserva": 28,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594251686183",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594276491559",
+    "paquetes": 2,
+    "cantidad": 40,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594276524327",
+    "paquetes": 2,
+    "cantidad": 89,
+    "reserva": 11,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594294382887",
+    "paquetes": 5,
+    "cantidad": 216,
+    "reserva": 18,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594309226791",
+    "paquetes": 2,
+    "cantidad": 24,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594309259559",
+    "paquetes": 1,
+    "cantidad": 41,
+    "reserva": 6,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47317943648551",
+    "paquetes": 15,
+    "cantidad": 45,
+    "reserva": 0,
+    "paraReserva": false
+   }
+  ]
+ }
+}

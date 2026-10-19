@@ -237,11 +237,11 @@ const BlurText = ({
 }: BlurTextProps) => {
   const ref = useRef<HTMLParagraphElement>(null);
   const [phase, setPhase] = useState<Phase>(() => startPhase(trigger));
-  const firstPhase = useRef(phase).current;
+  const firstPhase = startPhase(trigger);
   const [focusWord, setFocusWord] = useState(-1);
   const settledRef = useRef(phase === 'rest');
   const completeRef = useRef(onAnimationComplete);
-  completeRef.current = onAnimationComplete;
+  useEffect(() => { completeRef.current = onAnimationComplete; }, [onAnimationComplete]);
 
   const fx = useMemo(() => buildEffect(effect, direction, blur, distance), [effect, direction, blur, distance]);
 
@@ -292,15 +292,7 @@ const BlurText = ({
   const outTotal = (exitDuration + maxRank * exitStagger) * 1000;
 
   useEffect(() => {
-    if (phase !== 'from') return undefined;
-    if (trigger === 'load') {
-      setPhase('in');
-      return undefined;
-    }
-    if (trigger === 'hover' || trigger === 'click') {
-      setPhase('rest');
-      return undefined;
-    }
+    if (phase !== 'from' || trigger !== 'view') return undefined;
     const element = ref.current;
     if (!element) return undefined;
     const observer = new IntersectionObserver(

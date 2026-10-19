@@ -1,0 +1,212 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000065-1",
+  "image_sha256": "5d9aac38b88f44536bc5d47ba07bfa915f56f8526fb23f616abd45accf6d3d9a",
+  "idempotency_key": "5fb27c43052d6688a83a5f6d63c11b6a8e4da9761af744f9ae340fe3f4535e7e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000065/foto-1.jpg",
+    "orden": "950000065"
+  },
+  "anotacion": {
+    "image_id": "950000065-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "seamless white studio background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A vertical column body built from round balloons in yellow, lime green, red and black, forming the torso of a character figure."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.lime_green",
+          "balloon.modeling.latex.fashion.orange",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.modeling.latex.fashion.yellow",
+          "balloon.round.latex.fashion.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.lime_green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.orange",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.yellow",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A flat panel of twisted balloon flowers in yellow, lime green, orange and red with small black balls as flower centers, sitting on top of the column figure's head like a headdress."
+      }
+    ],
+    "non_purchased_elements": [
+      "a molded face piece",
+      "sunglasses",
+      "a striped hat brim"
+    ],
+    "uncertainties": [
+      "The malibu peach R-9 pastel matte balloon from allowed_concepts is not clearly identifiable in the photo, so it was excluded.",
+      "The face area appears to be a plastic/foam mask rather than a balloon and was treated as a non_purchased_element.",
+      "The relation between the flower headpiece and the column body was assumed to be anchored_to; overhead is also plausible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.lime_green",
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_matte.malibu_peach"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000065-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion round latex balloons in black, lime green, red and yellow, all at a single 5-inch size, a decorated backdrop, anchored to the balloon column, built from 2-inch matte Fashion modeling latex balloons in lime green, orange, red and yellow, 5-inch matte Fashion black round latex balloons, mixed organically rather than graded, alongside a molded face piece, sunglasses and a striped hat brim, set against seamless white studio background.",
+    "palabras": 80,
+    "caracteres": 526,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.lime_green",
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.lime_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:09:53.427Z",
+    "recompilado_en": "2026-09-03T14:45:23.906Z"
+  }
+}

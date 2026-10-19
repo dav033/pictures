@@ -1,0 +1,27 @@
+{
+  "$id": "backend-selection.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "operational.v1"
+    },
+    "backend": {
+      "type": "string",
+      "enum": [
+        "next",
+        "python"
+      ]
+    },
+    "kill_switch": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "backend",
+    "kill_switch"
+  ],
+  "additionalProperties": false
+}

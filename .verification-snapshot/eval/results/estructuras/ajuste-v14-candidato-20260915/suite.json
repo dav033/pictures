@@ -1,0 +1,642 @@
+{
+  "suite_id": "ajuste-v14-candidato-20260915",
+  "taxonomy_version": "estructuras-2.0.0",
+  "excepcion_permiso": {
+    "id": "dt7-excepcion-interna-20260915",
+    "aprobada_en": "2026-09-15",
+    "alcance": "evaluacion_interna_orientativa",
+    "registro": "docs/planes/estructuras-2026-09/ejecucion/fase-a/REVISION-HUMANA.md"
+  },
+  "items": [
+    {
+      "image_sha256": "0db3c4e7679e448f8b70e17478573580256d4b056bf4e159d97f6d48e6ed015a",
+      "ruta_privada": "arco\\arco__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "116308234b76ffb018e7ad069f7f2acd77625aa476f5f38c85156805445e6721",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "16772d3dbf1ff70f2633c70e023e62f7267b56bfb91260be785320d40cca58b3",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__015.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "04ffbbf35b3bcfbafaf9ffe867952db43d60412ab265d2e8a6dccce0521fd12f",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "15010b99d2134142314ff76bea24742476d88afd22454e7fd943f513659eea07",
+      "ruta_privada": "figura\\figura__co.pinterest.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "0e940006fe7c4ca24703c4b8dded2aafa5e1dcd1bfd7de9d49b5ac63597c5b38",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__008.webp",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "0725dc0e97cc6ac3a336ea88511f32a8f2a259cc16fef35ef31f0c3e5a272f75",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "2ffe04fc7d4684aaecf11e04648c3945081854d5d9106227c006716edb86c1db",
+      "ruta_privada": "arco\\arco__google.com__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "37b2aca42aa2891be883cc171b875e8aa6ad8fc9d495eb34e31f7cdfa08a19c3",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "1f6e4eb5b57836723a305dc73f81fb27d7af5537862e0f253d138d6be92979b3",
+      "ruta_privada": "centro_mesa\\centro_mesa__desconocido__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "1ddf59cd6716291e7b3869986dc1540afdae0bdc86bec35fd6eb1e7851613be1",
+      "ruta_privada": "figura\\figura__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "7b6d4c8aca74707bb80cbe51c2986c3fcc60d76bc3c90af428241dc5c22db556",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "0ce304a954c0a631dc8fb47230d11cada3087ff68fda9cc44cf8f390e7477b11",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "32abb1d02a5fd7ccded995513591d827ca3f338e8890b28544c334feada2fc13",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3c80a10d4923f048013ef3909a2cd56fe14cf8961663f352acc3e01a0038adb9",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "272377de32946afb1e2426748f9b91eb2d46c081cfe6c397378ae0aed44c1f4b",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "16d935117181616de9b200f43db2b83bb6e47a1a88b48800e9f4c722fc25fc3a",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "31dbd7e7e65c65ce179a665e4b273f5cf982eb176c3a7b405dfd12f572c4e966",
+      "ruta_privada": "figura\\figura__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "96ade2e18330c9b5d69321216d399e000d4718892e0055a02fca266cee011138",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "29c8add10816f82c692798b6d805032fcd66c0f7a0962241df88fa302bd9bdcd",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "4645f7a7824e3284af2defea25b5110770ed14ffe4f84d17a75ab653ee3050e7",
+      "ruta_privada": "arco\\arco__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3e32652151d3acfda3061193f5b45a2ba15bfc37d0a9555bf74beb5825c3307a",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "27ca8a49e760f1bcfed72e9eea8313310abd7d5ab17e60e81564b6e78a0626b8",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "36a89b61c327d53b56f61b8a400a6e7614f240eb9c57a02d0d29d19a50ec9dc5",
+      "ruta_privada": "figura\\figura__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "a1999b142a3dcac897dd68d795049bdad28e6dde16641b38c5c20e346f4eabff",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "2b99a9806d05bbe1691a0597d999a48db12a474432a350782de7b79343df7403",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "541cac23bd8f2c87bf44fe60c2a1a2a07892d1fee6f6f8abed4a4774a3bc3637",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "48182c2be48f7a949c8f3e562a86196d8b94c76e0090ee6b54796ae4913a086a",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__013.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3a07ef3301cd5a98d8e774b9cd6e78e20249d163ef5e626e320b91a0bfb03225",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "6240861946e0626c9f71bae3d50ae62fdf81e6839abdcb86f0fc516d760e840f",
+      "ruta_privada": "figura\\figura__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b216c3730a77f95e9dd971a318a60060b01c2fd57e384657266fa197b6772598",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "30bcb2b825a9ed184907730c6c15b76c94529bc980aca49418b4ba6448e09503",
+      "ruta_privada": "techo_globos\\techo_globos__desconocido__013.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "5c6d9747818f1d2bd85de4cfa51509d836aa474b9fecfeb6db2e225f02ffd4f4",
+      "ruta_privada": "arco\\arco__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "4d08fd41ee793458b75a6a8c0695e10640ad087f4882a48882b810032ad47db6",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3b9e7dc996c7824290f40e2dbb24742179f56acc73f10ffec282d329387804f8",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__016.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "2453c36509b1211b5ec42cb4aa735c4d9afd80c54a685646233e892668487f8a",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__017.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "65c616099fd41c2a8010a520a6d730ea20dbdfcb6255be0603f57250081a7d10",
+      "ruta_privada": "figura\\figura__co.pinterest.com__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "d8ff6432f86b437cf78a8c659f7b3a5aa9dafdab0dc0967bbcf727bba3253e36",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "47fa2b3a9dfa7532e93502a41f6084401db4118dd29f8b2799c1450c6644684e",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__017.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "6cecc7ede0c47b2b60e66d43e3fedb96bdd12d46706f2dd0104d818239bc04fb",
+      "ruta_privada": "arco\\arco__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "56c223b861dc18f070e7045bbfee7b98b01ba4d62df5b65d952cc58c6bd20e01",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "51b6a6ec6af036469221875d7988f6b378a114447bd349ed8ca2985daf1bc4e4",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "8b29d1960cfb4d01958ea257e1a6a43e30eb4a9861fffb6ee0c28fe767f50c50",
+      "ruta_privada": "figura\\figura__co.pinterest.com__013.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "ef8336b47f3bfec04de21fd9e6506e450ac6c16e0f09f38ae3673967ab43aff0",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "57081ec1450fa34bdb1a0749103acba3c345d976e788fda24dea1969e37b07ae",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "96a9f38eae9efd2c22c438e36bfba8a5d4581c4e87cd1d8c94f5aaabcb23947b",
+      "ruta_privada": "arco\\arco__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "9fd5a82e23813bd601f9535f93528fb020f802c75d320be5b4c352c5a91730db",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "5f545e7f8bcc7b0d1bebc2e747bff1c504eccf552c850c1fce6e57b996ee8088",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "2ea46f0301f24759802d6244affe52533cfd6bb476c4dc125e5e3e4ee39c0c3c",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__014.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "8b2f86ebb159efc50731b02676de8dba2c3a46694aaa3c6163d7e70d36a6e8ec",
+      "ruta_privada": "figura\\figura__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "fd22975d360e8ba06050b7abf10a4a312dcf9a9e0672e417a4fb092b3e499c76",
+      "ruta_privada": "semiarco_organico\\semiarco_organico__google.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "6b81dd7fa5f91831ffee851037aa38092217282ca389598c997bcbb3b8587ca5",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "9f54a0ee38f735693a4758c1dc9434dc66a9e8f614284c93cd7739ab187269ac",
+      "ruta_privada": "arco\\arco__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "abc504cea7767a8f9efe078b3d262f8c64d467eb5a8838e238218bc25c8a0ab8",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "640fe85c0ae4cb23426c608c770420bf45582756868f4381a19ed4fbd99f9093",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__013.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3045463e7a8b2c53e1a20c418b53d6ec3e468ab6b74ee3d5a1d4f97197f4d8fb",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "90ca3dc736848a01a9a5018c5bb023e7ccff2f280dd5f51b58060a6ee452b99e",
+      "ruta_privada": "figura\\figura__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "71d51058b1e32320e4800bf060d46491eb423fb0df8e56355a758a228c0b8eba",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__014.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b154df9989b9a5b8161d476583f5c6a98150c15015f51e715ec194a1ec6c147a",
+      "ruta_privada": "arco\\arco__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b80a725e2a89f60c3085d5e38adc515de0183f36bef3d6a40c25eaf143b02db6",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "6699a6dbd10da92c29b3a61597283db748d528a89b571c86c4e83a8555aa1214",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "3bf84867d53ff5798b79ce1711e83906949ab7c1c018d0578679aac02fb47e49",
+      "ruta_privada": "columna_organica\\columna_organica__desconocido__013.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "bfc04a0979ffef4a20c812fa049dc685902e1e6d71738ebb74ed26cdf86ad0a9",
+      "ruta_privada": "figura\\figura__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "8f4a69a8e049f77c28cd85d76c6be080b9949f5640c0580ec631e08083188d26",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b9b180c845a71347fa8ac600220a70acca3020be4e5c57b1d0c07d5bfe6116a8",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "e3a917736835dad660e6db1d298fddc055cccf9fbaad7bef4eaa92906be808f8",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "88124bc3be948f1cf21b0037ecda6c178f54055bcb9ab82590e3e7e74d4a0f53",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "470d9f525c0c89e8bc1249669d080e25cb1bbf1ed7cfaab3a63e29c21add43e0",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "c9d7c0c943b488f6588e7ebde4d89385ac971dd8498e2542681fb23b77849fec",
+      "ruta_privada": "figura\\figura__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "a90fdd241ec712c00840834446fa4e36cbe053cc5601c556172a3b70db9fded0",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "ba20441641ddb99660ab9b2e24f8ce865ea1e4f7ff1ac646eaf1814e20157d5a",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "e96c7359efa07048e5d0d24af72a97e4203284b13c046fc2e6e94c51aff45764",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "8bf5294d89ff4ac1ea0afe1a3e7749332b3bc51ade3888102fc10573083460f1",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__008.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "4cf1dd5b7bbf078f6d98448877251235ea77cbd191af74de5a16a0f229068b4b",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "d76fa1f849325a4e8769a58dfa0178905221126f25467e62636634077aa2cc50",
+      "ruta_privada": "figura\\figura__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b220d5212cc2dc96dec3a48ee16a80222a0e09df3e656825cc781a64d427dc00",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "c005ca739c06cc6a805e0308df05d29479527b5733d7222975b01f09a81a8782",
+      "ruta_privada": "arco\\arco__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "f6793c6951f6a52e4c171b066562b0b0fa8490c2cf50430c84fe91cdd09e4471",
+      "ruta_privada": "bouquet\\bouquet__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "965498cc0fa22dc41b473c16af1cecbd510d79e06f370aa1ce7e676047d246d1",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "53533c279bba6a8e6c2f7446770d44f0347f586790cdd6a3eec1d427874e1964",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "f2c14212197998cc4e5d68afe77a68ef96a5caa9e8a3d7ee5cd7025861a6d9bc",
+      "ruta_privada": "figura\\figura__co.pinterest.com__003.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b2a2d1a3f1e7145d36a7a88a3c63815122ed6a7c44d3d13bf35de2b0751a4d8d",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "d12febd44882779ecab4bf9e2ad8889ce6465de311df4b8d32205683f79aa845",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__006.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "cfa6ff9d835eb72206f6ac7dc76100ea6cd9b144b7b7419ce90a0297e4f3e6b7",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__014.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "b79e40c41e1e1108cc0ea2ba22c0cb90f072da5cda69a99d103aa533117f9997",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__015.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "dbd75934fc01dc16210d1762e9904a9f69e63349b6006e8f8176b85a53a44ec1",
+      "ruta_privada": "arco\\arco__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "d4f1a458d08ffa65743041eca8aac25944687ef1a8e3787e512ad44a5813f36d",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__005.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "5adf7bcea6cdafae0f8051a9b0a12c17d5a5fc1ed9194b62facfb579874e1453",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__011.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "db3c92c422789dfd699ca6ac634aeb191e8d380e5a752a007aa2d3cd51b4ba31",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__016.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "eb14530991add93266cef8273dc078e6209981ae19506fb66fa6ee36ef21159e",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__005.webp",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "fb5788fcf39d71a81664da7828ebb0461fd8c3992c1353c27256132c112b91ce",
+      "ruta_privada": "centro_mesa\\centro_mesa__co.pinterest.com__010.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "dc2e09eb74b4e2166653f0b1157fba1ea07542af151860c7db6016f12a9043c0",
+      "ruta_privada": "techo_globos\\techo_globos__desconocido__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "ed5e442183526190075a8e73d04dca147448b476340a79faa2bc1020afc14b86",
+      "ruta_privada": "arco\\arco__co.pinterest.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "6294569eb6ffb154f1e99f75668786149fd26f87b3c30bccb99a598437337c65",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__019.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "ed7bb62c40833396c59c62e427323465bd40c16063eff82bf50285bca7f0dfb3",
+      "ruta_privada": "techo_globos\\techo_globos__co.pinterest.com__004.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "f109f4b9b89c875f6f3712431645d49151d360fa3eeab4c4d822b190cfaf8325",
+      "ruta_privada": "arco\\arco__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "fcb5ba2a4ee386ea3f33cb26014c92950f6f3abfef3189a19ef12728b4f63baf",
+      "ruta_privada": "arco_organico\\arco_organico__google.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "834fbdb2fde9c4956b91dd3c9f02e2cc720155302ce9ff3740d081b1edd2f5e0",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__018.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "843053fbd57c4df6bc9a3f7bcbc403a4600ad9f3c58374209bf279c659cdb919",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__016.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "ac5617d142e21e55cb9ed5115b4ea895128772d4631c586902a5d39cb00a9293",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__002.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "af674ebe4186b7e580bfb6871e38075821bf16eb3b3bad387e92937d91b6b3b4",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__015.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "cb4dba5dc49bafeb5c3318c353c8459e8ad7f8acebdba8792d0cfcff7005d62a",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__009.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "cc00adea0fe39c37b13d95b8284cae86e083ed5d381345b582f563269c5dbb49",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__007.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "e2adc376fe005cb50e950bbef2a58ad7e886a48d6060b0c3aabd2caf63c3276b",
+      "ruta_privada": "columna_organica\\columna_organica__co.pinterest.com__012.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "eeb5df6e6de5f37077713ad17f2cb8b367bc845e122eb0e276ea8e31b47a8682",
+      "ruta_privada": "columna_organica\\columna_organica__google.com__001.jpg",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    }
+  ]
+}

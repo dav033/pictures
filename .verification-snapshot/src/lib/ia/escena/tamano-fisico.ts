@@ -1,0 +1,158 @@
+/**
+ * Traduce un código de catálogo ("R-12") a una descripción física anclada
+ * (plan de tamaños F4). Un modelo de imagen no sabe qué es "R-12" — es un
+ * SKU interno — pero sí resuelve escala por comparación con un objeto
+ * conocido, igual que lo haría un humano leyendo una ficha técnica. Sin
+ * este anclaje, el prompt solo podía decir "size" en abstracto y el modelo
+ * volvía a su propio criterio de qué tan grande es un globo.
+ */
+
+const ANCLAJES_REDONDO: Record<number, string> = {
+  5: "about the size of a fist or an orange",
+  9: "about the size of a grapefruit or small melon",
+  12: "about the size of a human head or a basketball",
+  18: "about the size of a large beach ball or a human torso",
+  24: "jumbo-sized, notably larger than a beach ball",
+  36: "giant-sized, roughly waist-to-chest height on an adult",
+};
+
+const NOMBRES_FORMA_EN: Record<string, string> = {
+  redondo: "round latex",
+  corazon: "heart-shaped latex",
+  link: "Link-O-Loon® linking",
+  modelar: "twisting/modeling",
+};
+
+function pulgadasACm(pulgadas: number): number {
+  return Math.round(pulgadas * 2.54 * 10) / 10;
+}
+
+/**
+ * Descripción física de una pieza para el prompt de imagen — null cuando no
+ * hay diámetro real que anclar (backdrop, kit, empaque…), que es el caso
+ * correcto de "no forzar un tamaño que no aplica" en vez de inventar uno.
+ */
+export function descripcionFisicaTamano(diamPulg: number | null | undefined, forma: string | null | undefined): string | null {
+  if (diamPulg == null) return null;
+  const cm = pulgadasACm(diamPulg);
+  const tipoMaterial = forma ? (NOMBRES_FORMA_EN[forma] ?? forma) : "latex";
+  const anclaje = forma === "redondo" || !forma ? ANCLAJES_REDONDO[diamPulg] : undefined;
+  const base = `${diamPulg}-inch (${cm} cm) ${tipoMaterial} balloon`;
+  return anclaje ? `${base} — ${anclaje}` : base;
+}
+
+export type LineaMezclaTamanos = { diamPulg: number; forma: string | null; cantidad: number };
+
+/**
+ * Porcentajes enteros que suman exactamente 100 (mayor resto). Único dueño del
+ * redondeo de las proporciones que se le muestran al modelo de imagen:
+ * redondear cada fila por separado daba 99 % o 101 % junto a la frase "EXACTLY
+ * these proportions" (ej. 64/25/21/6/3 de 119 globos daba 101 %).
+ */
+export function porcentajesMayorResto(unidades: number[]): number[] {
+  const total = unidades.reduce((suma, valor) => suma + valor, 0);
+  if (total <= 0) return unidades.map(() => 0);
+  const exactos = unidades.map((valor) => (valor / total) * 100);
+  const resultado = exactos.map(Math.floor);
+  const faltante = 100 - resultado.reduce((suma, valor) => suma + valor, 0);
+  const porResto = exactos
+    .map((valor, indice) => ({ indice, resto: valor - Math.floor(valor) }))
+    .sort((a, b) => b.resto - a.resto || a.indice - b.indice);
+  for (let i = 0; i < faltante && i < porResto.length; i += 1) resultado[porResto[i]!.indice] += 1;
+  return resultado;
+}
+
+/**
+ * Globos de UNA instancia cuando la estructura se repite: mismo reparto
+ * piso + resto que usa `planBlueprint` para la cantidad de cada instancia, así
+ * que el bloque y el INSTANCE CONTRACT no se contradicen. "39" si el total es
+ * divisible, "39-40" si no.
+ */
+function porInstancia(unidades: number, repeticiones: number): string {
+  const piso = Math.floor(unidades / repeticiones);
+  return unidades % repeticiones === 0 ? `${piso}` : `${piso}-${piso + 1}`;
+}
+
+/**
+ * Bloque SIZE MIX del prompt (plan F4): declara las proporciones EXACTAS de
+ * tamaño que se cotizaron, para que "vary scale" (necesario para que una
+ * guirnalda orgánica se vea creíble) quede acotado a los diámetros reales en
+ * vez de licencia libre para inventar un tamaño intermedio.
+ */
+export function bloqueMezclaTamanos(lineas: LineaMezclaTamanos[]): string | null {
+  if (lineas.length === 0) return null;
+  const total = lineas.reduce((suma, l) => suma + l.cantidad, 0);
+  if (total === 0) return null;
+  const diametros = [...new Set(lineas.map((linea) => linea.diamPulg))];
+  const ordenadas = lineas.slice().sort((a, b) => b.cantidad - a.cantidad);
+  const porcentajes = porcentajesMayorResto(ordenadas.map((linea) => linea.cantidad));
+  const filas = ordenadas.map((l, indice) => {
+    const desc = descripcionFisicaTamano(l.diamPulg, l.forma) ?? `${l.diamPulg}-inch balloon`;
+    return `- ${l.cantidad} balloons (${porcentajes[indice]}%): ${desc}`;
+  });
+  return [
+    "BALLOON SIZE MIX — HARD CONSTRAINT",
+    "This installation uses EXACTLY these balloon diameters, in these proportions:",
+    ...filas,
+    ...(diametros.length === 1
+      ? [`SINGLE DIAMETER: every balloon in this installation MUST be exactly ${diametros[0]} inches. Do not vary balloon size, even for depth, overlap, or visual interest.`]
+      : []),
+    "Every listed diameter must be visibly represented. Every visible balloon must be one of the listed, quoted sizes above; do not add unquoted mini or intermediate balloons.",
+    "Do not introduce any other diameter. Do not add jumbo, mini, or intermediate sizes not listed above.",
+  ].join("\n");
+}
+
+/**
+ * Una estructura del plan tal como la nombra el prompt de imagen: sin
+ * `estructura_id` (el brief retira los IDs a propósito porque el modelo los
+ * dibuja como rótulos) y con sus repeticiones, para que las cantidades sean
+ * por instancia y no el total de todas las piezas juntas.
+ */
+export type EstructuraMezclaTamanos = {
+  nombre: string;
+  total_unidades: number;
+  /** Instancias idénticas de la estructura; ausente o menor que 1 = una sola. */
+  repeticiones?: number;
+  /**
+   * Ubicación en palabras (`placementDescription`), la misma que usa el resto
+   * del prompt. Solo se imprime cuando dos estructuras comparten nombre: sin
+   * `estructura_id` el bloque sacaba dos cabeceras idénticas y el modelo no
+   * podía saber qué mezcla era de cuál.
+   */
+  ubicacion_en_palabras?: string;
+  mezcla_real: Array<{ diamPulg: number; forma: string | null; unidades: number }>;
+};
+
+export function bloqueMezclaPorEstructura(estructuras: EstructuraMezclaTamanos[]): string | null {
+  const nombresRepetidos = new Set(
+    estructuras.map((estructura) => estructura.nombre).filter((nombre, indice, nombres) => nombres.indexOf(nombre) !== indice),
+  );
+  const bloques = estructuras.filter((estructura) => estructura.mezcla_real.length > 0).map((estructura) => {
+    const etiqueta = nombresRepetidos.has(estructura.nombre) && estructura.ubicacion_en_palabras
+      ? `"${estructura.nombre}" in the ${estructura.ubicacion_en_palabras}`
+      : `"${estructura.nombre}"`;
+    const repeticiones = Math.max(1, Math.round(estructura.repeticiones ?? 1));
+    const ordenadas = estructura.mezcla_real.slice().sort((a, b) => b.unidades - a.unidades || b.diamPulg - a.diamPulg);
+    const porcentajes = porcentajesMayorResto(ordenadas.map((linea) => linea.unidades));
+    const filas = ordenadas.map((linea, indice) => {
+      const desc = descripcionFisicaTamano(linea.diamPulg, linea.forma) ?? `${linea.diamPulg}-inch balloon`;
+      const cantidad = repeticiones === 1 ? `${linea.unidades} balloons` : `${porInstancia(linea.unidades, repeticiones)} balloons each`;
+      return `- ${cantidad} (${porcentajes[indice]}%): ${desc}`;
+    });
+    return [
+      repeticiones === 1
+        ? `${etiqueta}, ${estructura.total_unidades} balloons total:`
+        : `${etiqueta}: ${repeticiones} separate identical structures, ${porInstancia(estructura.total_unidades, repeticiones)} balloons each (${estructura.total_unidades} total across ${repeticiones === 2 ? "both" : `all ${repeticiones}`}):`,
+      ...filas,
+      ...(estructura.mezcla_real.length === 1
+        ? [`SINGLE DIAMETER FOR THIS STRUCTURE: every balloon in this structure MUST be exactly ${estructura.mezcla_real[0]!.diamPulg} inches. Do not vary balloon size.`]
+        : []),
+    ].join("\n");
+  });
+  if (bloques.length === 0) return null;
+  return [
+    "BALLOON SIZE MIX — HARD CONSTRAINT (per structure)",
+    ...bloques,
+    "Each structure uses EXACTLY its own quoted diameters and quantities. Every listed diameter must be visibly represented; every visible balloon must be one of its listed, quoted sizes. Do not apply one structure's mix to another. Do not introduce any other diameter, and do not add jumbo, mini, or intermediate sizes not listed above.",
+  ].join("\n");
+}

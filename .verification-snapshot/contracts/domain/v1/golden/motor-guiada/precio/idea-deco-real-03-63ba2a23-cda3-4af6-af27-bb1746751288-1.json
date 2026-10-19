@@ -1,0 +1,198 @@
+{
+ "caso": "idea-deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "7bf6c601fa97e904697ed4a842b9a2ee8861df06fca202d9b3257ecbcd759404",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 22,
+  "cubierta": 22,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221080871"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221179175"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "005",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221474087"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233631015"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "040",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233762087"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233860391"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "940",
+   "cantidad": 6,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634249543975",
+   "variantId": "46594250342695"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "940",
+   "cantidad": 10,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634249543975",
+   "variantId": "46594250408231"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "940",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634249543975",
+   "variantId": "46594250473767"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "940",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634249543975",
+   "variantId": "46594250539303"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "981",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634257211687",
+   "variantId": "46594267611431"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "981",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634257211687",
+   "variantId": "46594267676967"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "981",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634257211687",
+   "variantId": "46594267742503"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "981",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634257211687",
+   "variantId": "46594267840807"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "640",
+   "cantidad": 10,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634259374375",
+   "variantId": "46594272821543"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "640",
+   "cantidad": 15,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634259374375",
+   "variantId": "46594272887079"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "640",
+   "cantidad": 15,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634259374375",
+   "variantId": "46594272952615"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "640",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634259374375",
+   "variantId": "46594273018151"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "640",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634259374375",
+   "variantId": "46594273116455"
+  }
+ ]
+}

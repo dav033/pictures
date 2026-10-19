@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-039",
+  "image_sha256": "6b7173fc1b007ee0f6610edf46b7a4f23eda73656312c89374dac731709d4cf2",
+  "idempotency_key": "8cd3cc6e427bce8673e8808bb999b2a681637d890defe6cf146d6856796d37b4",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-039.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Bouquet-DSC_6345-000x1000_40ad522a-d01e-4fe3-a492-603d47d0bdd1.jpg?v=1642707188",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-039",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Vertical balloon bouquet with dusty rose, white, sand, and gold-confetti balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "gold confetti balloons",
+      "balloon strings"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Infinity® Confetti Dorado Transparente"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-039",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion round latex balloons in dusty rose, sand and white, alongside gold confetti balloons and balloon strings, set against white wall and white floor.",
+    "palabras": 35,
+    "caracteres": 237,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:11:41.383Z"
+  }
+}

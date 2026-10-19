@@ -1,0 +1,107 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000058-1",
+  "image_sha256": "72867c9dc69dc1cb3147766a95e59b489906bb8458a5aaa64eb5df318e476636",
+  "idempotency_key": "edac37fcadf7cb97ffea1daeb4dbe0bfb8a6711226b0616dcbb0852dd990cc7e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000058/foto-1.jpg",
+    "orden": "950000058"
+  },
+  "anotacion": {
+    "image_id": "950000058-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "seamless white studio background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A rounded cluster of large high-shine rose gold spheres accented with small silver balls tucked between them, with silver curling ribbon tails hanging below the cluster."
+      }
+    ],
+    "non_purchased_elements": [
+      "curling ribbon strands"
+    ],
+    "uncertainties": [
+      "Placement guessed as sobre_mesa_principal since this is a studio product shot with no venue context.",
+      "The small silver accent balls are assumed to be twisted from the silver modeling balloon (T260); their exact size could not be fully confirmed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000058-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from 2-inch high-shine Reflex silver modeling latex balloons, 5-inch high-shine Reflex rose gold round latex balloons, mixed organically rather than graded, alongside curling ribbon strands, set against seamless white studio background.",
+    "palabras": 41,
+    "caracteres": 308,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:09:53.399Z",
+    "recompilado_en": "2026-09-03T14:45:23.833Z"
+  }
+}

@@ -1,0 +1,1749 @@
+{
+ "_origen": "Banco de fotos 20261007-003427, ejemplo-06 (clásica y guiada dieron el mismo caption): lo que /api/generate le pasó a compileProductPrompt, rehecho sin red con scripts/lib/caption-de-cuerpo-generate.ts desde cuerpo-generate.json y la respuesta de Python a plan/resolve del registro. En producción: FLUX_PREFLIGHT_FAILED «longitud 1540 supera límite 1000» (verificador 127).",
+ "sceneSpec": {
+  "schema_version": "1.0",
+  "generation_mode": "text_to_image",
+  "canvas": {
+   "aspect_ratio": "2:3",
+   "content_rect": {
+    "x": 0,
+    "y": 0,
+    "width": 1,
+    "height": 1
+   }
+  },
+  "venue": {
+   "preserve": [
+    "camera position",
+    "crop and framing",
+    "walls and ceiling",
+    "floor and floor line",
+    "doors and windows",
+    "existing furniture",
+    "people and architecture",
+    "ambient lighting and white balance"
+   ],
+   "anchors": [],
+   "protected_regions": [],
+   "editable_regions": [
+    {
+     "region_id": "EDIT_EST_01_SEMIARCO",
+     "bbox": {
+      "x": 0.04,
+      "y": 0.28,
+      "width": 0.24,
+      "height": 0.62
+     }
+    },
+    {
+     "region_id": "EDIT_EST_02_COLUMNA",
+     "bbox": {
+      "x": 0.72,
+      "y": 0.28,
+      "width": 0.24,
+      "height": 0.62
+     }
+    },
+    {
+     "region_id": "EDIT_EST_03_GUIRNALDA",
+     "bbox": {
+      "x": 0.18,
+      "y": 0.62,
+      "width": 0.64,
+      "height": 0.3
+     }
+    }
+   ]
+  },
+  "elements": [
+   {
+    "element_id": "EST_01_SEMIARCO",
+    "name": "Semiarco orgánico izquierdo (1.2 m × 2.2 m)",
+    "category": "balloon_structure",
+    "source_type": "catalog_backed",
+    "source_image_id": "PLAN_SOURCE",
+    "catalog_product_id": "46594235564327",
+    "catalog_product_ids": [
+     "46594235564327",
+     "46594235629863",
+     "46594233696551",
+     "46594235662631",
+     "46594235695399",
+     "46594233762087",
+     "46594235793703",
+     "46594235826471",
+     "46594233860391",
+     "46594233925927",
+     "46594235859239",
+     "46594233991463"
+    ],
+    "required": true,
+    "quantity": {
+     "mode": "exact",
+     "min": 105,
+     "max": 105
+    },
+    "target_bbox": {
+     "x": 0.04,
+     "y": 0.28,
+     "width": 0.24,
+     "height": 0.62
+    },
+    "depth_layer": 14,
+    "resolved_colors": [
+     "rosado",
+     "azul"
+    ],
+    "visual_semantics": {
+     "structure_type": "semiarco",
+     "placement": "lateral_izquierdo",
+     "design_role": "focal",
+     "repetition_group": "EST_01_SEMIARCO",
+     "dimensions_m": {
+      "width": 1.2,
+      "height": 2.2
+     },
+     "density": "lujosa"
+    },
+    "element_kind": "balloon_structure",
+    "quantity_semantics": "material_units",
+    "physical_relations": [],
+    "resolved_finishes": [
+     "fashion"
+    ],
+    "identity_constraints": [
+     "Required final arrangement and appearance: asymmetrical balloon half-arch.",
+     "Render the approved catalog-backed visual as an installed physical element; do not add packaging, labels, or unrelated objects."
+    ],
+    "relationships": []
+   },
+   {
+    "element_id": "EST_02_COLUMNA",
+    "name": "Columna orgánica derecha (1.8 m)",
+    "category": "balloon_structure",
+    "source_type": "catalog_backed",
+    "source_image_id": "PLAN_SOURCE",
+    "catalog_product_id": "46594235629863",
+    "catalog_product_ids": [
+     "46594235629863",
+     "46594233696551",
+     "46594235695399",
+     "46594233762087",
+     "46594233794855",
+     "46594235826471",
+     "46594233925927",
+     "46594235859239",
+     "46594233991463",
+     "46594235957543",
+     "46594234089767"
+    ],
+    "required": true,
+    "quantity": {
+     "mode": "exact",
+     "min": 165,
+     "max": 165
+    },
+    "target_bbox": {
+     "x": 0.72,
+     "y": 0.28,
+     "width": 0.24,
+     "height": 0.62
+    },
+    "depth_layer": 14,
+    "resolved_colors": [
+     "rosado",
+     "azul"
+    ],
+    "visual_semantics": {
+     "structure_type": "columna",
+     "placement": "lateral_derecho",
+     "design_role": "soporte",
+     "repetition_group": "EST_02_COLUMNA",
+     "dimensions_m": {
+      "height": 1.8
+     },
+     "density": "lujosa"
+    },
+    "element_kind": "balloon_structure",
+    "quantity_semantics": "material_units",
+    "physical_relations": [],
+    "resolved_finishes": [
+     "fashion"
+    ],
+    "identity_constraints": [
+     "Required final arrangement and appearance: balloon column.",
+     "Render the approved catalog-backed visual as an installed physical element; do not add packaging, labels, or unrelated objects."
+    ],
+    "relationships": [
+     {
+      "type": "aligned_with",
+      "target_element_id": "EST_01_SEMIARCO"
+     }
+    ]
+   },
+   {
+    "element_id": "EST_03_GUIRNALDA",
+    "name": "Guirnalda de base frontal (2.5 m)",
+    "category": "balloon_structure",
+    "source_type": "catalog_backed",
+    "source_image_id": "PLAN_SOURCE",
+    "catalog_product_id": "46594221080871",
+    "catalog_product_ids": [
+     "46594221080871",
+     "46594221146407",
+     "46594221179175",
+     "46594221211943",
+     "46594221277479",
+     "46594221343015",
+     "46594221474087",
+     "46594221539623"
+    ],
+    "required": true,
+    "quantity": {
+     "mode": "exact",
+     "min": 204,
+     "max": 204
+    },
+    "target_bbox": {
+     "x": 0.18,
+     "y": 0.62,
+     "width": 0.64,
+     "height": 0.3
+    },
+    "depth_layer": 20,
+    "resolved_colors": [
+     "blanco"
+    ],
+    "visual_semantics": {
+     "structure_type": "guirnalda",
+     "placement": "piso_frontal",
+     "design_role": "soporte",
+     "repetition_group": "EST_03_GUIRNALDA",
+     "dimensions_m": {
+      "length": 2.5
+     },
+     "density": "lujosa"
+    },
+    "element_kind": "balloon_structure",
+    "quantity_semantics": "material_units",
+    "physical_relations": [],
+    "resolved_finishes": [
+     "fashion"
+    ],
+    "identity_constraints": [
+     "Required final arrangement and appearance: organic balloon garland.",
+     "Render the approved catalog-backed visual as an installed physical element; do not add packaging, labels, or unrelated objects."
+    ],
+    "relationships": [
+     {
+      "type": "aligned_with",
+      "target_element_id": "EST_01_SEMIARCO"
+     }
+    ]
+   }
+  ],
+  "material_estimate": {
+   "version": "design-material-estimate-v1",
+   "design": {
+    "type": "composite_installation",
+    "shape": "coordinated structures",
+    "dimensions_m": {
+     "width": 1.2,
+     "height": 2.2,
+     "length": null
+    },
+    "installation_length_m": 6.959999999999999,
+    "density": "lujosa",
+    "visual_density": "high",
+    "visual_scale": "very_large",
+    "cluster_count": 3
+   },
+   "balloons": [
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235564327",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235629863",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 16,
+     "waste_reserve": 0,
+     "required_quantity": 16,
+     "waste_adjusted_quantity": 16
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239385895",
+     "variant_id": "46594233696551",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 6,
+     "waste_reserve": 0,
+     "required_quantity": 6,
+     "waste_adjusted_quantity": 6
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235662631",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235695399",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 1,
+     "waste_reserve": 0,
+     "required_quantity": 1,
+     "waste_adjusted_quantity": 1
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239385895",
+     "variant_id": "46594233762087",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 6,
+     "waste_reserve": 0,
+     "required_quantity": 6,
+     "waste_adjusted_quantity": 6
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235793703",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 20,
+     "waste_reserve": 0,
+     "required_quantity": 20,
+     "waste_adjusted_quantity": 20
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235826471",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 4,
+     "waste_reserve": 0,
+     "required_quantity": 4,
+     "waste_adjusted_quantity": 4
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239385895",
+     "variant_id": "46594233860391",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239385895",
+     "variant_id": "46594233925927",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 11,
+     "waste_reserve": 0,
+     "required_quantity": 11,
+     "waste_adjusted_quantity": 11
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239844647",
+     "variant_id": "46594235859239",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 18,
+     "shape": "redondo",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3
+    },
+    {
+     "structure_id": "EST_01_SEMIARCO",
+     "product_id": "8634239385895",
+     "variant_id": "46594233991463",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 18,
+     "shape": "redondo",
+     "design_quantity": 2,
+     "waste_reserve": 0,
+     "required_quantity": 2,
+     "waste_adjusted_quantity": 2
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239844647",
+     "variant_id": "46594235629863",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 31,
+     "waste_reserve": 0,
+     "required_quantity": 31,
+     "waste_adjusted_quantity": 31
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594233696551",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 9,
+     "waste_reserve": 0,
+     "required_quantity": 9,
+     "waste_adjusted_quantity": 9
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239844647",
+     "variant_id": "46594235695399",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 17,
+     "waste_reserve": 0,
+     "required_quantity": 17,
+     "waste_adjusted_quantity": 17
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594233762087",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 6,
+     "waste_reserve": 0,
+     "required_quantity": 6,
+     "waste_adjusted_quantity": 6
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594233794855",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 16,
+     "waste_reserve": 0,
+     "required_quantity": 16,
+     "waste_adjusted_quantity": 16
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239844647",
+     "variant_id": "46594235826471",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 43,
+     "waste_reserve": 0,
+     "required_quantity": 43,
+     "waste_adjusted_quantity": 43
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594233925927",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 30,
+     "waste_reserve": 0,
+     "required_quantity": 30,
+     "waste_adjusted_quantity": 30
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239844647",
+     "variant_id": "46594235859239",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 18,
+     "shape": "redondo",
+     "design_quantity": 5,
+     "waste_reserve": 0,
+     "required_quantity": 5,
+     "waste_adjusted_quantity": 5
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594233991463",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 18,
+     "shape": "redondo",
+     "design_quantity": 1,
+     "waste_reserve": 0,
+     "required_quantity": 1,
+     "waste_adjusted_quantity": 1
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239844647",
+     "variant_id": "46594235957543",
+     "color": "rosado",
+     "finish": "fashion",
+     "size_inches": 24,
+     "shape": "redondo",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3
+    },
+    {
+     "structure_id": "EST_02_COLUMNA",
+     "product_id": "8634239385895",
+     "variant_id": "46594234089767",
+     "color": "azul",
+     "finish": "fashion",
+     "size_inches": 24,
+     "shape": "redondo",
+     "design_quantity": 4,
+     "waste_reserve": 0,
+     "required_quantity": 4,
+     "waste_adjusted_quantity": 4
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221080871",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221146407",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 5,
+     "shape": "redondo",
+     "design_quantity": 43,
+     "waste_reserve": 0,
+     "required_quantity": 43,
+     "waste_adjusted_quantity": 43
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221179175",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221211943",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 9,
+     "shape": "redondo",
+     "design_quantity": 19,
+     "waste_reserve": 0,
+     "required_quantity": 19,
+     "waste_adjusted_quantity": 19
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221277479",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221343015",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 12,
+     "shape": "redondo",
+     "design_quantity": 91,
+     "waste_reserve": 0,
+     "required_quantity": 91,
+     "waste_adjusted_quantity": 91
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221474087",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 18,
+     "shape": "redondo",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12
+    },
+    {
+     "structure_id": "EST_03_GUIRNALDA",
+     "product_id": "8634235781415",
+     "variant_id": "46594221539623",
+     "color": "blanco",
+     "finish": "fashion",
+     "size_inches": 24,
+     "shape": "redondo",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3
+    }
+   ],
+   "special_elements": [],
+   "purchases": [
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221080871",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 1826,
+     "purchase_cost": 1826,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221146407",
+     "design_quantity": 43,
+     "waste_reserve": 7,
+     "required_quantity": 50,
+     "waste_adjusted_quantity": 50,
+     "units_per_package": 50,
+     "package_count": 1,
+     "purchase_quantity": 50,
+     "used": 43,
+     "leftover_inventory": 0,
+     "consumption_cost": 6164,
+     "purchase_cost": 6164,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 7
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221179175",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 2427,
+     "purchase_cost": 2427,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221211943",
+     "design_quantity": 19,
+     "waste_reserve": 0,
+     "required_quantity": 19,
+     "waste_adjusted_quantity": 19,
+     "units_per_package": 20,
+     "package_count": 1,
+     "purchase_quantity": 20,
+     "used": 19,
+     "leftover_inventory": 1,
+     "consumption_cost": 3456,
+     "purchase_cost": 3638,
+     "additional_package_for_waste": false,
+     "operational_surplus": 1,
+     "potential_surplus": 1
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221277479",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 3963,
+     "purchase_cost": 3963,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221343015",
+     "design_quantity": 91,
+     "waste_reserve": 9,
+     "required_quantity": 100,
+     "waste_adjusted_quantity": 100,
+     "units_per_package": 50,
+     "package_count": 2,
+     "purchase_quantity": 100,
+     "used": 91,
+     "leftover_inventory": 0,
+     "consumption_cost": 26074,
+     "purchase_cost": 26074,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 9
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221474087",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 6,
+     "package_count": 2,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 14398,
+     "purchase_cost": 14398,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221539623",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3,
+     "units_per_package": 3,
+     "package_count": 1,
+     "purchase_quantity": 3,
+     "used": 3,
+     "leftover_inventory": 0,
+     "consumption_cost": 10124,
+     "purchase_cost": 10124,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233696551",
+     "design_quantity": 15,
+     "waste_reserve": 5,
+     "required_quantity": 20,
+     "waste_adjusted_quantity": 20,
+     "units_per_package": 20,
+     "package_count": 1,
+     "purchase_quantity": 20,
+     "used": 15,
+     "leftover_inventory": 0,
+     "consumption_cost": 2759,
+     "purchase_cost": 2759,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 5
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233762087",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 2427,
+     "purchase_cost": 2427,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233794855",
+     "design_quantity": 16,
+     "waste_reserve": 4,
+     "required_quantity": 20,
+     "waste_adjusted_quantity": 20,
+     "units_per_package": 20,
+     "package_count": 1,
+     "purchase_quantity": 20,
+     "used": 16,
+     "leftover_inventory": 0,
+     "consumption_cost": 3638,
+     "purchase_cost": 3638,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 4
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233860391",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 3963,
+     "purchase_cost": 3963,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233925927",
+     "design_quantity": 41,
+     "waste_reserve": 9,
+     "required_quantity": 50,
+     "waste_adjusted_quantity": 50,
+     "units_per_package": 50,
+     "package_count": 1,
+     "purchase_quantity": 50,
+     "used": 41,
+     "leftover_inventory": 0,
+     "consumption_cost": 13037,
+     "purchase_cost": 13037,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 9
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233991463",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3,
+     "units_per_package": 6,
+     "package_count": 1,
+     "purchase_quantity": 6,
+     "used": 3,
+     "leftover_inventory": 3,
+     "consumption_cost": 3600,
+     "purchase_cost": 7199,
+     "additional_package_for_waste": false,
+     "operational_surplus": 3,
+     "potential_surplus": 3
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594234089767",
+     "design_quantity": 4,
+     "waste_reserve": 0,
+     "required_quantity": 4,
+     "waste_adjusted_quantity": 4,
+     "units_per_package": 3,
+     "package_count": 2,
+     "purchase_quantity": 6,
+     "used": 4,
+     "leftover_inventory": 2,
+     "consumption_cost": 13499,
+     "purchase_cost": 20248,
+     "additional_package_for_waste": false,
+     "operational_surplus": 2,
+     "potential_surplus": 2
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235564327",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 1826,
+     "purchase_cost": 1826,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235629863",
+     "design_quantity": 47,
+     "waste_reserve": 0,
+     "required_quantity": 47,
+     "waste_adjusted_quantity": 47,
+     "units_per_package": 50,
+     "package_count": 1,
+     "purchase_quantity": 50,
+     "used": 47,
+     "leftover_inventory": 3,
+     "consumption_cost": 5794,
+     "purchase_cost": 6164,
+     "additional_package_for_waste": false,
+     "operational_surplus": 3,
+     "potential_surplus": 3
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235662631",
+     "design_quantity": 12,
+     "waste_reserve": 0,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 12,
+     "package_count": 1,
+     "purchase_quantity": 12,
+     "used": 12,
+     "leftover_inventory": 0,
+     "consumption_cost": 2427,
+     "purchase_cost": 2427,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235695399",
+     "design_quantity": 18,
+     "waste_reserve": 0,
+     "required_quantity": 18,
+     "waste_adjusted_quantity": 18,
+     "units_per_package": 20,
+     "package_count": 1,
+     "purchase_quantity": 20,
+     "used": 18,
+     "leftover_inventory": 2,
+     "consumption_cost": 3274,
+     "purchase_cost": 3638,
+     "additional_package_for_waste": false,
+     "operational_surplus": 2,
+     "potential_surplus": 2
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235793703",
+     "design_quantity": 20,
+     "waste_reserve": 0,
+     "required_quantity": 20,
+     "waste_adjusted_quantity": 20,
+     "units_per_package": 20,
+     "package_count": 1,
+     "purchase_quantity": 20,
+     "used": 20,
+     "leftover_inventory": 0,
+     "consumption_cost": 6029,
+     "purchase_cost": 6029,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235826471",
+     "design_quantity": 47,
+     "waste_reserve": 0,
+     "required_quantity": 47,
+     "waste_adjusted_quantity": 47,
+     "units_per_package": 50,
+     "package_count": 1,
+     "purchase_quantity": 50,
+     "used": 47,
+     "leftover_inventory": 3,
+     "consumption_cost": 12255,
+     "purchase_cost": 13037,
+     "additional_package_for_waste": false,
+     "operational_surplus": 3,
+     "potential_surplus": 3
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235859239",
+     "design_quantity": 8,
+     "waste_reserve": 4,
+     "required_quantity": 12,
+     "waste_adjusted_quantity": 12,
+     "units_per_package": 6,
+     "package_count": 2,
+     "purchase_quantity": 12,
+     "used": 8,
+     "leftover_inventory": 0,
+     "consumption_cost": 14398,
+     "purchase_cost": 14398,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 4
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235957543",
+     "design_quantity": 3,
+     "waste_reserve": 0,
+     "required_quantity": 3,
+     "waste_adjusted_quantity": 3,
+     "units_per_package": 3,
+     "package_count": 1,
+     "purchase_quantity": 3,
+     "used": 3,
+     "leftover_inventory": 0,
+     "consumption_cost": 10124,
+     "purchase_cost": 10124,
+     "additional_package_for_waste": false,
+     "operational_surplus": 0,
+     "potential_surplus": 0
+    }
+   ],
+   "totals": {
+    "design_quantity": 474,
+    "target_waste_reserve": 38,
+    "covered_waste_reserve": 38,
+    "uncovered_waste_reserve": 0,
+    "natural_package_surplus": 52,
+    "required_quantity": 512,
+    "consumption_cost": 167482,
+    "purchase_cost": 179528,
+    "waste_only_savings_cop": 75174,
+    "additional_waste_packages": 0,
+    "waste_adjusted_quantity": 512,
+    "purchase_quantity": 526,
+    "operational_surplus": 14,
+    "potential_surplus": 52
+   },
+   "warnings": [
+    "sobrante_alto:46594233991463",
+    "sobrante_alto:46594234089767",
+    "sobrante_alto:46594235859239"
+   ]
+  },
+  "positive_prompt": {
+   "required_elements": [
+    "Required final arrangement and appearance: asymmetrical balloon half-arch.; MANDATORY VISIBLE CATALOG ITEM; quantity: 105 physical units; placement: middle left area of the composition.",
+    "Required final arrangement and appearance: balloon column.; MANDATORY VISIBLE CATALOG ITEM; quantity: 165 physical units; placement: middle right area of the composition.",
+    "Required final arrangement and appearance: organic balloon garland.; MANDATORY VISIBLE CATALOG ITEM; quantity: 204 physical units; placement: lower center area of the composition."
+   ],
+   "composition": [
+    "Semiarco orgánico izquierdo",
+    "Density: dense.",
+    "Keep negative space: clear walking space in front of the installation, visible contact with the floor or furniture.",
+    "Design one cohesive, event-ready installation with a clear focal point, visual hierarchy, balanced color, and believable physical support. Any scale variation between balloons must stay within the exact diameters stated for each mandatory element below — never invent a size not listed.",
+    "Treat selected catalog products as ingredients for one party setup, not as isolated objects or a flat product list.",
+    "Build a complete installed event scene with a rear backdrop/support, middle decoration, grounded floor contact, event lighting, realistic scale, depth, and visible relationships between elements.",
+    "Do not default to a generic balloon arch, empty table, banquet vignette, garden/forest/park background, or any other generic event cliché.",
+    "Selected products are installed decoration, never catalog samples, retail displays, packaging, or commercial objects added for atmosphere.",
+    "Only a selected catalog-backed signage product may contain a focal, legible sign or printed message; otherwise add no sign, banner, lettering, or invented event text."
+   ],
+   "venue_preservation": [],
+   "photorealistic_integration": [
+    "Act as an event designer: turn the selected products into a polished, creative, usable party installation.",
+    "Render every catalog-backed scene element visibly; each quoted product is mandatory, even when it is a backdrop or small accent.",
+    "Respect the installed design quantities in the material estimate. Package capacity, merma, and closed-package surplus are procurement data only; never add them to the visible decoration. Balloon diameter is controlled only by the hard size constraint, never by creative scale changes.",
+    "Treat the product list as ingredients, not a layout: group compatible balloons into an arch, garland, columns, or balanced clusters; use overlap and depth instead of spacing one object per product, and obey the hard balloon-size constraint supplied by the image prompt.",
+    "Use accent kits, signs, and themed props as integrated focal-point details; never show product packaging or a catalog cutout as the decoration.",
+    "Preserve each catalog product's supplied color exactly; reference palette cannot recolor catalog items.",
+    "Place curtain, drape, backdrop, and panel elements as rear background surfaces behind the balloon decoration, spanning their target boxes.",
+    "Place string lights and other lighting elements in the rear backdrop zone behind or around the decoration; never move them to the ceiling unless the catalog product is explicitly a ceiling light.",
+    "Render only supplied catalog products as physical objects from the venue camera angle.",
+    "Match perspective, scale, focus, white balance, light direction, contact shadows, occlusion, and surface contact.",
+    "Use natural overlap and depth between layers; every item must touch, hang from, rest on, or clearly belong to the installation.",
+    "Do not leave loose single balloons floating in empty space when they can be grouped into the main installation.",
+    "Use only the selected catalog allowlist and preserved venue objects; do not add generic tables, empty furniture, flowers, plants, food, gifts, props, signs, lights, or extra balloons beyond the PRESERVED SCENE CONTEXT above.",
+    "Rebuild the scene from catalog products; never reproduce the reference image as a collage."
+   ]
+  },
+  "negative_prompt": {
+   "forbidden_elements": [
+    "generic or empty tables, chairs, furniture vignettes, isolated balloon arches, or loose garlands",
+    "generic garden/forest/park backgrounds, empty landscapes, or unrelated outdoor scenes",
+    "unselected signs, flowers, plants, lights, people, text, logos, or commercial/event props beyond installed design quantities and beyond the preserved scene context"
+   ],
+   "forbidden_venue_changes": [],
+   "forbidden_compositing_artifacts": [
+    "No source-image background, rectangular crop, border, halo, studio shadow, flat sticker, cutout edge, pasted rectangle, floating object, impossible support, mismatched sharpness, or mismatched lighting.",
+    "No catalog IDs, labels, callouts, arrows, captions, prices, watermarks, UI, or explanatory text in the output.",
+    "No product cards, packages, catalog boards, isolated floating catalog cutouts, or evenly spaced inventory display.",
+    "If a catalog product image shows retail packaging (box art, QR code, printed icons), its graphic design is not a style cue: never reproduce a legend, color-swatch key, diagram, or pointer arrows in the output.",
+    "No catalog color drift: never turn black catalog products blue, blue products black, or silver products blue.",
+    "Do not copy reference product designs; use catalog products only for object identity while preserving reference composition."
+   ]
+  },
+  "metadata": {
+   "blueprint_hash": "8f6aca079cfe0c63b411c19c44a60132387e242a971a208aca8d24769d0b674f",
+   "plan_hash": "b080d07b4f43476ac268e9de63c33a5ef6d4cfd6463609228dff1dbce4d18d37",
+   "created_by": "server_default"
+  }
+ },
+ "visualContext": {
+  "userRequest": "Adjunto imágenes de referencia del estilo que busco.",
+  "eventType": "revelacion_genero",
+  "eventLabel": "revelacion_genero",
+  "venueKind": "unknown",
+  "lightingKind": "unspecified",
+  "palette": [
+   "rosado",
+   "azul",
+   "blanco"
+  ],
+  "eventCue": "open event cue: express \"revelacion_genero\" through the approved composition, palette, motifs, and lighting only; do not invent text, signage, or accessories",
+  "confirmedMotifs": [],
+  "pieceMatchLevels": [],
+  "approvedPlan": [],
+  "approvedMaterials": []
+ },
+ "sizeConfirmations": [
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235564327",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 12
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235629863",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 16
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594233696551",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 6
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235662631",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 12
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235695399",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 1
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594233762087",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 6
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235793703",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 20
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235826471",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 4
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594233860391",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 12
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594233925927",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 11
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594235859239",
+   "sizeCode": "R-18",
+   "diameterInches": 18,
+   "units": 3
+  },
+  {
+   "elementId": "EST_01_SEMIARCO",
+   "productId": "46594233991463",
+   "sizeCode": "R-18",
+   "diameterInches": 18,
+   "units": 2
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594235629863",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 31
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594233696551",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 9
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594235695399",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 17
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594233762087",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 6
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594233794855",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 16
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594235826471",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 43
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594233925927",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 30
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594235859239",
+   "sizeCode": "R-18",
+   "diameterInches": 18,
+   "units": 5
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594233991463",
+   "sizeCode": "R-18",
+   "diameterInches": 18,
+   "units": 1
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594235957543",
+   "sizeCode": "R-24",
+   "diameterInches": 24,
+   "units": 3
+  },
+  {
+   "elementId": "EST_02_COLUMNA",
+   "productId": "46594234089767",
+   "sizeCode": "R-24",
+   "diameterInches": 24,
+   "units": 4
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221080871",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 12
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221146407",
+   "sizeCode": "R-5",
+   "diameterInches": 5,
+   "units": 43
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221179175",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 12
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221211943",
+   "sizeCode": "R-9",
+   "diameterInches": 9,
+   "units": 19
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221277479",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 12
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221343015",
+   "sizeCode": "R-12",
+   "diameterInches": 12,
+   "units": 91
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221474087",
+   "sizeCode": "R-18",
+   "diameterInches": 18,
+   "units": 12
+  },
+  {
+   "elementId": "EST_03_GUIRNALDA",
+   "productId": "46594221539623",
+   "sizeCode": "R-24",
+   "diameterInches": 24,
+   "units": 3
+  }
+ ],
+ "productIdAliases": [
+  [
+   "46594235564327",
+   [
+    "B2B-20000438",
+    "20000438",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594235629863",
+   [
+    "B2B-20000440",
+    "20000440",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594233696551",
+   [
+    "B2B-20000471",
+    "20000471",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594235662631",
+   [
+    "B2B-20000576",
+    "20000576",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594235695399",
+   [
+    "B2B-20000577",
+    "20000577",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594233762087",
+   [
+    "B2B-20000607",
+    "20000607",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594235793703",
+   [
+    "B2B-20000725",
+    "20000725",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594235826471",
+   [
+    "B2B-20000726",
+    "20000726",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594233860391",
+   [
+    "B2B-20000756",
+    "20000756",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594233925927",
+   [
+    "B2B-20000758",
+    "20000758",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594235859239",
+   [
+    "B2B-20000904",
+    "20000904",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594233991463",
+   [
+    "B2B-20000916",
+    "20000916",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594233794855",
+   [
+    "B2B-20000608",
+    "20000608",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594235957543",
+   [
+    "B2B-20012054",
+    "20012054",
+    "8634239844647"
+   ]
+  ],
+  [
+   "46594234089767",
+   [
+    "B2B-20012065",
+    "20012065",
+    "8634239385895"
+   ]
+  ],
+  [
+   "46594221080871",
+   [
+    "B2B-20000435",
+    "20000435",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221146407",
+   [
+    "B2B-20000437",
+    "20000437",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221179175",
+   [
+    "B2B-20000573",
+    "20000573",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221211943",
+   [
+    "B2B-20000574",
+    "20000574",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221277479",
+   [
+    "B2B-20000721",
+    "20000721",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221343015",
+   [
+    "B2B-20000723",
+    "20000723",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221474087",
+   [
+    "B2B-20000902",
+    "20000902",
+    "8634235781415"
+   ]
+  ],
+  [
+   "46594221539623",
+   [
+    "B2B-20012053",
+    "20012053",
+    "8634235781415"
+   ]
+  ]
+ ],
+ "productCatalogTitles": [
+  [
+   "46594235564327",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "8634239844647",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594235629863",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594233696551",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "8634239385895",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594235662631",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594235695399",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594233762087",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594235793703",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594235826471",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594233860391",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594233925927",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594235859239",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594233991463",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594233794855",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594235957543",
+   "B2b Globo Latex Redondo Fashion Rosado"
+  ],
+  [
+   "46594234089767",
+   "B2b Globo Latex Redondo Fashion Azul"
+  ],
+  [
+   "46594221080871",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "8634235781415",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221146407",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221179175",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221211943",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221277479",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221343015",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221474087",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ],
+  [
+   "46594221539623",
+   "B2b Globo Latex Redondo Fashion Blanco"
+  ]
+ ],
+ "ambientDecor": [
+  "gender reveal arched backdrop panels",
+  "sequin draped table",
+  "fluted white plinths"
+ ],
+ "creativeCues": [],
+ "officialStructures": [
+  [
+   "EST_01_SEMIARCO",
+   "semiarco_asimetrico"
+  ],
+  [
+   "EST_02_COLUMNA",
+   "columna_asimetrica"
+  ],
+  [
+   "EST_03_GUIRNALDA",
+   "guirnalda"
+  ]
+ ],
+ "colorPatterns": [
+  {
+   "estructura_id": "EST_03_GUIRNALDA",
+   "aplicado": true,
+   "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland resting on the floor along the front, running straight along its length. Build it from 26 five-balloon clusters of 12\" balloons in matte white, chained from the left end to the right end. Tuck small 5\" matte white filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 2 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+   "prompt_lora": "resting on the floor along the front in clusters of five with small white filler balloons and large white accent balloons",
+   "guirnalda": {
+    "soporte": "piso",
+    "forma": "recta",
+    "conPatron": false,
+    "conRelleno": true,
+    "conRemates": true
+   }
+  },
+  {
+   "estructura_id": "EST_01_SEMIARCO",
+   "aplicado": true,
+   "prompt_gemini": "ARCH ASSEMBLY - a tall arch, taller than it is wide, about 1.4 m wide and 2.2 m tall, standing on the floor on its left leg and climbing until it finishes free in the air on the right, its curve a rounded sweep, its highest point shifted toward the right side. The band of balloons is about 0.6 m thick at the legs and 0.4 m at the crown, thickest at the legs and tapering toward the crown, and it carries more volume on the left side, where the band thickens and the largest balloons mass. Build it from 5 balloons per cluster (4 to 6 in each) in pink and matte blue, in balloons of several sizes mixed together, the clusters overlapping and packed tightly against each other so the whole arch reads as one continuous organic band with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+   "prompt_lora": "standing on the floor on its left leg, climbing and finishing free in the air on the right, tall and narrow, taller than it is wide, softly rounded at the top, its highest point off to the right, heavier and thicker on the left, with the largest balloons massed there, thickest at the legs and tapering toward the top, in clusters of five",
+   "forma": true
+  },
+  {
+   "estructura_id": "EST_02_COLUMNA",
+   "aplicado": true,
+   "prompt_gemini": "COLUMN ASSEMBLY - an organic balloon cluster arrangement about 1.8 m tall, about 1 m thick at the base and 0.8 m at the top, tapering as it rises, its top leaning about 0.4 m to the left of its base. Build it from 5 balloons per cluster (4 to 6 in each) in pink and matte blue, in mixed sizes, chained from the floor up to the tip. The column ends at the top with the same balloon clusters as the rest of its body, at the same sizes: nothing larger crowns it and there is no topper. Build an irregular, deep silhouette from overlapping balloon clusters, with rounded bulges and small inward notches; vary the width along its rise, broad at the foot and bends. Distribute the large 18- and 24-inch balloons through the clusters, with small 5-inch fillers between them. Clear confetti bubbles keep their transparent shells visible. Keep the outline asymmetrical and clustered, not smooth or uniform, made only of round latex balloons; no ribbons or fabric.",
+   "prompt_lora": "widest at the base and tapering toward the top, leaning toward the left, in clusters of five, ending at the top with the same clusters as the rest",
+   "forma": true
+  },
+  {
+   "estructura_id": "EST_03_GUIRNALDA",
+   "aplicado": true,
+   "prompt_gemini": "GARLAND ASSEMBLY - mounted flat against the wall, high up, with both ends hanging free in the air, rising and falling in a soft wave about 0.1 m deep along its length. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor. Build it from 5 balloons per cluster (4 to 6 in each) in white, chained from the left end to the right end. The large balloons (18 inches and up) are spread along its whole length. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+   "prompt_lora": "mounted flat high on the wall, rising and falling in a soft wave along its length, both ends free, in clusters of five",
+   "guirnaldaOrganica": {
+    "enAlto": true
+   },
+   "forma": true
+  }
+ ]
+}

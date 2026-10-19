@@ -1,0 +1,144 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8260-1",
+  "image_sha256": "6abc23c25c2b276ba9fd6498b7ae6897d4d3dfdf7b2a043a1ff9b075613e9853",
+  "idempotency_key": "e11943d9f5436b9c81e085b894d5fea89c1cb8c53b133ed437be75ffc34ec5c6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8260/foto-1.jpg",
+    "orden": "8260"
+  },
+  "anotacion": {
+    "image_id": "8260-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-24"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon garland with pink balloons in mixed sizes, plus pearl, gold, and white cow-print balloons, rising along the left wall and extending across the floor."
+      }
+    ],
+    "non_purchased_elements": [
+      "character cutouts",
+      "sheep cutouts",
+      "a number balloon",
+      "a blue chair"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "confirmed_size_codes": [
+      "2",
+      "R-12",
+      "R-24"
+    ],
+    "sin_resolver": [
+      "BANDEROLA METALIZADA NUMEROS"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8260-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 24-inch and 12-inch matte Fashion pink round latex balloons, 12-inch high-shine Reflex gold round latex balloons, Satin pearl round latex balloons and matte Fashion white round latex balloons with a printed pattern, mixed organically rather than graded, alongside character cutouts, sheep cutouts, a number balloon and a blue chair, set against off-white walls and a light tiled floor.",
+    "palabras": 69,
+    "caracteres": 467,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:54:15.325Z",
+    "recompilado_en": "2026-09-03T14:45:23.097Z"
+  }
+}

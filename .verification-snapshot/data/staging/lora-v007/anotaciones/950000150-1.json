@@ -1,0 +1,137 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000150-1",
+  "image_sha256": "e5b1e815237cc02f1a63a80f2cb2f41e77ccaa80fe622e06a9a5ac3804e9b52c",
+  "idempotency_key": "383d5d708c47f2ce517ba7d505cc08b9f17ed25e2a273a7003710bae510013a1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000150/foto-1.jpg",
+    "orden": "950000150"
+  },
+  "anotacion": {
+    "image_id": "950000150-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense cream balloon installation covering the background behind the central display."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Central blue and black vehicle-shaped balloon arrangement."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Lateral bouquet of metallic gold, brown, and green balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "blue balloon figure",
+      "metallic balloon bouquet",
+      "two wooden plinths",
+      "printed signs"
+    ],
+    "uncertainties": [
+      "The dense cream installation's exact wall-versus-arch construction is not fully visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 16",
+      "PAQUETE X 8",
+      "R-12",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Reflex Feliz Dia Fiesta Bigotes",
+      "Plato Fiesta Bigotes",
+      "Vaso Fiesta Bigotes",
+      "Servilleta Pequeña Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000150-1",
+    "caption": "eventdecor_style_v3, a balloon wall, behind the coordinated decoration kit, built from muted Pastel Dusk cream round latex balloons, all at a single 9-inch size, a coordinated decoration kit, centred on the main display area, a balloon bouquet, standing to one side, alongside blue balloon figure, metallic balloon bouquet, two wooden plinths and printed signs, set against white walls and a white floor.",
+    "palabras": 62,
+    "caracteres": 404,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:15:31.520Z",
+    "recompilado_en": "2026-09-03T14:45:24.723Z"
+  }
+}

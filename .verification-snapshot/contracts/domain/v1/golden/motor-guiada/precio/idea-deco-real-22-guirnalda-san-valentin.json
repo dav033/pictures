@@ -1,0 +1,144 @@
+{
+ "caso": "idea-deco-real-22-guirnalda-san-valentin",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "483f111ab7ee0e2c52181ae0bc68e5f44d68f6ff957bf3d2914c220c5213cd26",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 15,
+  "cubierta": 15,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "015",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239942951",
+   "variantId": "46594236154151"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "015",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239942951",
+   "variantId": "46594236350759"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "110",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634302071079",
+   "variantId": "46594342027559"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "110",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634302071079",
+   "variantId": "46594342322471"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "110",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634302071079",
+   "variantId": "46594342486311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "110",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634302071079",
+   "variantId": "46594342551847"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "806",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475777921319"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "806",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475778019623"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "806",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475778085159"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "806",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475778183463"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "011",
+   "cantidad": 8,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9832318828839",
+   "variantId": "50030991114535"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "011",
+   "cantidad": 15,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "9832318828839",
+   "variantId": "50030991212839"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "011",
+   "cantidad": 9,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9832318828839",
+   "variantId": "50030991278375"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "011",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9832318828839",
+   "variantId": "50030991343911"
+  }
+ ]
+}

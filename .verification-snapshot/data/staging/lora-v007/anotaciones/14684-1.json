@@ -1,0 +1,246 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14684-1",
+  "image_sha256": "bb3efabf7bde3d65d8a5ef99f902adca623ee2c935ae8aa3c956b95bd431073a",
+  "idempotency_key": "a5ed0a4299052efacd6c3e5e5b30273016a9031c0b3de8e2904ad28008178a74",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14684/foto-1.jpg",
+    "orden": "14684"
+  },
+  "anotacion": {
+    "image_id": "14684-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and light wood-look flooring",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat printed panel with a video-game theme and the name/number, flanked by two balloon garlands, set against the far wall."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two matching vertical garlands of primary-colored round balloons (red, blue, green, yellow, white), one on each side of the printed backdrop."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.lime_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Small cluster of round balloons mounted on the right wall near the number balloon."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.matte_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.number.foil.matte_gold",
+            "size_code": "32 IN"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Single large matte gold foil number balloon mounted flat on the right wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a gold star balloon",
+      "party tables with chairs",
+      "triangle bunting flags",
+      "an outdoor playground view"
+    ],
+    "uncertainties": [
+      "Exact colors in the small wall-mounted cluster (s3) are hard to confirm at this distance/resolution.",
+      "Could not fully verify individual balloon sizes within the garlands beyond the single R-12 option offered."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "32 IN",
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14684-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, two matching organic balloon garlands, one at each end of the decorated backdrop, built from matte Fashion round latex balloons in blue, honey yellow, lime green, red and white, all at a single 12-inch size, with an organic balloon garland, standing to one side, built from matte Fashion round latex balloons in blue, lime green and red, all at a single 12-inch size and a decorative accessory, standing to one side, built from Metallic matte gold number foil balloons, all at a single 32-inch size, alongside a gold star balloon, party tables with chairs, triangle bunting flags and an outdoor playground view, set against white walls and light wood-look flooring.",
+    "palabras": 119,
+    "caracteres": 741,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.number.foil.matte_gold",
+        "size_code": "32 IN",
+        "inches": 32
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:12.750Z",
+    "recompilado_en": "2026-09-03T14:45:22.476Z"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000074-1",
+  "image_sha256": "ba60766ff074c4bb11f6c6e7a6cd18d07d69b4595861d8f10a029635b8fddf64",
+  "idempotency_key": "5331cb538d8a321213ebc3c73b412ac5cbb39a755fcb4e61c86af1646e892b66",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000074/foto-1.jpg",
+    "orden": "950000074"
+  },
+  "anotacion": {
+    "image_id": "950000074-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white wall and white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical balloon column with stacked green, sand, and lime balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "balloon strings"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000074-1",
+    "caption": "eventdecor_style_v3, a balloon column, installed against the rear wall, built from 9-inch matte Fashion round latex balloons in clover green, eucalyptus green and sand, 5-inch matte Fashion lime green round latex balloons, mixed organically rather than graded, alongside balloon strings, set against white wall and white background.",
+    "palabras": 47,
+    "caracteres": 332,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:59:45.092Z",
+    "recompilado_en": "2026-09-03T14:45:24.017Z"
+  }
+}

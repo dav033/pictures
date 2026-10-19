@@ -1,0 +1,173 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12305-1",
+  "image_sha256": "348b8ddf5a7d5b2f8029c4038a48c40e69941073d5fc3a3679e6b88f294ddb0e",
+  "idempotency_key": "47e1634638afbdae7b2cd7a383402aaf862bc2614b3275e281a275472aa874d8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12305/foto-1.jpg",
+    "orden": "12305"
+  },
+  "anotacion": {
+    "image_id": "12305-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dark wood-patterned tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.green",
+          "balloon.round.latex.metallic.violet",
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.satin.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.violet",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pink",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional round balloon arch built against the wall with clusters of pink, purple, chrome gold-bronze and green balloons, framing two dessert tables."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 3,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.green",
+          "balloon.round.latex.satin.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small four-balloon quad clusters in pink and green sitting on top of the white plinth stands and on the floor beside the dessert tables."
+      }
+    ],
+    "non_purchased_elements": [
+      "a number four piñata",
+      "birthday cakes on stands",
+      "white plinth stands",
+      "themed paper cups"
+    ],
+    "uncertainties": [
+      "could not confidently distinguish lilac satin from violet metallic balloons in the dense arch, so lilac satin was left out",
+      "teal/turquoise and chrome silver balloons visible in the arch are not in the allowed product list and were excluded"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.green",
+      "balloon.round.latex.metallic.violet",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.lilac",
+      "balloon.round.latex.satin.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12305-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 5-inch matte Fashion green round latex balloons, 12-inch Metallic violet round latex balloons, high-shine Reflex champagne round latex balloons and Satin pink round latex balloons, mixed organically rather than graded, with three matching balloon bouquets, grounded across the front, built from matte Fashion green round latex balloons and Satin pink round latex balloons, all at a single 5-inch size, alongside a number four piñata, birthday cakes on stands, white plinth stands and themed paper cups, set against white walls and a dark wood-patterned tiled floor.",
+    "palabras": 98,
+    "caracteres": 656,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.green",
+      "balloon.round.latex.metallic.violet",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.violet",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pink",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pink",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:26.106Z",
+    "recompilado_en": "2026-09-03T14:45:22.039Z"
+  }
+}

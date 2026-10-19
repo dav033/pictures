@@ -1,0 +1,67 @@
+{
+ "caso": "oficial-arco",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "071de9ea76a7961da15868861870d67e8b419d59faf368e27c2740a6393b907e",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_ARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 40
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 48
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 40
+    }
+   ],
+   "unidades": 128,
+   "caja": [
+    -173,
+    0,
+    -183,
+    173,
+    276,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 40
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 48
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 40
+   }
+  ],
+  "unidades": 128
+ },
+ "caja": [
+  -173,
+  0,
+  -183,
+  173,
+  276,
+  -137
+ ]
+}

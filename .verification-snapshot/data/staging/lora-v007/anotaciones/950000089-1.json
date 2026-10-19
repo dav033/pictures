@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000089-1",
+  "image_sha256": "df3ca09a5f04046f707b7b7c1ebba34f28ee6213a145a366abba8aa9e091ae72",
+  "idempotency_key": "e640e319b956a8397d65204bf841906df8e0316b671f1579e23aeb9fb4b7ab0f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000089/foto-1.jpg",
+    "orden": "950000089"
+  },
+  "anotacion": {
+    "image_id": "950000089-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "textured wallpaper and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "organic garland arch combining deep merlot, coral, and cream balloons over a gold frame with a wooden sign, cascading down to the floor on both sides"
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden sign",
+      "a sequin backdrop panel",
+      "a round table with tableware",
+      "a potted plant"
+    ],
+    "uncertainties": [
+      "the order confirms a single R-9 size for all three colors even though the organic clustering makes the balloons appear visually varied in size"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000089-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in coral and merlot and muted Pastel Dusk cream round latex balloons, all at a single 9-inch size, alongside a wooden sign, a sequin backdrop panel, a round table with tableware and a potted plant, set against textured wallpaper and a light wood floor.",
+    "palabras": 62,
+    "caracteres": 378,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:23.734Z",
+    "recompilado_en": "2026-09-03T14:45:24.175Z"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000075-1",
+  "image_sha256": "f8da1267104aa5da0792b684af3193fbbd1bb999b730d8682b3d70024101e14b",
+  "idempotency_key": "77a573df6f90b29d104394175c07d80a219a157bea64aa609fa1a7e3770c5897",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000075/foto-1.jpg",
+    "orden": "950000075"
+  },
+  "anotacion": {
+    "image_id": "950000075-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical bouquet in color bands from top to bottom: pale matte pink, hot solid pink, pale matte blue, solid blue, and shiny gold at the base, with ribbon strings visible; matte pink/blue bands look larger, matching their confirmed R-9 size against the R-5 solid and gold bands."
+      }
+    ],
+    "non_purchased_elements": [
+      "balloon ribbon strings"
+    ],
+    "uncertainties": [
+      "Studio product shot with no floor/wall context, so placement (piso_frontal) is a best guess rather than an observed setting.",
+      "Distinguishing pastel matte finish from solid fashion finish by color/sheen alone; assignment follows the size-band pattern rather than a certain finish read."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000075-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 5-inch matte Fashion round latex balloons in blue and pink and high-shine Reflex gold round latex balloons, 9-inch Pastel Matte round latex balloons in blue and pastel pink, mixed organically rather than graded, alongside balloon ribbon strings, set against plain white studio background, no floor or wall visible.",
+    "palabras": 58,
+    "caracteres": 392,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:10.419Z",
+    "recompilado_en": "2026-09-03T14:45:24.030Z"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-025",
+  "image_sha256": "178fddce80735bf02970857a0113946a82ea6b7dea942e880bd135fa7b524f5e",
+  "idempotency_key": "fd3aa8a2c64b40821276090d26f92dd6b6312b56b6602d5ea96fcc076f0e4859",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-025.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/BASE_DE_AMOR_-_LOVE_BASE_ed94455b-969c-420a-bba1-b9a9e64a084d.jpg?v=1746721558",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-025",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.amethyst",
+          "balloon.modeling.latex.silk.gold",
+          "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.fashion.coral"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A freestanding balloon bouquet with printed round balloons, a clear outer balloon, coral balloons, and amethyst and gold modeling balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coral"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-025",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from satin Silk modeling latex balloons in amethyst and gold, matte Fashion round latex balloons in clear and coral and round latex balloons in assorted colors with a matte Fashion finish and a printed pattern, set against a white wall and white floor.",
+    "palabras": 52,
+    "caracteres": 325,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coral"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:07:09.118Z"
+  }
+}

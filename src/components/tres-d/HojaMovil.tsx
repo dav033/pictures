@@ -54,7 +54,7 @@ export function HojaMovil<P extends string>({ hoja, alCambiarAltura, alFijarAltu
   const [arrastre, setArrastre] = useState<number | null>(null);
   const alternar = () => alCambiarAltura(hoja === "alta" ? -1 : 1);
   const alTaparRef = useRef(alTapar);
-  alTaparRef.current = alTapar;
+  useEffect(() => { alTaparRef.current = alTapar; }, [alTapar]);
   useEffect(() => {
     const nodo = seccion.current;
     if (!nodo) return;

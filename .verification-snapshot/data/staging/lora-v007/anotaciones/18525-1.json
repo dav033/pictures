@@ -1,0 +1,119 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "18525-1",
+  "image_sha256": "81e98bb26f4bdc1defd50e7afb5d40896a67a4655a83918763c08ac0df5c822b",
+  "idempotency_key": "08071bb41aded3787fcb04fedf05240feb79bb8de87ef338d0fd431bf14b0f07",
+  "source": {
+    "kind": "order_photo",
+    "ref": "18525/foto-1.jpg",
+    "orden": "18525"
+  },
+  "anotacion": {
+    "image_id": "18525-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "beige marble walls and a dark floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.jungle_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.jungle_green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Freestanding vertical column of red, royal blue and green round balloons of matching size next to a doorway, standing on top of stacked equipment cases"
+      }
+    ],
+    "non_purchased_elements": [
+      "audio equipment flight cases",
+      "a laptop computer",
+      "water bottles"
+    ],
+    "uncertainties": [
+      "The green balloons appear teal/turquoise rather than a deep jungle green, but jungle green is the only green option in the allowed concepts"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "18525-1",
+    "caption": "eventdecor_style_v3, a balloon column, framing the entrance, built from matte Fashion round latex balloons in jungle green, red and royal blue, all at a single 9-inch size, alongside audio equipment flight cases, a laptop computer and water bottles, set against beige marble walls and a dark floor.",
+    "palabras": 47,
+    "caracteres": 298,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.jungle_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:23.654Z",
+    "recompilado_en": "2026-09-03T14:45:22.919Z"
+  }
+}

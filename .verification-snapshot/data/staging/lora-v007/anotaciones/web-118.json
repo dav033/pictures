@@ -1,0 +1,128 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-118",
+  "image_sha256": "89057dc39fb84c3aa42d05314f4edaf7dbaac1d29dc53cd38db9740893d3ab23",
+  "idempotency_key": "17323a6f81ce9b5ac7fc38f3f4293541bb954b579dd830e3e8df9cbcafc40f37",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-118.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Decoracion_Webinar_navidad_60585d92-49cf-4517-bd37-4378ebec53bf.jpg?v=1739827164",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-118",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white paneled walls and green carpeted floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "balloon_wall_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense pink and red balloon wall covering the background."
+      },
+      {
+        "structure_id": "tree_balloon_garland_1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Champagne metallic balloon garland spiraling around the Christmas tree."
+      },
+      {
+        "structure_id": "balloon_wreath_1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "balloon_wall_1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Closed green balloon ring with a pink-red balloon bow mounted on the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a Christmas tree",
+      "wrapped gift boxes",
+      "holiday table props"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.champagne"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-118",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in pink and red, an organic balloon garland, standing to one side, built from high-shine Reflex champagne round latex balloons, an organic balloon arch, anchored to the balloon wall, built from matte Fashion round latex balloons in clover green, pink and red, alongside a Christmas tree, wrapped gift boxes and holiday table props, set against off-white paneled walls and green carpeted floor.",
+    "palabras": 78,
+    "caracteres": 509,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.champagne"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:21:55.072Z"
+  }
+}

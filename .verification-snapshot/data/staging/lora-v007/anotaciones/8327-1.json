@@ -1,0 +1,138 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8327-1",
+  "image_sha256": "63fad314602ec12d7d17d19009a027e52d086192c7570ace76c86b93a8503684",
+  "idempotency_key": "a80fbd5bd1ec0d14ded487eb0340d601d413b211798734785d614a23c0feccf1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8327/foto-1.jpg",
+    "orden": "8327"
+  },
+  "anotacion": {
+    "image_id": "8327-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a plain off-white wall, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense cluster of round balloons behind the figure, mostly black and silver chrome balloons with a pink round balloon visible among them"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.modeling.latex.fashion.assorted_colors"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.pink",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A twisted modeling-balloon animal character figure in pink and white, mounted on top of the round-balloon cluster"
+      }
+    ],
+    "non_purchased_elements": [
+      "black balloons",
+      "silver chrome balloons"
+    ],
+    "uncertainties": [
+      "Close-up crop with no visible room context, so exact placement in the overall installation could not be determined",
+      "White portions of the character figure may come from the assorted-colors modeling balloon concept rather than a separate white concept, which is not in the allowed list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8327-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, anchored to the balloon wall, built from matte Fashion pink modeling latex balloons and modeling latex balloons in assorted colors, solid Fashion finish, all at a single 2-inch size, a balloon wall, installed against the rear wall, built from matte Fashion pink round latex balloons, all 5-inch, alongside black balloons and silver chrome balloons, set against a plain off-white wall, no floor visible.",
+    "palabras": 68,
+    "caracteres": 453,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:46:17.361Z",
+    "recompilado_en": "2026-09-03T14:45:23.126Z"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-018",
+  "image_sha256": "7c3c498bed4ec9088951693ca5c7f8bf47e253bdc9b771a1491701aebaee033d",
+  "idempotency_key": "d14983c46f762d11fd8bb17e4391e72d328b3afe8f33f26fb28258936d7da323",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-018.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Esfera_de_amor_88196b5a-b581-46da-ae9c-6e6f57299691.png?v=1749229952",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-018",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.gold",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding red, white, and gold balloon bouquet with a clustered top, gold balloon flowers, printed red balloons, and a support rod."
+      }
+    ],
+    "non_purchased_elements": [
+      "a support rod",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-018",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from high-shine Reflex gold modeling latex balloons, matte Fashion round latex balloons in red and white and high-shine Reflex gold round latex balloons, alongside a support rod and a printed sign, set against white walls and a white floor.",
+    "palabras": 48,
+    "caracteres": 313,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:25:51.035Z"
+  }
+}

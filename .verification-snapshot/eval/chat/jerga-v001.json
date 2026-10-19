@@ -1,0 +1,18 @@
+{
+  "version": "jerga-v001",
+  "descripcion": "Conversaciones reales contra /api/chat para comprobar que el asistente no traslada jerga interna al cliente (A4, docs/mejoras/PLAN-ESTRUCTURAS-Y-UX.md). Cada caso fuerza una rama distinta: presupuesto excedido, color o tamaño sin catálogo, cardinalidad, modo LoRA restringido y conversación normal.",
+  "criterio": "0 coincidencias de detectarJergaInterna en todo el texto del asistente (deltas y reply final) en los 10 casos",
+  "seguimiento": "Si el asistente responde con una pregunta y no confirma un plan, se envía una sola respuesta de confirmación del cliente.",
+  "casos": [
+    { "id": "xv-glamour", "mensaje": "Quiero decorar unos XV años en un salón, estilo glamour, colores rosa, dorado y plateado." },
+    { "id": "presupuesto-bajo", "mensaje": "Necesito un arco de globos de 3 metros rojo y dorado y dos columnas. Mi presupuesto máximo es 60.000 pesos." },
+    { "id": "color-inexistente", "mensaje": "Cumpleaños infantil con globos color turquesa neón fosforescente con brillo en la oscuridad." },
+    { "id": "tamano-sin-catalogo", "mensaje": "Quiero un arco solo con globos de 40 pulgadas dorados para una boda." },
+    { "id": "cardinalidad", "mensaje": "Baby shower en terraza: 2 arcos y 3 columnas en azul y blanco." },
+    { "id": "boda-jardin", "mensaje": "Boda en jardín para 80 invitados, elegante, blanco y verde eucalipto. Arma la propuesta." },
+    { "id": "revelacion", "mensaje": "Revelación de género en casa, rosado y azul, presupuesto 300 mil pesos." },
+    { "id": "letras", "mensaje": "¿Tienen globos metalizados de letras para escribir FELIZ CUMPLE en dorado?" },
+    { "id": "corporativo", "mensaje": "Evento corporativo en auditorio: una pared de globos de 2 por 2 metros en azul rey y blanco." },
+    { "id": "lora-restringido", "mensaje": "Graduación en salón, dorado y negro, un arco orgánico y centros de mesa. Arma la propuesta.", "loraMode": "training_1" }
+  ]
+}

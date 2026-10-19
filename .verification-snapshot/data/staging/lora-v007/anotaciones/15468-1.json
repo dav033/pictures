@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15468-1",
+  "image_sha256": "83686a59dacc494c7e732d9cf1c0ec1c93a919e437bb3dbf6b1c5a61747cc39a",
+  "idempotency_key": "7fc35f108a6ae541e6c08843b74a84d20420257756b8d9c064c282a599c4c5dc",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15468/foto-1.jpg",
+    "orden": "15468"
+  },
+  "anotacion": {
+    "image_id": "15468-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a pink wall and a white round table",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "asymmetric cluster of pink, cream, and metallic gold round balloons rising from the lower left and arcing over the top of a round wooden sign, accented with gold butterfly picks"
+      }
+    ],
+    "non_purchased_elements": [
+      "a round wood sign",
+      "a wood gift tray",
+      "a fruit cup",
+      "a croissant"
+    ],
+    "uncertainties": [
+      "cream-toned balloons assumed to be the sand color; could instead be an ivory/pearl finish not in the allowed list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "15468-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, placed on the main table, built from matte Fashion round latex balloons in dusty rose and sand and high-shine Reflex gold round latex balloons, all at a single 5-inch size, alongside a round wood sign, a wood gift tray, a fruit cup and a croissant, set against a pink wall and a white round table.",
+    "palabras": 60,
+    "caracteres": 353,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:49.180Z",
+    "recompilado_en": "2026-09-03T14:45:22.603Z"
+  }
+}

@@ -1,0 +1,1685 @@
+@import "tailwindcss";
+@import "../components/ui/icon-button.css";
+
+/* Teléfono acostado (o ventana baja y angosta): el taller 3D pone el panel al lado del visor y no debajo. */
+@custom-variant apaisado (@media (orientation: landscape) and (max-height: 540px) and (max-width: 1023.98px));
+
+/* ==========================================================================
+   TOKENS — única fuente de color de la app (iteración 4, estilo limpio).
+   Claro por defecto; el oscuro se aplica con [data-theme="dark"] (elección
+   guardada, ver src/lib/tema) o con prefers-color-scheme cuando no hay
+   elección. Los componentes usan solo estas variables o sus clases de
+   Tailwind (bg-superficie, text-texto-suave, border-borde-suave…).
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+  --fondo: #faf9fc;
+  --superficie: #ffffff;
+  /* Fondo tenue dentro de una tarjeta (pie, filas, chips). */
+  --superficie-suave: #faf8fd;
+  --superficie-2: #efe9f8;
+  --borde: #e3daef;
+  /* Separadores y bordes de tarjeta, más discretos que `borde`. */
+  --borde-suave: #efe9f8;
+  --texto: #1c1425;
+  --texto-suave: #6b6178;
+  /* Placeholders y metadatos terciarios. */
+  --texto-tenue: #766c85;
+  --acento: #6d3fe0;
+  --acento-hover: #5530b8;
+  --acento-suave: #ece3fb;
+  /* Texto sobre `acento`. */
+  --sobre-acento: #ffffff;
+  --acento-2: #d6216f;
+  --acento-2-suave: #fbdfec;
+  --salvia: #2f8f6b;
+  --exito: #1f7a55;
+  --exito-suave: #dcf5e9;
+  --error: #b23a45;
+  --error-suave: #ffeaec;
+  --aviso: #8f5f12;
+  --aviso-suave: #fff3d8;
+  --sombra: rgb(28 20 37 / 0.08);
+  --sombra-acento: rgb(109 63 224 / 0.22);
+  --overlay: rgb(28 20 37 / 0.4);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Taller 3D (/3d): editor de escenas. Barras, paneles, visor, tarjetas, botones y la fila elegida; el morado de
+     los botones primarios (con texto blanco) va aparte del acento de texto. Ver `.taller-3d` más abajo. */
+  --taller-barra: #ffffff;
+  --taller-panel: #faf9fc;
+  --taller-visor: #ebe7f1;
+  --taller-tarjeta: #ffffff;
+  --taller-boton: #ffffff;
+  --taller-encima: #f3eefb;
+  --taller-elegido: #ece3fb;
+  --taller-linea: #ebe5f3;
+  --taller-borde: #ddd3ea;
+  --taller-texto: #1c1425;
+  --taller-texto-2: #3a3146;
+  --taller-suave: #675e74;
+  --taller-medio: #5a5168;
+  --taller-primario: #6d3fe0;
+  --taller-primario-hover: #5530b8;
+  --taller-sobre-primario: #ffffff;
+  --taller-resalte: #6d3fe0;
+  --taller-acento: #5530b8;
+  --taller-peligro: #a8323d;
+  --taller-valido: #1a6a4a;
+  --taller-solitario: #f1ebfc;
+  --taller-solitario-borde: #d9cdf3;
+  --taller-sobre-acento: #ffffff;
+  --taller-deco: #a3245f;
+  --taller-valido-fondo: #1a6a4a;
+  --taller-sobre-valido: #ffffff;
+
+  /* Alias para los componentes estilo shadcn/Radix: mismos tokens de marca. */
+  --background: var(--fondo);
+  --foreground: var(--texto);
+  --card: var(--superficie);
+  --card-foreground: var(--texto);
+  --popover: var(--superficie);
+  --popover-foreground: var(--texto);
+  --primary: var(--acento);
+  --primary-foreground: var(--sobre-acento);
+  --secondary: var(--superficie-2);
+  --secondary-foreground: var(--texto);
+  --muted: var(--superficie-2);
+  --muted-foreground: var(--texto-suave);
+  --accent: var(--acento-suave);
+  --accent-foreground: var(--acento);
+  --destructive: var(--error);
+  --destructive-foreground: #ffffff;
+  --border: var(--borde);
+  --input: var(--borde);
+  --ring: var(--acento);
+  --radius: 0.8rem;
+}
+
+/* Oscuro (maqueta PropuestaOscuro): el mismo bloque dos veces porque CSS no
+   tiene mixins — por sistema sin elección y por elección explícita. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --fondo: #0b0c10;
+    --superficie: #16181f;
+    --superficie-suave: #1c1e26;
+    --superficie-2: #242733;
+    --borde: #383c48;
+    --borde-suave: #2a2d38;
+    --texto: #f4f5f7;
+    --texto-suave: #9aa1ad;
+    --texto-tenue: #8a91a0;
+    --acento: #9479ff;
+    --acento-hover: #a58dff;
+    --acento-suave: #241f3d;
+    /* Texto oscuro sobre el acento: el blanco no llega a AA (4,5:1) sobre un violeta
+       que también debe leerse como texto sobre la superficie (scripts/test-contraste-tema.ts). */
+    --sobre-acento: #120b24;
+    --acento-2: #ff3d68;
+    --acento-2-suave: #3a1522;
+    --salvia: #5fd9a0;
+    --exito: #78d6a8;
+    --exito-suave: #173b31;
+    --error: #ff979f;
+    --error-suave: #43252a;
+    --aviso: #f7c46b;
+    --aviso-suave: #3f311c;
+    --sombra: rgb(0 0 0 / 0.4);
+    --sombra-acento: rgb(139 108 255 / 0.25);
+    --overlay: rgb(0 0 0 / 0.6);
+    --destructive-foreground: #3a0f13;
+
+    --taller-barra: #121018;
+    --taller-panel: #16131d;
+    --taller-visor: #1a1722;
+    --taller-tarjeta: #1d1926;
+    --taller-boton: #1b1724;
+    --taller-encima: #231e2e;
+    --taller-elegido: #2a2140;
+    --taller-linea: #221e2b;
+    --taller-borde: #2d2838;
+    --taller-texto: #f2eff7;
+    --taller-texto-2: #ddd8e6;
+    --taller-suave: #8d85a0;
+    --taller-medio: #a59db5;
+    --taller-primario: #7a55ec;
+    --taller-primario-hover: #6a46dc;
+    --taller-sobre-primario: #ffffff;
+    --taller-resalte: #8f6ef5;
+    --taller-acento: #b9a4ff;
+    --taller-peligro: #f08a94;
+    --taller-valido: #5fd3a0;
+    --taller-solitario: #1a1528;
+    --taller-solitario-borde: #3a2f5a;
+    --taller-sobre-acento: #120b24;
+    --taller-deco: #f59fc1;
+    --taller-valido-fondo: #1f7a55;
+    --taller-sobre-valido: #ffffff;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --fondo: #0b0c10;
+  --superficie: #16181f;
+  --superficie-suave: #1c1e26;
+  --superficie-2: #242733;
+  --borde: #383c48;
+  --borde-suave: #2a2d38;
+  --texto: #f4f5f7;
+  --texto-suave: #9aa1ad;
+  --texto-tenue: #8a91a0;
+  --acento: #9479ff;
+  --acento-hover: #a58dff;
+  --acento-suave: #241f3d;
+  /* Texto oscuro sobre el acento: el blanco no llega a AA (4,5:1) sobre un violeta
+     que también debe leerse como texto sobre la superficie (scripts/test-contraste-tema.ts). */
+  --sobre-acento: #120b24;
+  --acento-2: #ff3d68;
+  --acento-2-suave: #3a1522;
+  --salvia: #5fd9a0;
+  --exito: #78d6a8;
+  --exito-suave: #173b31;
+  --error: #ff979f;
+  --error-suave: #43252a;
+  --aviso: #f7c46b;
+  --aviso-suave: #3f311c;
+  --sombra: rgb(0 0 0 / 0.4);
+  --sombra-acento: rgb(139 108 255 / 0.25);
+  --overlay: rgb(0 0 0 / 0.6);
+  --destructive-foreground: #3a0f13;
+
+  --taller-barra: #121018;
+  --taller-panel: #16131d;
+  --taller-visor: #1a1722;
+  --taller-tarjeta: #1d1926;
+  --taller-boton: #1b1724;
+  --taller-encima: #231e2e;
+  --taller-elegido: #2a2140;
+  --taller-linea: #221e2b;
+  --taller-borde: #2d2838;
+  --taller-texto: #f2eff7;
+  --taller-texto-2: #ddd8e6;
+  --taller-suave: #8d85a0;
+  --taller-medio: #a59db5;
+  --taller-primario: #7a55ec;
+  --taller-primario-hover: #6a46dc;
+  --taller-sobre-primario: #ffffff;
+  --taller-resalte: #8f6ef5;
+  --taller-acento: #b9a4ff;
+  --taller-peligro: #f08a94;
+  --taller-valido: #5fd3a0;
+  --taller-solitario: #1a1528;
+  --taller-solitario-borde: #3a2f5a;
+  --taller-sobre-acento: #120b24;
+  --taller-deco: #f59fc1;
+  --taller-valido-fondo: #1f7a55;
+  --taller-sobre-valido: #ffffff;
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-suave: var(--superficie-suave);
+  --color-superficie-2: var(--superficie-2);
+  --color-borde: var(--borde);
+  --color-borde-suave: var(--borde-suave);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-texto-tenue: var(--texto-tenue);
+  --color-acento: var(--acento);
+  --color-acento-hover: var(--acento-hover);
+  --color-acento-suave: var(--acento-suave);
+  --color-sobre-acento: var(--sobre-acento);
+  --color-acento-2: var(--acento-2);
+  --color-acento-2-suave: var(--acento-2-suave);
+  --color-salvia: var(--salvia);
+  --color-exito: var(--exito);
+  --color-exito-suave: var(--exito-suave);
+  --color-error: var(--error);
+  --color-error-suave: var(--error-suave);
+  --color-aviso: var(--aviso);
+  --color-aviso-suave: var(--aviso-suave);
+  --color-overlay: var(--overlay);
+  --color-taller-barra: var(--taller-barra);
+  --color-taller-panel: var(--taller-panel);
+  --color-taller-visor: var(--taller-visor);
+  --color-taller-tarjeta: var(--taller-tarjeta);
+  --color-taller-boton: var(--taller-boton);
+  --color-taller-encima: var(--taller-encima);
+  --color-taller-elegido: var(--taller-elegido);
+  --color-taller-linea: var(--taller-linea);
+  --color-taller-borde: var(--taller-borde);
+  --color-taller-texto: var(--taller-texto);
+  --color-taller-texto-2: var(--taller-texto-2);
+  --color-taller-suave: var(--taller-suave);
+  --color-taller-medio: var(--taller-medio);
+  --color-taller-primario: var(--taller-primario);
+  --color-taller-primario-hover: var(--taller-primario-hover);
+  --color-taller-sobre-primario: var(--taller-sobre-primario);
+  --color-taller-resalte: var(--taller-resalte);
+  --color-taller-acento: var(--taller-acento);
+  --color-taller-peligro: var(--taller-peligro);
+  --color-taller-valido: var(--taller-valido);
+  --color-taller-solitario: var(--taller-solitario);
+  --color-taller-solitario-borde: var(--taller-solitario-borde);
+  --color-taller-deco: var(--taller-deco);
+  --color-taller-valido-fondo: var(--taller-valido-fondo);
+  --color-taller-sobre-valido: var(--taller-sobre-valido);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+html {
+  background: var(--fondo);
+}
+
+body {
+  min-width: 320px;
+  background: var(--fondo);
+  color: var(--texto);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--acento-suave);
+  color: var(--texto);
+}
+
+::placeholder {
+  color: var(--texto-tenue);
+}
+
+:where(a, button, select, input, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* Las piezas de la tarjeta del plan recortan su contenido (overflow hidden):
+   el contorno se dibuja por dentro para que no se corte. */
+.plan-pieza > summary:focus-visible {
+  outline-offset: -2px;
+}
+
+:where(button, a, select) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+}
+
+:where(a, button):active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ui-pressable:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Íconos del interruptor de tema: CSS elige el correcto también antes de
+   hidratar, sin depender del estado de React. */
+.tema-icono-sol {
+  display: none;
+}
+
+:root[data-theme="dark"] .tema-icono-sol {
+  display: block;
+}
+
+:root[data-theme="dark"] .tema-icono-luna {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tema-icono-sol {
+    display: block;
+  }
+
+  :root:not([data-theme="light"]) .tema-icono-luna {
+    display: none;
+  }
+}
+
+/* Clases de componente en la capa `components` de Tailwind: así una utilidad
+   (size-7, px-3, rounded-lg…) puede ajustarlas en el sitio donde se usan. */
+@layer components {
+  /* ==========================================================================
+     CONTROLES COMPARTIDOS (los usan también catálogo, admin, LoRA, plan…)
+     ========================================================================== */
+
+  .ui-button-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border-radius: 0.8rem;
+    background: var(--acento);
+    padding: 0.625rem 1rem;
+    color: var(--sobre-acento);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .ui-button-primary:hover:not(:disabled) {
+    background: var(--acento-hover);
+  }
+
+  .ui-button-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ui-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border: 1px solid var(--borde);
+    border-radius: 0.8rem;
+    background: var(--superficie);
+    padding: 0.625rem 1rem;
+    color: var(--acento);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .ui-button-secondary:hover:not(:disabled) {
+    border-color: var(--acento);
+    background: var(--acento-suave);
+  }
+
+  .ui-button-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .ui-button-ghost,
+  .ui-nav-link {
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  .ui-button-ghost:hover,
+  .ui-nav-link:hover {
+    color: var(--acento);
+  }
+
+  .ui-chip {
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    background: var(--superficie);
+    padding: 0.4rem 0.75rem;
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  .ui-chip:hover:not(:disabled) {
+    border-color: var(--acento);
+    color: var(--acento);
+  }
+
+  .ui-alert {
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, var(--borde));
+    border-radius: 0.8rem;
+    background: var(--acento-suave);
+    padding: 0.625rem 0.75rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+  }
+
+  /* Tarjeta limpia: la base de propuesta, estados y paneles de las vistas. */
+  .ui-card {
+    border: 1px solid var(--borde-suave);
+    border-radius: 1.25rem;
+    background: var(--superficie);
+    box-shadow: 0 1px 2px var(--sombra);
+  }
+
+  .ui-input {
+    width: 100%;
+    border: 1px solid var(--borde);
+    border-radius: 0.7rem;
+    background: var(--superficie);
+    padding: 0.5rem 0.75rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+  }
+
+  .ui-input:focus {
+    border-color: var(--acento);
+  }
+
+  /* Nombres históricos que siguen usando otros componentes: ahora son
+     tarjetas planas, sin vidrio ni desenfoque. */
+  .material-panel {
+    border: 1px solid var(--borde-suave);
+    border-radius: 1rem;
+    background: var(--superficie);
+    padding: 1rem;
+  }
+
+  .material-subpanel {
+    border: 1px solid var(--borde-suave);
+    border-radius: 0.9rem;
+    background: var(--superficie-suave);
+  }
+
+  .material-comparison-card {
+    overflow: hidden;
+    border: 1px solid var(--borde-suave);
+    border-radius: 1rem;
+    background: var(--superficie);
+  }
+
+  .material-kicker {
+    color: var(--acento);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .material-status {
+    border-radius: 999px;
+    background: var(--acento-suave);
+    color: var(--acento);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.3rem 0.55rem;
+    white-space: nowrap;
+  }
+
+  .material-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--salvia);
+    box-shadow: 0 0 0 4px var(--exito-suave);
+  }
+
+  /* Barra de scroll discreta. */
+  .scroll-suave {
+    scrollbar-width: thin;
+    scrollbar-color: var(--borde) transparent;
+  }
+
+  .scroll-suave::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  .scroll-suave::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--borde);
+    background-clip: padding-box;
+  }
+
+  /* Markdown de las respuestas del asistente. */
+  .prose-chat > :first-child {
+    margin-top: 0;
+  }
+  .prose-chat > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-chat p {
+    margin: 0.5em 0;
+  }
+  .prose-chat ul,
+  .prose-chat ol {
+    margin: 0.5em 0;
+    padding-left: 1.25em;
+  }
+  .prose-chat ul {
+    list-style-type: disc;
+  }
+  .prose-chat ol {
+    list-style-type: decimal;
+  }
+  .prose-chat li {
+    margin: 0.15em 0;
+  }
+  .prose-chat strong {
+    font-weight: 600;
+  }
+  .prose-chat a {
+    color: var(--acento);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-chat code {
+    background: var(--superficie-2);
+    border-radius: 0.25em;
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+  }
+  .prose-chat table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.9em;
+  }
+  .prose-chat th,
+  .prose-chat td {
+    border: 1px solid var(--borde);
+    padding: 0.3em 0.5em;
+    text-align: left;
+  }
+
+  /* Radix expone data-state=open/closed en popovers, selects y tooltips. */
+  @keyframes radix-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes radix-pop-out {
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.96) translateY(-2px);
+    }
+  }
+
+  .radix-pop[data-state="open"] {
+    animation: radix-pop-in 140ms var(--ease-out) both;
+  }
+
+  .radix-pop[data-state="closed"] {
+    animation: radix-pop-out 100ms var(--ease-in-out) both;
+  }
+
+  /* ==========================================================================
+     ARMAZÓN DE LA APP (page.tsx): cabecera de una línea, chat centrado y
+     compositor. Maquetas EstadoInicial, Main, ChatNormal y PropuestaMovil.
+     ========================================================================== */
+
+  .app-shell {
+    display: flex;
+    min-height: 100dvh;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow-x: clip;
+    background: var(--fondo);
+  }
+
+  @media (min-width: 1024px) {
+    .app-shell {
+      height: 100dvh;
+    }
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    min-height: 3.5rem;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--borde-suave);
+    background: var(--fondo);
+    padding: 0.25rem 0.75rem 0.25rem 1rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-header {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+      padding-inline: 1.25rem;
+    }
+  }
+
+  .app-marca {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .app-marca-icono {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.5rem;
+    background: var(--acento);
+    color: var(--sobre-acento);
+  }
+
+  .app-contexto {
+    display: none;
+    min-width: 0;
+    justify-content: center;
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-contexto {
+      display: flex;
+    }
+  }
+
+  .app-acciones {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.125rem;
+  }
+
+  /* Contexto del evento bajo la cabecera en pantallas angostas. */
+  .app-contexto-movil {
+    border-bottom: 1px solid var(--borde-suave);
+    padding: 0.375rem 1rem;
+    color: var(--texto-suave);
+    font-size: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-contexto-movil {
+      display: none;
+    }
+  }
+
+  .app-barra-dev {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    border-bottom: 1px dashed var(--borde);
+    background: var(--superficie-suave);
+    padding: 0.375rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  /* Menú desplegable (⋯) y selector de creatividad. */
+  .app-menu {
+    position: absolute;
+    top: calc(100% + 0.375rem);
+    right: 0;
+    z-index: 30;
+    min-width: 14rem;
+    overflow: hidden;
+    border: 1px solid var(--borde-suave);
+    border-radius: 0.9rem;
+    background: var(--superficie);
+    padding: 0.25rem;
+    box-shadow: 0 16px 40px var(--sombra);
+    animation: radix-pop-in 140ms var(--ease-out) both;
+  }
+
+  .app-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.625rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+    text-align: left;
+  }
+
+  .app-menu-item:hover:not(:disabled),
+  .app-menu-item:focus-visible {
+    background: var(--superficie-2);
+  }
+
+  .app-menu-item:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .app-menu-titulo {
+    padding: 0.375rem 0.625rem 0.125rem;
+    color: var(--texto-suave);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .app-menu-separador {
+    margin: 0.25rem 0.5rem;
+    border-top: 1px solid var(--borde-suave);
+  }
+
+  .app-main {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .app-log {
+    /* `position: relative` no es decorativo: los textos `sr-only` de los
+       mensajes son `position: absolute` sin `top`/`left`, así que sin un
+       ancestro posicionado su bloque contenedor es el documento entero. Ahí
+       escapan al recorte de este contenedor y estiran la página: con una
+       imagen generada el documento pasaba de 900 a 1579 px y dejaba un hueco
+       vacío enorme bajo el compositor. Medido con Playwright. */
+    position: relative;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .app-columna {
+    width: 100%;
+    max-width: 47.5rem;
+    margin-inline: auto;
+  }
+
+  /* Pantallas anchas: un poco más de ancho para la propuesta y sus tarjetas;
+     el texto del chat conserva su medida de lectura. */
+  @media (min-width: 1200px) {
+    .app-main:not(.en-inicio) .app-log .app-columna {
+      max-width: 60rem;
+    }
+
+    .app-log .msg-asistente {
+      max-width: 47.5rem;
+    }
+  }
+
+  /* --- Estado inicial -------------------------------------------------------- */
+
+  /* En el inicio no hay conversación que fijar abajo: toda la columna (título,
+     compositor grande, ideas y galería) desplaza junta. Los tres bloques son
+     los mismos nodos que en el chat, así el compositor no se vuelve a montar
+     (y el análisis de una foto recién elegida no se reinicia). */
+  .app-main.en-inicio {
+    overflow-y: auto;
+  }
+
+  .app-main.en-inicio .app-log {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .app-inicio-compositor {
+    flex: 0 0 auto;
+    padding: 1.75rem 1rem 0;
+  }
+
+  .app-inicio-extra {
+    flex: 0 0 auto;
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  @media (min-width: 820px) {
+    .app-inicio-extra .app-columna {
+      max-width: 50rem;
+    }
+  }
+
+  .inicio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: clamp(1.5rem, 8vh, 6rem);
+    text-align: center;
+  }
+
+  .inicio-titulo {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .inicio-subtitulo {
+    margin-top: 0.5rem;
+    color: var(--texto-suave);
+    font-size: 1rem;
+  }
+
+  .entra {
+    animation: entra 0.9s var(--ease-out) both;
+  }
+
+  @keyframes entra {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
+  .galeria {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  @media (min-width: 560px) {
+    .galeria {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 820px) {
+    .galeria {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  .galeria-item {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    text-align: left;
+    animation: galeria-entra 0.8s var(--ease-rebote) both;
+  }
+
+  @keyframes galeria-entra {
+    from {
+      opacity: 0;
+      transform: translateY(22px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .galeria-foto {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--superficie-2);
+    transition: box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out);
+  }
+
+  .galeria-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 600ms var(--ease-out);
+  }
+
+  .galeria-item:hover .galeria-foto img {
+    transform: scale(1.06);
+  }
+
+  .galeria-item:hover .galeria-foto,
+  .galeria-item[aria-pressed="true"] .galeria-foto {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 3px var(--acento), 0 10px 24px var(--sombra-acento);
+  }
+
+  .galeria-item:focus-visible {
+    outline-offset: 4px;
+  }
+
+  .galeria-check {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: grid;
+    width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--acento);
+    color: var(--sobre-acento);
+    animation: aparece-rebote 0.4s var(--ease-rebote) both;
+  }
+
+  @keyframes aparece-rebote {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Foto que "vuela" de la galería al chip del compositor. */
+  .foto-en-vuelo {
+    position: fixed;
+    z-index: 60;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    box-shadow: 0 10px 24px var(--sombra);
+    pointer-events: none;
+  }
+
+  /* --- Mensajes ------------------------------------------------------------ */
+
+  .msg-usuario {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .msg-usuario-burbuja {
+    display: flex;
+    max-width: min(34rem, 88%);
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 1.125rem;
+    background: var(--acento-suave);
+    padding: 0.625rem 0.875rem;
+    color: var(--texto);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .msg-usuario-burbuja.con-foto {
+    padding-left: 0.375rem;
+  }
+
+  .msg-usuario-foto {
+    width: 2.75rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    border-radius: 0.625rem;
+    object-fit: cover;
+  }
+
+  .msg-asistente {
+    min-width: 0;
+    color: var(--texto);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- Esperas --------------------------------------------------------------- */
+
+  .puntos {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .puntos span {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--acento);
+    animation: punto 1.2s ease-in-out infinite;
+  }
+
+  .puntos span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .puntos span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes punto {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: none;
+    }
+    40% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+
+  .brillo-carga {
+    background: linear-gradient(90deg, var(--superficie-2) 0%, var(--superficie-suave) 40%, var(--superficie-2) 80%);
+    background-size: 200% 100%;
+    animation: brillo-carga 1.6s linear infinite;
+  }
+
+  @keyframes brillo-carga {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* --- Compositor ------------------------------------------------------------ */
+
+  .app-compositor-zona {
+    flex: 0 0 auto;
+    padding: 0.5rem 0.75rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    background: var(--fondo);
+  }
+
+  @media (min-width: 640px) {
+    .app-compositor-zona {
+      padding-inline: 1rem;
+      padding-bottom: 1.375rem;
+    }
+  }
+
+  .compositor {
+    display: flex;
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--borde);
+    border-radius: 1rem;
+    background: var(--superficie);
+    padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+    transition: border-color 160ms var(--ease-out);
+  }
+
+  .compositor:focus-within {
+    border-color: var(--acento);
+  }
+
+  /* PromptBar (React Bits): halo suave del acento al enfocar. */
+  .prompt-bar:focus-within {
+    box-shadow: 0 0 0 3px var(--acento-suave);
+  }
+
+  .compositor.grande {
+    min-height: 3.75rem;
+    border-radius: 1.125rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    box-shadow: 0 8px 28px var(--sombra);
+  }
+
+  .compositor-input {
+    min-width: 0;
+    flex: 1 1 auto;
+    border: 0;
+    background: transparent;
+    padding: 0.5rem 0.25rem;
+    color: var(--texto);
+    font-size: 1rem;
+    outline: none;
+  }
+
+
+  .compositor-adjuntar {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.75rem;
+    color: var(--acento);
+  }
+
+  .compositor.grande .compositor-adjuntar {
+    background: var(--superficie-2);
+  }
+
+  .compositor-adjuntar:hover:not(:disabled) {
+    background: var(--acento-suave);
+  }
+
+  .compositor-enviar {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.8rem;
+    background: var(--acento);
+    color: var(--sobre-acento);
+  }
+
+  .compositor-enviar:hover:not(:disabled) {
+    background: var(--acento-hover);
+  }
+
+  .compositor-enviar:disabled {
+    cursor: not-allowed;
+    background: var(--acento-suave);
+    color: var(--acento);
+  }
+
+  .adjunto-chip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: var(--superficie-2);
+    padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+    color: var(--texto);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .adjunto-chip img {
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    border-radius: 0.5rem;
+    object-fit: cover;
+  }
+
+  /* --- Hoja lateral (selección manual) -------------------------------------- */
+
+  .hoja-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--overlay);
+    animation: aparece 160ms var(--ease-out) both;
+  }
+
+  .hoja {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 41;
+    display: flex;
+    width: min(24rem, 100%);
+    flex-direction: column;
+    border-left: 1px solid var(--borde-suave);
+    background: var(--superficie);
+    box-shadow: -16px 0 40px var(--sombra);
+    animation: hoja-entra 260ms var(--ease-out) both;
+  }
+
+  @keyframes aparece {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes hoja-entra {
+    from {
+      transform: translateX(100%);
+    }
+  }
+
+  /* --- Globos del dibujo del patrón (VistaPatron) ---------------------------
+     Entrada escalonada desde la base; el retraso va en el estilo de cada
+     globo. Corre una vez al montar: la vista previa en vivo repinta colores
+     sin volver a animar la entrada. `backwards` y no `both`: al terminar no
+     queda una animación en cada globo, que el navegador recomponía en cada
+     cuadro del arrastre. */
+
+  .patron-globo-entra {
+    animation: patron-globo-entra 380ms var(--ease-out) backwards;
+  }
+
+  @keyframes patron-globo-entra {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+  }
+}
+
+/* Excepciones de foco fuera de capa: deben ganarle a la regla global de
+   :focus-visible, que también está fuera de capa a propósito. */
+.compositor-input:focus-visible,
+.app-menu-item:focus-visible {
+  outline: none;
+}
+
+.app-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--acento);
+}
+
+/* Vista guiada: cursor de escritura al final del texto que llega del asistente. */
+.escribiendo-caret > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--acento);
+  animation: caret 1s steps(2) infinite;
+}
+
+@keyframes caret {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Vista guiada: franja de acento que recorre la foto de inspiración mientras se lee. Va aparte de
+   `.escaner-barrido` (EscanerFoto.tsx de la vista clásica, 3,6 s de ida y vuelta) para no cambiar aquella. */
+.escaner-guiado {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: var(--acento);
+  box-shadow: 0 0 12px 3px var(--sombra-acento);
+  animation: escaner-guiado-barrido 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes escaner-guiado-barrido {
+  from { top: 0%; }
+  to { top: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .puntos span,
+  .brillo-carga,
+  .foto-en-vuelo,
+  .escribiendo-caret > :last-child::after,
+  .escaner-guiado {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   HAPPIE IA: transiciones del recomendador/wizard. La regla global de
+   prefers-reduced-motion (arriba) ya neutraliza duración e iteración.
+   ========================================================================== */
+@keyframes happie-flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes happie-flotar-lento {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+
+@keyframes happie-brillo {
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes happie-entrar {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.happie-flota {
+  animation: happie-flotar 5s ease-in-out infinite;
+}
+
+.happie-flota-lento {
+  animation: happie-flotar-lento 7s ease-in-out infinite;
+}
+
+.happie-brilla {
+  animation: happie-brillo 3.2s ease-in-out infinite;
+}
+
+.happie-entra {
+  animation: happie-entrar 0.5s var(--ease-out) both;
+}
+
+.happie-tarjeta {
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.happie-tarjeta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px var(--sombra);
+}
+
+/* ==========================================================================
+   HOJA DE ARMADO (patrón de color, ADR-0028): al imprimir sale solo la hoja.
+   El diálogo vive en un portal, hijo directo de <body>; todo lo demás se
+   oculta y el diálogo pierde su caja fija para paginar. La hoja se imprime
+   siempre en claro: sus tokens se fijan aquí aunque la app esté en oscuro.
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body:has(> .hoja-armado-dialogo) > :not(.hoja-armado-dialogo):not(:has(.hoja-armado-dialogo)),
+  .hoja-armado-fondo,
+  .hoja-armado-no-imprimir {
+    display: none !important;
+  }
+
+  .hoja-armado-dialogo,
+  .hoja-armado-scroll {
+    /* <body> es flex en columna: con márgenes automáticos la hoja se encogería. */
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    translate: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .hoja-armado {
+    --fondo: #ffffff;
+    --superficie: #ffffff;
+    --superficie-suave: #faf8fd;
+    --superficie-2: #efe9f8;
+    --borde: #d9cfe8;
+    --borde-suave: #e8e1f2;
+    --texto: #1c1425;
+    --texto-suave: #4f465c;
+    --texto-tenue: #6b6178;
+    --acento: #5530b8;
+    --acento-suave: #ece3fb;
+    --aviso: #8f5f12;
+    --aviso-suave: #fff3d8;
+    color: var(--texto);
+  }
+
+  .hoja-armado,
+  .hoja-armado * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Chrome rasteriza cada sombra al imprimir: sin ellas el PDF pesa decenas de veces menos. */
+  .hoja-armado * {
+    box-shadow: none !important;
+  }
+
+  .hoja-armado-bloque,
+  .hoja-armado tr {
+    break-inside: avoid;
+  }
+
+  /* Una sola columna: la gráfica numerada toma todo el ancho del papel (en
+     pantalla ancha va al lado de la vista). Lo que aún no cabe se imprime por
+     tramos (HojaArmado); nada se recorta. */
+  .hoja-armado-columnas {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .hoja-armado h3 {
+    break-after: avoid;
+  }
+}
+
+/* ==========================================================================
+   Escáner de la foto de referencia (EscanerFoto.tsx). Pieza de presentación:
+   se anima también con prefers-reduced-motion, por decisión de producto; la
+   regla global de arriba se sobrescribe solo para estas clases.
+   ========================================================================== */
+@keyframes escaner-barrido {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+@keyframes escaner-revelar {
+  0% { clip-path: inset(0% 0 0 0); }
+  50% { clip-path: inset(100% 0 0 0); }
+  100% { clip-path: inset(0% 0 0 0); }
+}
+
+@keyframes escaner-destello {
+  0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+  40% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+}
+
+@keyframes escaner-pulso {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes escaner-rejilla {
+  from { background-position: 0 0; }
+  to { background-position: 0 28px; }
+}
+
+.escaner-barrido,
+.escaner-revelar {
+  animation-duration: 3.6s;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  animation-iteration-count: infinite;
+}
+
+.escaner-barrido { animation-name: escaner-barrido; }
+.escaner-revelar { animation-name: escaner-revelar; }
+
+.escaner-destello {
+  animation: escaner-destello 3.6s ease-out infinite;
+}
+
+.escaner-pulso {
+  animation: escaner-pulso 1.4s ease-in-out infinite;
+}
+
+.escaner-rejilla {
+  animation: escaner-rejilla 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escaner-barrido,
+  .escaner-revelar {
+    animation-duration: 3.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .escaner-destello {
+    animation-duration: 3.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .escaner-pulso {
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .escaner-rejilla {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ==========================================================================
+   Arco que se construye mientras se genera la imagen (ConstruccionArco.tsx).
+   Pieza de presentación, como el escáner: también con prefers-reduced-motion.
+   ========================================================================== */
+@keyframes construir-inflar {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  80% { transform: scale(0.94); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes construir-flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes construir-trazo {
+  from { stroke-dashoffset: 520; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes construir-fantasma {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+@keyframes construir-chispa {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+
+.construir-globo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: construir-inflar 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.construir-flotar {
+  animation: construir-flotar 3s ease-in-out infinite;
+}
+
+.construir-trazo {
+  stroke-dasharray: 520;
+  animation: construir-trazo 2.2s ease-out both;
+}
+
+.construir-fantasma {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: construir-fantasma 1.1s ease-in-out infinite;
+}
+
+.construir-chispa {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: construir-chispa 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .construir-globo {
+    animation-duration: 0.7s !important;
+  }
+
+  .construir-flotar {
+    animation-duration: 3s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .construir-trazo {
+    animation-duration: 2.2s !important;
+  }
+
+  .construir-fantasma {
+    animation-duration: 1.1s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .construir-chispa {
+    animation-duration: 2.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ==========================================================================
+   TALLER 3D (/3d): dentro del editor, los tokens generales toman los del
+   taller. Así los editores que reusa (deslizadores, selectores de color,
+   paneles de cada estructura) se ven con su paleta sin tocar cada uno.
+   ========================================================================== */
+.taller-3d {
+  --fondo: var(--taller-panel);
+  --superficie: var(--taller-tarjeta);
+  --superficie-suave: var(--taller-encima);
+  --superficie-2: var(--taller-elegido);
+  --borde: var(--taller-borde);
+  --borde-suave: var(--taller-linea);
+  --texto: var(--taller-texto);
+  --texto-suave: var(--taller-suave);
+  --texto-tenue: var(--taller-suave);
+  --acento: var(--taller-acento);
+  --acento-hover: var(--taller-acento);
+  --acento-suave: var(--taller-elegido);
+  --sobre-acento: var(--taller-sobre-acento);
+  background: var(--taller-panel);
+  color: var(--taller-texto);
+}
+
+/* Paneles por secciones (inspector, parámetros del editor solitario): las tarjetas de los editores que se reusan se
+   vuelven secciones planas separadas por una línea, como en la maqueta. */
+.taller-seccionado > section,
+.taller-seccionado > details {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: 1px solid var(--taller-linea);
+  padding: 14px 16px;
+}
+
+.taller-seccionado > section:first-child,
+.taller-seccionado > details:first-child {
+  border-top: 0;
+}
+
+/* Rótulo de sección del taller (MEDIDAS, COLORES DE LA PIEZA…). */
+.taller-rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--taller-suave);
+}
+
+/* Barras de desplazamiento discretas en los paneles del taller. */
+.taller-3d :where(aside, nav, section, div) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--taller-borde) transparent;
+}

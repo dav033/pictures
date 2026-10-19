@@ -1,0 +1,107 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000056-1",
+  "image_sha256": "2b00a0e93246adb3cc93bd8e866eb9ef428bdff4c0944b1b0d2835f174fa928e",
+  "idempotency_key": "cefe2202793a1e68b53fbad7dbe46d97aae07e8ff360150efb74c6b2e0fb88c1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000056/foto-1.png",
+    "orden": "950000056"
+  },
+  "anotacion": {
+    "image_id": "950000056-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.metallic.gold",
+          "balloon.link.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.metallic.gold",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.link.latex.fashion.red",
+            "size_code": "LOL-6"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Three stacked printed heart balloons rise above a red flower-shaped balloon cluster whose center is filled with small round gold and red balloons"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The three large printed heart balloons and the red flower petals are visible but do not match any allowed concept for this image, so they were not annotated",
+      "Small cream/white round balls in the flower center could not be confidently matched to modeling sand T260 or another product"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.red",
+      "balloon.link.latex.metallic.gold",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000056-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from matte Fashion red Link-O-Loon® linking latex balloons and Metallic gold Link-O-Loon® linking latex balloons, all at a single 6-inch size, set against white studio background.",
+    "palabras": 36,
+    "caracteres": 251,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.red",
+      "balloon.link.latex.metallic.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.fashion.red",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.link.latex.metallic.gold",
+        "size_code": "LOL-6",
+        "inches": 6
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:07:58.944Z",
+    "recompilado_en": "2026-09-03T14:45:23.808Z"
+  }
+}

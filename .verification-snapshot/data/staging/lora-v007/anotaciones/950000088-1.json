@@ -1,0 +1,180 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000088-1",
+  "image_sha256": "186faf71466e85e75f66aea98e6a6013a78f19be6cfbdf0048f426beb861ce27",
+  "idempotency_key": "6816aab6a943119d96a4fe777a30e543b26a3b732260a518872b3ac7c0726384",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000088/foto-1.jpg",
+    "orden": "950000088"
+  },
+  "anotacion": {
+    "image_id": "950000088-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white brick wall and a pink floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.blue",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.pastel_dusk.pink",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "quilted balloon wall panel arranged in rows of blue, gray-green, and pink with small gold spheres at each intersection"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "matching pairs of curly twisted balloon branch sculptures set in vase-like stands flanking the wall on each side"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic pink balloon garland cascading along the floor beneath the table"
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden table",
+      "a birthday cake",
+      "party tableware",
+      "printed foil balloons"
+    ],
+    "uncertainties": [
+      "the curly branch sculptures may not be simple round latex balloons and could be a product not in the allowed list",
+      "the gray wall stripe may or may not correspond to the laurel green dusk finish",
+      "the melon color from the allowed list was not clearly distinguished in the photo"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000088-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch muted Pastel Dusk round latex balloons in blue, laurel green and pink, 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, two matching balloon bouquets, one at each end of the balloon wall, an organic balloon garland, anchored to the balloon wall, built from muted Pastel Dusk pink round latex balloons, all 9-inch, alongside a wooden table, a birthday cake, party tableware and printed foil balloons, set against white brick wall and a pink floor.",
+    "palabras": 90,
+    "caracteres": 575,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:23.727Z",
+    "recompilado_en": "2026-09-03T14:45:24.165Z"
+  }
+}

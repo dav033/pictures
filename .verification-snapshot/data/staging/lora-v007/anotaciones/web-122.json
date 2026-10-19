@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-122",
+  "image_sha256": "ea07bb4c704ab8aa4516d9c8c606354d0ffaae9237f12440be8445bf7ed6ae2e",
+  "idempotency_key": "c6d193dae7f1ab626e2a24ffbb7cba0cb16dda0f7200899e364284c0996859a1",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-122.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Rudolph_el_reno.png?v=1739827056",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-122",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional reindeer balloon sculpture with red, white, brown, and latte balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The exact balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-122",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion round latex balloons in coffee brown, latte, red and white, set against white walls and a white floor.",
+    "palabras": 30,
+    "caracteres": 194,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:24:31.308Z"
+  }
+}

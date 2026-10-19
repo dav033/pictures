@@ -1,0 +1,75 @@
+[build-system]
+requires = [
+    "setuptools==75.6.0",
+    "wheel==0.45.1",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decoracion-ai-api"
+version = "0.1.0"
+description = "Deterministic Python contract-model scaffold for the AI API"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "asyncpg==0.30.0",
+    "fastapi==0.115.6",
+    "google-genai==2.24.0",
+    "httpx==0.28.1",
+    "jsonschema==4.23.0",
+    "pydantic==2.12.5",
+    "sentence-transformers==3.3.1",
+    "torch==2.5.1",
+    "truststore==0.10.4",
+    "uvicorn==0.34.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.3.4",
+]
+quality = [
+    "mypy==1.14.1",
+    "ruff==0.9.10",
+]
+
+[tool.uv.sources]
+# CPU-only torch: the EC2 deployment target has no GPU, and the default
+# (CUDA) wheels pull in ~2GB of nvidia-* packages for zero benefit. Scoped to
+# linux (the Docker deployment platform) -- the pytorch-cpu index does not
+# publish macOS wheels, and macOS/Windows dev wheels do not pull CUDA anyway.
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra"]
+# [tool.setuptools] py-modules = [] deliberately installs nothing (the
+# Dockerfile runs uvicorn straight from source via `uv run` with WORKDIR
+# /app, never through the installed package). Tests need `app` importable
+# too, but from source in the same way, not through the (empty) install.
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+exclude = ["app/generated_models.py"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_any_generics = true
+follow_imports = "skip"
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_ignores = true
+exclude = "app/generated_models\\.py$"

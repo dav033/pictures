@@ -1,0 +1,154 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14660-1",
+  "image_sha256": "cf4d04ace5caa76c91d6314e0183509180503d7ace5cb9fdcdaf6fbe43104b1a",
+  "idempotency_key": "525a7679828e2e9e13be958874af361154345e0931ba4a433395cdcd872e1d0f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14660/foto-1.jpg",
+    "orden": "14660"
+  },
+  "anotacion": {
+    "image_id": "14660-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "cream walls and a terracotta tiled floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.pastel_matte.green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic round-balloon garland wraps over the top of the backdrop panel and down both sides to the floor, mixing bright green, mint, and white balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat green sequin/fringe panel behind the child, hung with a Feliz Cumpleaños banner."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 3,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Foil dinosaur-shaped balloons (T-rex and dino head) placed at floor level flanking the backdrop, not matching any allowed round-latex concept."
+      }
+    ],
+    "non_purchased_elements": [
+      "birthday cake on stand",
+      "gold foil number balloon",
+      "child in polo shirt",
+      "gift bags"
+    ],
+    "uncertainties": [
+      "Could not reliably distinguish dusk laurel green from pastel matte green among the mint-toned balloons, so laurel green was omitted."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_matte.green"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14660-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, anchored to the decorated backdrop, built from 9-inch matte Fashion clover green round latex balloons and Pastel Matte green round latex balloons, 5-inch matte Fashion white round latex balloons, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, with three matching decorative accessorys, grounded across the front, alongside birthday cake on stand, gold foil number balloon, child in polo shirt and gift bags, set against cream walls and a terracotta tiled floor.",
+    "palabras": 81,
+    "caracteres": 553,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.pastel_matte.green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:13.874Z",
+    "recompilado_en": "2026-09-03T14:45:22.456Z"
+  }
+}

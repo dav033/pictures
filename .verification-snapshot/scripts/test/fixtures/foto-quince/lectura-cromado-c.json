@@ -1,0 +1,138 @@
+{
+ "resumen": "Decoración de fiesta de quince años al fondo con guirnalda orgánica rosa, morada y dorada sobre marcos de arco y paneles, vista desde la mesa de invitados en primer plano.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 320,
+  "referencia": "sillón trono de 150 cm"
+ },
+ "pisoY": 0.88,
+ "sala": {
+  "pared": "#3a2b38",
+  "piso": "#5e4c5a"
+ },
+ "piezas": [
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.08,
+     "y": 0.25,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.16,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.29,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.39,
+     "y": 0.21,
+     "grosor": 0.09
+    },
+    {
+     "x": 0.5,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.6,
+     "y": 0.24,
+     "grosor": 0.11
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 20,
+    "medianos": 55,
+    "chicos": 25,
+    "diametroGrande": 0.11,
+    "diametroMediano": 0.06,
+    "diametroChico": 0.035
+   },
+   "racimos": 0.7,
+   "colores": [
+    {
+     "nombre": "Fashion Rosado",
+     "hex": "#e8a5c2",
+     "peso": 40,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "Reflex Violeta",
+     "hex": "#7a2862",
+     "peso": 30,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Reflex Dorado",
+     "hex": "#cfa44e",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "arcos_chiara",
+   "x": 0.35,
+   "yBase": 0.48,
+   "ancho": 0.22,
+   "alto": 0.3,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#e0d8df",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.11,
+   "yBase": 0.49,
+   "ancho": 0.15,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "dorado",
+     "hex": "#a88e5d",
+     "peso": 100,
+     "acabado": "brillante"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.6,
+   "yBase": 0.45,
+   "ancho": 0.1,
+   "alto": 0.22,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#d6c7d2",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#b89047",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "primer plano: mesa de invitados con vasos, servilletas y personas sentadas"
+  }
+ ]
+}

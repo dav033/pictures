@@ -1,0 +1,155 @@
+{
+ "caso": "idea-deco-real-30-columna-balon-futbol",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "a34c257fba59b16f20d4017edaf26504ca7a5d19454b950d0850c199c0f335e1",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_02_FIGURA",
+   "motivo": "No hay un constructor genérico de figuras: solo existen las digitalizadas una a una."
+  }
+ ],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "031",
+     "cantidad": 14
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "031",
+     "cantidad": 15
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "080",
+     "cantidad": 11
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "031",
+     "cantidad": 12
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "080",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "031",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "080",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "005",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 72,
+   "caja": [
+    -35,
+    0,
+    -196,
+    35,
+    219,
+    -124
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "031",
+    "cantidad": 14
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "031",
+    "cantidad": 15
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "080",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "031",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "080",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "031",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "080",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "005",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 72
+ },
+ "caja": [
+  -35,
+  0,
+  -196,
+  35,
+  219,
+  -124
+ ],
+ "referenciaPython": {
+  "globos": 164
+ }
+}

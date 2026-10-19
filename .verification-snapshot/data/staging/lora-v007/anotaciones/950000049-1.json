@@ -1,0 +1,124 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000049-1",
+  "image_sha256": "40e3d5699afe87b073c89547db98137e0717260f4d93b2f4b0a9929d9923edec",
+  "idempotency_key": "63a5c281665e75bc3bbecee37baa091a7f243d93a3d072e130580f7ca63dd0a6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000049/foto-1.jpg",
+    "orden": "950000049"
+  },
+  "anotacion": {
+    "image_id": "950000049-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+            "size_code": "C-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.imperial_red",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding vertical balloon column with red and silver clusters, a heart balloon, and a large printed round balloon."
+      }
+    ],
+    "non_purchased_elements": [
+      "white balloons",
+      "a support pole",
+      "a printed balloon"
+    ],
+    "uncertainties": [
+      "Small red balloons may include modeling balloons, but their form is not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "C-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000049-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 12-inch matte Fashion red heart-shaped latex balloons with a printed pattern, 9-inch matte Fashion imperial red round latex balloons, 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside white balloons, a support pole and a printed balloon, set against white walls and a white floor.",
+    "palabras": 59,
+    "caracteres": 409,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red.printed_unclassified_2_caras_love",
+        "size_code": "C-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:58:50.888Z",
+    "recompilado_en": "2026-09-03T14:45:23.712Z"
+  }
+}

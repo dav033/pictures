@@ -1,0 +1,134 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "16850-1",
+  "image_sha256": "b6235ef067123b39d3aa4cc69cdd6aa66789a7f27bbb749ece5183d89853c9a6",
+  "idempotency_key": "33923c040d85f113f51b47b2421d58bb95cf6fa58fbb27ce5107db40016006e9",
+  "source": {
+    "kind": "order_photo",
+    "ref": "16850/foto-1.jpg",
+    "orden": "16850"
+  },
+  "anotacion": {
+    "image_id": "16850-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white wall; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors",
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Horizontal organic garland with solid tan, brown and cream balloons mixed with white cow-print balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 6,
+        "placement": "techo",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "overhead",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Cow-print balloons suspended above the garland with curled ribbons."
+      }
+    ],
+    "non_purchased_elements": [
+      "curled ribbons"
+    ],
+    "uncertainties": [
+      "Some hanging balloons are partially cropped."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "16850-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from round latex balloons in assorted colors, solid Fashion finish and matte Fashion white round latex balloons with a printed pattern, all at a single 12-inch size, with six matching balloon bouquets, suspended above the organic balloon garland, built from matte Fashion white round latex balloons with a printed pattern, all at a single 12-inch size, alongside curled ribbons, set against off-white wall; floor not visible.",
+    "palabras": 77,
+    "caracteres": 513,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:53:25.515Z",
+    "recompilado_en": "2026-09-03T14:45:22.824Z"
+  }
+}

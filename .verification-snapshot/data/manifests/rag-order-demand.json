@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-08-22T01:06:05.008Z",
+  "source": {
+    "kind": "order_data",
+    "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/order_data.json?v=1779763985de",
+    "fetched_at": "2026-08-22T01:06:04.832Z",
+    "status": 200,
+    "content_type": "application/json",
+    "bytes": 1204158,
+    "sha256": "d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+    "counts": {
+      "orders": 200,
+      "lineItems": 1855,
+      "uniqueOrderSkus": 897
+    },
+    "contract_version": "cdn-graphql-v1"
+  },
+  "catalog_counts": {
+    "products": 1411,
+    "variants": 3592
+  },
+  "aggregate": {
+    "orders": 200,
+    "lines": 1855,
+    "ordersWithLines": 200,
+    "matchedLines": 1785,
+    "matchedByVariantId": 1778,
+    "matchedBySku": 7,
+    "matchedWithAmbiguousSkuLines": 25,
+    "matchedWithAmbiguousSkuUnits": 371,
+    "ambiguousSkuLines": 11,
+    "unmatchedLines": 59,
+    "unitsObserved": 24006,
+    "aggregateVariants": 869,
+    "ambiguousSkuKeys": 2,
+    "demandClass": "observed_demand"
+  }
+}

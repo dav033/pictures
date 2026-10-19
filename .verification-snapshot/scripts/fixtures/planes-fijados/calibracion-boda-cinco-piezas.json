@@ -1,0 +1,1934 @@
+{
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "c0000004-0000-4000-8000-000000000004",
+      "concepto": {
+        "titulo": "Boda blanco verde dorado",
+        "descripcion": "Pared de globos, columnas y centros de mesa.",
+        "paleta": [
+          "blanco",
+          "verde",
+          "dorado"
+        ],
+        "momento_dia": "atardecer"
+      },
+      "espacio": {
+        "tipo": "jardín",
+        "fuente": "supuesto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_PARED",
+          "nombre": "Pared de globos",
+          "tipo": "pared",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "organica_fina",
+          "materiales": [
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "blanco",
+              "participacion": 0.5,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "verde",
+              "participacion": 0.3,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "dorado",
+              "participacion": 0.2,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Foco."
+        },
+        {
+          "estructura_id": "EST_02_COL_ENTRADA",
+          "nombre": "Columna de entrada",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "entrada",
+          "medidas": {
+            "alto_m": 1.8
+          },
+          "repeticiones": 2,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "blanco",
+              "participacion": 0.6,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "dorado",
+              "participacion": 0.4,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Recibe a los invitados."
+        },
+        {
+          "estructura_id": "EST_03_CENTRO",
+          "nombre": "Centro de mesa",
+          "tipo": "centro_mesa",
+          "rol_escena": "acento",
+          "ubicacion": "mesas_invitados",
+          "medidas": {
+            "ancho_m": 0.5,
+            "alto_m": 0.6
+          },
+          "repeticiones": 2,
+          "densidad": "sencilla",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "blanco",
+              "participacion": 0.6,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "verde",
+              "participacion": 0.4,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Acento en mesas."
+        }
+      ],
+      "supuestos": [],
+      "referencia_omitida": []
+    },
+    "plan_hash": "6eeb2d63006be8fc2b95fc82003aeb8b5bdff5585c597c3273dd8182c71ab0f2",
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_PARED",
+        "nombre": "Pared de globos",
+        "tipo": "pared",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 0,
+        "total_unidades": 443,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-5-BLANCO",
+            "sku": "SKU-R-5-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-5 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 46,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-5-VERDE",
+            "sku": "SKU-R-5-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-5 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 28,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-5-DORADO",
+            "sku": "SKU-R-5-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-5 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 19,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-9-BLANCO",
+            "sku": "SKU-R-9-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-9 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 40,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-9-VERDE",
+            "sku": "SKU-R-9-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-9 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 24,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-9-DORADO",
+            "sku": "SKU-R-9-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-9 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 16,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-BLANCO",
+            "sku": "SKU-R-12-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 119,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-VERDE",
+            "sku": "SKU-R-12-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-12 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 72,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-DORADO",
+            "sku": "SKU-R-12-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 48,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-18-BLANCO",
+            "sku": "SKU-R-18-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-18 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 12,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-18-VERDE",
+            "sku": "SKU-R-18-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-18 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 6,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-18-DORADO",
+            "sku": "SKU-R-18-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-18 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 4,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-24-BLANCO",
+            "sku": "SKU-R-24-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-24 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24,
+            "diam_cm": 61,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 4,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-24-VERDE",
+            "sku": "SKU-R-24-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-24 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24,
+            "diam_cm": 61,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 3,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_PARED",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_PARED"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-24-DORADO",
+            "sku": "SKU-R-24-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-24 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24,
+            "diam_cm": 61,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 2,
+            "imagen": null,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 239,
+            "pct": 53.95
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 93,
+            "pct": 20.99
+          },
+          {
+            "diam_pulg": 9,
+            "forma": "redondo",
+            "unidades": 80,
+            "pct": 18.06
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 22,
+            "pct": 4.97
+          },
+          {
+            "diam_pulg": 24,
+            "forma": "redondo",
+            "unidades": 9,
+            "pct": 2.03
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COL_ENTRADA",
+        "nombre": "Columna de entrada",
+        "tipo": "columna",
+        "ubicacion": "entrada",
+        "repeticiones": 2,
+        "eje_m": 1.8,
+        "total_unidades": 78,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COL_ENTRADA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COL_ENTRADA"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-BLANCO",
+            "sku": "SKU-R-12-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 46,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COL_ENTRADA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COL_ENTRADA"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-DORADO",
+            "sku": "SKU-R-12-DORADO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 32,
+            "imagen": null,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 78,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_03_CENTRO",
+        "nombre": "Centro de mesa",
+        "tipo": "centro_mesa",
+        "ubicacion": "mesas_invitados",
+        "repeticiones": 2,
+        "eje_m": 0.6,
+        "total_unidades": 20,
+        "lineas": [
+          {
+            "estructura_id": "EST_03_CENTRO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_03_CENTRO"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-BLANCO",
+            "sku": "SKU-R-12-BLANCO",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 12,
+            "imagen": null,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_03_CENTRO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_03_CENTRO"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-VERDE",
+            "sku": "SKU-R-12-VERDE",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Verde — R-12 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 8,
+            "imagen": null,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 20,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "compras": [
+      {
+        "variant_id": "V-R-12-BLANCO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-12-BLANCO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Blanco — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 177,
+        "design_quantity": 177,
+        "waste_reserve": 0,
+        "required_quantity": 177,
+        "unidades_con_merma": 177,
+        "unidades_paquete": 50,
+        "paquetes": 4,
+        "purchase_quantity": 200,
+        "used": 177,
+        "leftover_inventory": 23,
+        "consumption_cost": 49560,
+        "purchase_cost": 56000,
+        "additional_package_for_waste": false,
+        "sobrante": 23,
+        "precio_paquete": 14000,
+        "subtotal": 56000,
+        "estructuras": [
+          "EST_01_PARED",
+          "EST_02_COL_ENTRADA",
+          "EST_03_CENTRO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COL_ENTRADA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_CENTRO"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-12-DORADO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-12-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Dorado — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 80,
+        "design_quantity": 80,
+        "waste_reserve": 0,
+        "required_quantity": 80,
+        "unidades_con_merma": 80,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 80,
+        "leftover_inventory": 20,
+        "consumption_cost": 22400,
+        "purchase_cost": 28000,
+        "additional_package_for_waste": false,
+        "sobrante": 20,
+        "precio_paquete": 14000,
+        "subtotal": 28000,
+        "estructuras": [
+          "EST_01_PARED",
+          "EST_02_COL_ENTRADA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COL_ENTRADA"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-12-VERDE",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-12-VERDE",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Verde — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "verde",
+        "unidades_necesarias": 80,
+        "design_quantity": 80,
+        "waste_reserve": 0,
+        "required_quantity": 80,
+        "unidades_con_merma": 80,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 80,
+        "leftover_inventory": 20,
+        "consumption_cost": 22400,
+        "purchase_cost": 28000,
+        "additional_package_for_waste": false,
+        "sobrante": 20,
+        "precio_paquete": 14000,
+        "subtotal": 28000,
+        "estructuras": [
+          "EST_01_PARED",
+          "EST_03_CENTRO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_CENTRO"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-18-BLANCO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-18-BLANCO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Blanco — R-18 / PAQUETE X 50",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "blanco",
+        "unidades_necesarias": 12,
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "unidades_con_merma": 12,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 12,
+        "leftover_inventory": 38,
+        "consumption_cost": 4080,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "sobrante": 38,
+        "precio_paquete": 17000,
+        "subtotal": 17000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-18-DORADO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-18-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Dorado — R-18 / PAQUETE X 50",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "dorado",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "unidades_con_merma": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1360,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "sobrante": 46,
+        "precio_paquete": 17000,
+        "subtotal": 17000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-18-VERDE",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-18-VERDE",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Verde — R-18 / PAQUETE X 50",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "verde",
+        "unidades_necesarias": 6,
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "unidades_con_merma": 6,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 44,
+        "consumption_cost": 2040,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "sobrante": 44,
+        "precio_paquete": 17000,
+        "subtotal": 17000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-24-BLANCO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-24-BLANCO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Blanco — R-24 / PAQUETE X 50",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "color": "blanco",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "unidades_con_merma": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1600,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "sobrante": 46,
+        "precio_paquete": 20000,
+        "subtotal": 20000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-24-DORADO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-24-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Dorado — R-24 / PAQUETE X 50",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "color": "dorado",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 44,
+        "required_quantity": 46,
+        "unidades_con_merma": 46,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 18400,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "sobrante": 48,
+        "precio_paquete": 20000,
+        "subtotal": 20000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-24-VERDE",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-24-VERDE",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Verde — R-24 / PAQUETE X 50",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "color": "verde",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 1200,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "sobrante": 47,
+        "precio_paquete": 20000,
+        "subtotal": 20000,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-5-BLANCO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-5-BLANCO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Blanco — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "blanco",
+        "unidades_necesarias": 46,
+        "design_quantity": 46,
+        "waste_reserve": 0,
+        "required_quantity": 46,
+        "unidades_con_merma": 46,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 46,
+        "leftover_inventory": 4,
+        "consumption_cost": 9660,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "sobrante": 4,
+        "precio_paquete": 10500,
+        "subtotal": 10500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-5-DORADO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-5-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Dorado — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "dorado",
+        "unidades_necesarias": 19,
+        "design_quantity": 19,
+        "waste_reserve": 0,
+        "required_quantity": 19,
+        "unidades_con_merma": 19,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 19,
+        "leftover_inventory": 31,
+        "consumption_cost": 3990,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "sobrante": 31,
+        "precio_paquete": 10500,
+        "subtotal": 10500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-5-VERDE",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-5-VERDE",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Verde — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "verde",
+        "unidades_necesarias": 28,
+        "design_quantity": 28,
+        "waste_reserve": 0,
+        "required_quantity": 28,
+        "unidades_con_merma": 28,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 28,
+        "leftover_inventory": 22,
+        "consumption_cost": 5880,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "sobrante": 22,
+        "precio_paquete": 10500,
+        "subtotal": 10500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-9-BLANCO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-9-BLANCO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Blanco — R-9 / PAQUETE X 50",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "blanco",
+        "unidades_necesarias": 40,
+        "design_quantity": 40,
+        "waste_reserve": 0,
+        "required_quantity": 40,
+        "unidades_con_merma": 40,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 40,
+        "leftover_inventory": 10,
+        "consumption_cost": 10000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "sobrante": 10,
+        "precio_paquete": 12500,
+        "subtotal": 12500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-9-DORADO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-9-DORADO",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Dorado — R-9 / PAQUETE X 50",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "dorado",
+        "unidades_necesarias": 16,
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "unidades_con_merma": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "sobrante": 34,
+        "precio_paquete": 12500,
+        "subtotal": 12500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      },
+      {
+        "variant_id": "V-R-9-VERDE",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-9-VERDE",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Verde — R-9 / PAQUETE X 50",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "verde",
+        "unidades_necesarias": 24,
+        "design_quantity": 24,
+        "waste_reserve": 0,
+        "required_quantity": 24,
+        "unidades_con_merma": 24,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 24,
+        "leftover_inventory": 26,
+        "consumption_cost": 6000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "sobrante": 26,
+        "precio_paquete": 12500,
+        "subtotal": 12500,
+        "estructuras": [
+          "EST_01_PARED"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_PARED"
+          }
+        ],
+        "imagen": null
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 337,
+        "R-18": 22,
+        "R-24": 9,
+        "R-5": 93,
+        "R-9": 80
+      },
+      "total_unidades": 541,
+      "total_cop": 292000,
+      "design_quantity": 541,
+      "target_waste_reserve": 44,
+      "covered_waste_reserve": 44,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 459,
+      "purchase_cost": 292000,
+      "consumption_cost": 162570,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 28000,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:V-R-18-BLANCO",
+      "sobrante_alto:V-R-18-DORADO",
+      "sobrante_alto:V-R-18-VERDE",
+      "sobrante_alto:V-R-24-BLANCO",
+      "sobrante_alto:V-R-24-DORADO",
+      "sobrante_alto:V-R-24-VERDE",
+      "sobrante_alto:V-R-5-DORADO",
+      "sobrante_alto:V-R-5-VERDE",
+      "sobrante_alto:V-R-9-DORADO",
+      "sobrante_alto:V-R-9-VERDE"
+    ],
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [
+      {
+        "familia_id": "P-CALIBRACION-LATEX",
+        "titulo": "Globo Latex Redondo Blanco + Globo Latex Redondo Verde + Globo Latex Redondo Dorado",
+        "total_cop": 292000,
+        "ahorro_cop": 0,
+        "etiqueta": "economica"
+      }
+    ],
+    "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 541\nTarget waste reserve: 44\nNatural package surplus: 459\nUsable waste coverage: 44\nAdditional packages required for waste: 0\nGlobo Latex Redondo Blanco — R-12 / PAQUETE X 50: design=177, required=177, package=50, packages=4, purchased=200, natural surplus=23, waste reserve=0, leftover inventory=23\nGlobo Latex Redondo Dorado — R-12 / PAQUETE X 50: design=80, required=80, package=50, packages=2, purchased=100, natural surplus=20, waste reserve=0, leftover inventory=20\nGlobo Latex Redondo Verde — R-12 / PAQUETE X 50: design=80, required=80, package=50, packages=2, purchased=100, natural surplus=20, waste reserve=0, leftover inventory=20\nGlobo Latex Redondo Blanco — R-18 / PAQUETE X 50: design=12, required=12, package=50, packages=1, purchased=50, natural surplus=38, waste reserve=0, leftover inventory=38\nGlobo Latex Redondo Dorado — R-18 / PAQUETE X 50: design=4, required=4, package=50, packages=1, purchased=50, natural surplus=46, waste reserve=0, leftover inventory=46\nGlobo Latex Redondo Verde — R-18 / PAQUETE X 50: design=6, required=6, package=50, packages=1, purchased=50, natural surplus=44, waste reserve=0, leftover inventory=44\nGlobo Latex Redondo Blanco — R-24 / PAQUETE X 50: design=4, required=4, package=50, packages=1, purchased=50, natural surplus=46, waste reserve=0, leftover inventory=46\nGlobo Latex Redondo Dorado — R-24 / PAQUETE X 50: design=2, required=46, package=50, packages=1, purchased=50, natural surplus=48, waste reserve=44, leftover inventory=4\nGlobo Latex Redondo Verde — R-24 / PAQUETE X 50: design=3, required=3, package=50, packages=1, purchased=50, natural surplus=47, waste reserve=0, leftover inventory=47\nGlobo Latex Redondo Blanco — R-5 / PAQUETE X 50: design=46, required=46, package=50, packages=1, purchased=50, natural surplus=4, waste reserve=0, leftover inventory=4\nGlobo Latex Redondo Dorado — R-5 / PAQUETE X 50: design=19, required=19, package=50, packages=1, purchased=50, natural surplus=31, waste reserve=0, leftover inventory=31\nGlobo Latex Redondo Verde — R-5 / PAQUETE X 50: design=28, required=28, package=50, packages=1, purchased=50, natural surplus=22, waste reserve=0, leftover inventory=22\nGlobo Latex Redondo Blanco — R-9 / PAQUETE X 50: design=40, required=40, package=50, packages=1, purchased=50, natural surplus=10, waste reserve=0, leftover inventory=10\nGlobo Latex Redondo Dorado — R-9 / PAQUETE X 50: design=16, required=16, package=50, packages=1, purchased=50, natural surplus=34, waste reserve=0, leftover inventory=34\nGlobo Latex Redondo Verde — R-9 / PAQUETE X 50: design=24, required=24, package=50, packages=1, purchased=50, natural surplus=26, waste reserve=0, leftover inventory=26",
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_PARED",
+        "consumo_cop": 117530
+      },
+      {
+        "estructura_id": "EST_02_COL_ENTRADA",
+        "consumo_cop": 21840
+      },
+      {
+        "estructura_id": "EST_03_CENTRO",
+        "consumo_cop": 5600
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 2.4,
+        "height": 2.2,
+        "length": null
+      },
+      "installation_length_m": 4.8,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 5
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 46,
+        "waste_reserve": 0,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 28,
+        "waste_reserve": 0,
+        "required_quantity": 28,
+        "waste_adjusted_quantity": 28
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 19,
+        "waste_reserve": 0,
+        "required_quantity": 19,
+        "waste_adjusted_quantity": 19
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 40,
+        "waste_reserve": 0,
+        "required_quantity": 40,
+        "waste_adjusted_quantity": 40
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 24,
+        "waste_reserve": 0,
+        "required_quantity": 24,
+        "waste_adjusted_quantity": 24
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 119,
+        "waste_reserve": 0,
+        "required_quantity": 119,
+        "waste_adjusted_quantity": 119
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 72,
+        "waste_reserve": 0,
+        "required_quantity": 72,
+        "waste_adjusted_quantity": 72
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 48,
+        "waste_reserve": 0,
+        "required_quantity": 48,
+        "waste_adjusted_quantity": 48
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 24,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 24,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_PARED",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 24,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COL_ENTRADA",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 46,
+        "waste_reserve": 0,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46
+      },
+      {
+        "structure_id": "EST_02_COL_ENTRADA",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-DORADO",
+        "color": "dorado",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 32,
+        "waste_reserve": 0,
+        "required_quantity": 32,
+        "waste_adjusted_quantity": 32
+      },
+      {
+        "structure_id": "EST_03_CENTRO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-BLANCO",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      },
+      {
+        "structure_id": "EST_03_CENTRO",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-VERDE",
+        "color": "verde",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-BLANCO",
+        "design_quantity": 177,
+        "waste_reserve": 0,
+        "required_quantity": 177,
+        "waste_adjusted_quantity": 177,
+        "units_per_package": 50,
+        "package_count": 4,
+        "purchase_quantity": 200,
+        "used": 177,
+        "leftover_inventory": 23,
+        "consumption_cost": 49560,
+        "purchase_cost": 56000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 23,
+        "potential_surplus": 23
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-DORADO",
+        "design_quantity": 80,
+        "waste_reserve": 0,
+        "required_quantity": 80,
+        "waste_adjusted_quantity": 80,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 80,
+        "leftover_inventory": 20,
+        "consumption_cost": 22400,
+        "purchase_cost": 28000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 20,
+        "potential_surplus": 20
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-VERDE",
+        "design_quantity": 80,
+        "waste_reserve": 0,
+        "required_quantity": 80,
+        "waste_adjusted_quantity": 80,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 80,
+        "leftover_inventory": 20,
+        "consumption_cost": 22400,
+        "purchase_cost": 28000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 20,
+        "potential_surplus": 20
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-BLANCO",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 12,
+        "leftover_inventory": 38,
+        "consumption_cost": 4080,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 38,
+        "potential_surplus": 38
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-DORADO",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1360,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 46,
+        "potential_surplus": 46
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-18-VERDE",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 44,
+        "consumption_cost": 2040,
+        "purchase_cost": 17000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 44,
+        "potential_surplus": 44
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-BLANCO",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1600,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 46,
+        "potential_surplus": 46
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-DORADO",
+        "design_quantity": 2,
+        "waste_reserve": 44,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 18400,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 48
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-24-VERDE",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 1200,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 47,
+        "potential_surplus": 47
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-BLANCO",
+        "design_quantity": 46,
+        "waste_reserve": 0,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 46,
+        "leftover_inventory": 4,
+        "consumption_cost": 9660,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 4
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-DORADO",
+        "design_quantity": 19,
+        "waste_reserve": 0,
+        "required_quantity": 19,
+        "waste_adjusted_quantity": 19,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 19,
+        "leftover_inventory": 31,
+        "consumption_cost": 3990,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 31,
+        "potential_surplus": 31
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-5-VERDE",
+        "design_quantity": 28,
+        "waste_reserve": 0,
+        "required_quantity": 28,
+        "waste_adjusted_quantity": 28,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 28,
+        "leftover_inventory": 22,
+        "consumption_cost": 5880,
+        "purchase_cost": 10500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 22,
+        "potential_surplus": 22
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-BLANCO",
+        "design_quantity": 40,
+        "waste_reserve": 0,
+        "required_quantity": 40,
+        "waste_adjusted_quantity": 40,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 40,
+        "leftover_inventory": 10,
+        "consumption_cost": 10000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 10,
+        "potential_surplus": 10
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-DORADO",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 34,
+        "potential_surplus": 34
+      },
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-9-VERDE",
+        "design_quantity": 24,
+        "waste_reserve": 0,
+        "required_quantity": 24,
+        "waste_adjusted_quantity": 24,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 24,
+        "leftover_inventory": 26,
+        "consumption_cost": 6000,
+        "purchase_cost": 12500,
+        "additional_package_for_waste": false,
+        "operational_surplus": 26,
+        "potential_surplus": 26
+      }
+    ],
+    "totals": {
+      "design_quantity": 541,
+      "target_waste_reserve": 44,
+      "covered_waste_reserve": 44,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 459,
+      "required_quantity": 585,
+      "consumption_cost": 162570,
+      "purchase_cost": 292000,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 585,
+      "purchase_quantity": 1000,
+      "operational_surplus": 415,
+      "potential_surplus": 459
+    },
+    "warnings": [
+      "sobrante_alto:V-R-18-BLANCO",
+      "sobrante_alto:V-R-18-DORADO",
+      "sobrante_alto:V-R-18-VERDE",
+      "sobrante_alto:V-R-24-BLANCO",
+      "sobrante_alto:V-R-24-DORADO",
+      "sobrante_alto:V-R-24-VERDE",
+      "sobrante_alto:V-R-5-DORADO",
+      "sobrante_alto:V-R-5-VERDE",
+      "sobrante_alto:V-R-9-DORADO",
+      "sobrante_alto:V-R-9-VERDE"
+    ]
+  }
+}

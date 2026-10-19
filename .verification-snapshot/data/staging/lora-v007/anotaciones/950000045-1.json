@@ -1,0 +1,204 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000045-1",
+  "image_sha256": "133833ab9ee6518ea9ccaa8bc003da526674d3c8fe69d14cbc8214b6ef779b4d",
+  "idempotency_key": "1def96e2323b0e7a2c71d5f80aaacd28f247b202f6344e4adc01e92d794bec2d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000045/foto-1.jpg",
+    "orden": "950000045"
+  },
+  "anotacion": {
+    "image_id": "950000045-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white",
+          "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.pearl_white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Rounded cluster of pearl white and gold balloons with a sculpted gold bow and one red printed heart-pattern balloon at its center."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red",
+          "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A large printed red 'Feliz Dia' balloon rising on a twisted red modeling-balloon stem above the main cluster."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two matching sculpted balloon flowers with pearl petals and a red center, each on a curling red twisted stem, one on each side."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A gold balloon shaped into a bow, sculpted on top of the main cluster."
+      }
+    ],
+    "non_purchased_elements": [
+      "a thin curling ribbon accent"
+    ],
+    "uncertainties": [
+      "The white flower petals could be modeling balloons not covered by any allowed concept, so they were left unmatched.",
+      "It is unclear whether the composition rests on a table or stands freely, since the background is plain white."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000045-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from 12-inch round latex balloons in assorted colors with a Metallic finish and printed greeting lettering, 5-inch satin Silk round latex balloons in gold and pearl white, mixed organically rather than graded, with a decorative accessory, anchored to the balloon bouquet, built from 2-inch matte Fashion imperial red modeling latex balloons, 12-inch round latex balloons in assorted colors with a Metallic finish and printed greeting lettering, mixed organically rather than graded, two matching balloon bouquets, one at each end, built from matte Fashion imperial red modeling latex balloons, all at a single 2-inch size and a decorative accessory, anchored to the balloon bouquet, alongside a thin curling ribbon accent, set against plain white studio backdrop, no floor visible.",
+    "palabras": 128,
+    "caracteres": 853,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:03:37.741Z",
+    "recompilado_en": "2026-09-03T14:45:23.661Z"
+  }
+}

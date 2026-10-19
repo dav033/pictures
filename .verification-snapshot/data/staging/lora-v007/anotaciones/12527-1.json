@@ -1,0 +1,108 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12527-1",
+  "image_sha256": "c746309dde15333ad28ae5a701456880fb5cb478749ccb65266df1d40ffc01a6",
+  "idempotency_key": "836159e7f564e667e54b9e4b31a7d8aaddf70019932a637966624580980312e8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12527/foto-1.jpg",
+    "orden": "12527"
+  },
+  "anotacion": {
+    "image_id": "12527-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "beige building wall and a dark doorway",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Symmetric three-dimensional balloon arch with alternating yellow and gold clusters forming two bilateral columns framing a religious statue."
+      }
+    ],
+    "non_purchased_elements": [
+      "a religious statue",
+      "a sunflower floral arrangement",
+      "a white tablecloth",
+      "large monstera leaves"
+    ],
+    "uncertainties": [
+      "the row of maroon balloons across the very top of the arch is not in the allowed product list and was excluded from visible_concept_ids"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12527-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion yellow round latex balloons and high-shine Reflex gold round latex balloons, all at a single 12-inch size, alongside a religious statue, a sunflower floral arrangement, a white tablecloth and large monstera leaves, set against beige building wall and a dark doorway.",
+    "palabras": 56,
+    "caracteres": 371,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:26.532Z",
+    "recompilado_en": "2026-09-03T14:45:22.073Z"
+  }
+}

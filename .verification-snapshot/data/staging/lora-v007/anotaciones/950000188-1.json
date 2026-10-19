@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000188-1",
+  "image_sha256": "cb1ccadcdb4ee7fda65c9b671c0f78cb23b72a1286acbe944e58d58b5760ccf9",
+  "idempotency_key": "6af495dbcc3847ea4b59d028935cabfddd2fb4f7f9748ea67f0de125ec67a4ed",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000188/foto-1.jpg",
+    "orden": "950000188"
+  },
+  "anotacion": {
+    "image_id": "950000188-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white wall; floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense red balloon wall arranged in a heart shape against the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "word balloon"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000188-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from translucent Crystal red round latex balloons with a printed pattern, all at a single 5-inch size, alongside word balloon, set against off-white wall; floor not visible.",
+    "palabras": 37,
+    "caracteres": 249,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T20:00:35.408Z",
+    "recompilado_en": "2026-09-03T14:45:25.227Z"
+  }
+}

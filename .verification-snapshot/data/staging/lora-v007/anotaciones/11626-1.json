@@ -1,0 +1,112 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11626-1",
+  "image_sha256": "780d7378e64aed07a66321da91d6967ca7df1550de6ed110f245fcfc9f838955",
+  "idempotency_key": "94486527b6d9856716ef14886f12fba83be60489257fcae9b42f998d3e5051a1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11626/foto-1.jpg",
+    "orden": "11626"
+  },
+  "anotacion": {
+    "image_id": "11626-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a brown marble-tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_hearts"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.solid.printed_hearts",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon garland across the upper edge and left side, with printed heart balloons visibly mixed into the arrangement."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat white grid panel with reflective square sections behind the balloon decoration."
+      }
+    ],
+    "non_purchased_elements": [
+      "rose-gold balloons",
+      "a number marquee",
+      "a silver heart balloon",
+      "a person"
+    ],
+    "uncertainties": [
+      "The sizes of the non-printed balloons cannot be confirmed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11626-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from round latex balloons with printed heart pattern, all 12-inch, a decorated backdrop, installed against the rear wall, alongside rose-gold balloons, a number marquee, a silver heart balloon and a person, set against off-white walls and a brown marble-tiled floor.",
+    "palabras": 51,
+    "caracteres": 357,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.solid.printed_hearts",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T15:29:46.128Z"
+  }
+}

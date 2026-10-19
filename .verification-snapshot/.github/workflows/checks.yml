@@ -1,0 +1,185 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  types-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+      - if: ${{ !cancelled() }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: ${{ !cancelled() }}
+        run: npm ci
+      - if: ${{ !cancelled() }}
+        run: npm run build --workspaces --if-present
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:check
+      - if: ${{ !cancelled() }}
+        run: npm run lint
+      - if: ${{ !cancelled() }}
+        run: npm run build
+      - if: ${{ !cancelled() }}
+        run: npx tsc --noEmit
+
+  deterministic-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: decoracion_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d decoracion_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/decoracion_test
+      APP_ENV: test
+      GEMINI_API_KEY: local-ci-placeholder
+      FAL_KEY: local-ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - if: ${{ !cancelled() }}
+        run: npm run build --workspaces --if-present
+      - if: ${{ !cancelled() }}
+        run: npm run rag:migrate
+      # Cada paso corre aunque uno anterior falle (salvo cancelación): el job reporta todas las suites y falla al final.
+      - if: ${{ !cancelled() }}
+        run: npm run test-guardia-prerender
+      - if: ${{ !cancelled() }}
+        run: npm run test-columna-asimetrica-densa
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-golden
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-precio
+      - if: ${{ !cancelled() }}
+        run: npm run propiedades:test
+        env:
+          PROPIEDADES_CASOS: "12"
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-integracion
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-color-dicho
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-tarjeta-total
+      # D-038: la misma lista de materiales cuesta lo mismo en el plan del 3D, su tarjeta y el Taller (la de Python, en pytest).
+      - if: ${{ !cancelled() }}
+        run: npm run test-cotizacion-unica
+      - if: ${{ !cancelled() }}
+        run: npm run catalogo:test
+      - if: ${{ !cancelled() }}
+        run: npm run kontext:test
+      - if: ${{ !cancelled() }}
+        run: npm run motor3d:test
+      - if: ${{ !cancelled() }}
+        run: npm run test-escenarios-matriz
+      - if: ${{ !cancelled() }}
+        run: npm run globos3d:test
+      # Escena del taller 3D (IA de escena, lectura de foto, armado dorado): sin red, sin secretos ni servidor.
+      - if: ${{ !cancelled() }}
+        run: npm run escena:test
+      # Topes de gasto por hora en Neon (migración 035). Con CI=true y el DATABASE_URL local de este job (el servicio pg16, ya migrado
+      # por rag:migrate arriba) corre el mismo conjunto de escenarios contra un pg.Pool de 8 conexiones: la sentencia SQL real, los
+      # bloqueos de fila entre conexiones y el adaptador de producción. Sin esa base (en local) cae al doble en memoria; PGlite, con PGLITE_DIR.
+      - if: ${{ !cancelled() }}
+        run: npm run topes:test
+      - if: ${{ !cancelled() }}
+        run: npm run test-honestidad-forzada
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:domain
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:operational
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:cancel
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:python-adapter
+      - if: ${{ !cancelled() }}
+        run: npm run test-proxy-matcher
+      - if: ${{ !cancelled() }}
+        run: npm run test-comparar-constante
+      - if: ${{ !cancelled() }}
+        run: npm run test-rotacion-secretos
+      # plan:test encadena decenas de suites con &&; el runner las corre todas y reporta cada falla.
+      - if: ${{ !cancelled() }}
+        run: node scripts/test/run-suites.mjs plan:test
+      - if: ${{ !cancelled() }}
+        run: npm run chat:test-historial
+      - if: ${{ !cancelled() }}
+        run: npm run happie:test-webhook
+      - if: ${{ !cancelled() }}
+        run: npx tsx scripts/test/test-idempotency-store.ts
+
+  python-quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-api
+    steps:
+      - if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+      - if: ${{ !cancelled() }}
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+          enable-cache: true
+      - if: ${{ !cancelled() }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - if: ${{ !cancelled() }}
+        run: uv lock --check
+      - if: ${{ !cancelled() }}
+        run: uv sync --locked --extra test --extra quality
+      - if: ${{ !cancelled() }}
+        run: uv run ruff check app scripts tests
+      - if: ${{ !cancelled() }}
+        run: uv run ruff format --check app scripts tests
+      - if: ${{ !cancelled() }}
+        run: uv run mypy app scripts
+      - if: ${{ !cancelled() }}
+        run: uv run python scripts/generate_models.py --check
+      - if: ${{ !cancelled() }}
+        run: uv run pytest
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          # GITLEAKS_LICENSE is only required for organization-owned repositories;
+          # this repository belongs to a personal GitHub account.

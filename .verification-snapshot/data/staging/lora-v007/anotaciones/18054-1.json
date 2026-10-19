@@ -1,0 +1,52 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "18054-1",
+  "image_sha256": "68ba19b6088c09cba36f39c17928779967979ccc4b849c070e035c89693d23c5",
+  "idempotency_key": "a45503ad6bb2946ebb72c57bcc0624963e0abe609c55cd62b2a7e192713f2f1b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "18054/foto-1.jpg",
+    "orden": "18054"
+  },
+  "anotacion": {
+    "image_id": "18054-1",
+    "usable": false,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a street with light-colored walls and grey pavement",
+      "symmetry": "asymmetric"
+    },
+    "structures": [],
+    "non_purchased_elements": [
+      "colorful pennant bunting",
+      "a parked motorcycle",
+      "a painted wall"
+    ],
+    "uncertainties": [
+      "No balloon decor elements are visible in this image; only fabric pennant bunting is strung across the street, so it does not depict a balloon structure for this dataset."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "BANDEROLAS SURTIDAS"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "reason": "no_usable"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:45:06.696Z"
+  }
+}

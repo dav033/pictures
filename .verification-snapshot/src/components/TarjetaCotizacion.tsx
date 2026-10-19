@@ -1,0 +1,356 @@
+"use client";
+
+/* Catalog photos come from runtime URLs and already carry explicit dimensions. */
+/* eslint-disable @next/next/no-img-element */
+
+import { Fragment, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { BadgeCheck, RotateCcw, Trash2 } from "lucide-react";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
+import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
+import { agruparComprasCliente, familiasEnOrden, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";
+import { CountUp } from "@/components/ui/reactbits/CountUp";
+
+const pesos = new Intl.NumberFormat("es-CO", {
+  style: "currency",
+  currency: "COP",
+  maximumFractionDigits: 0,
+});
+const numero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
+
+type Props = {
+  cotizacion: Cotizacion;
+  /** The parent disables editing while a chat/image request is in flight. */
+  editable?: boolean;
+  /** Confirmed lines are handed back to the parent, which owns regeneration. */
+  onAplicar?: (lineas: LineaBorrador[]) => void;
+  referenceBlueprint?: ReferenceBlueprintV2;
+  /** The quote of an approved proposal: said so, instead of replacing the draft in silence. */
+  final?: boolean;
+};
+
+function tamanoLinea(linea: LineaBorrador): string | null {
+  if (linea.tamanoCodigo) return pulgadasCliente(linea.tamanoCodigo);
+  if (linea.diamPulg) return `${numero.format(linea.diamPulg)} pulgadas`;
+  // Plan quotes use "sin tamaño aplicable" for items without a size (number balloons, backdrops).
+  return linea.tamano && !/^sin tama/i.test(linea.tamano) ? pulgadasCliente(linea.tamano) : null;
+}
+
+/**
+ * Rows shown for the draft: outside editing, one row per product + size + color
+ * even when the cheapest mix buys two package sizes (D3). While editing, each
+ * line keeps its own row because packages are adjusted per package size.
+ * Lines without a catalog match or removed from the draft never merge.
+ */
+export function filasBorrador(lineas: readonly LineaBorrador[], editando: boolean) {
+  return agruparComprasCliente(lineas, (linea) => ({
+    product_id: editando || linea.sinReferencia || linea.excluida ? `${linea.id}|${linea.excluida ? "x" : ""}` : linea.productId ?? null,
+    titulo: linea.nombre ?? linea.id,
+    tamano_codigo: linea.tamanoCodigo ?? linea.tamano,
+    diam_pulg: linea.diamPulg ?? null,
+    color: linea.color ?? null,
+    necesitas: linea.cantidadNecesaria,
+    paquetes: linea.paquetes ?? 0,
+    unidades_paquete: linea.unidadesPaquete ?? 0,
+    sobrante: linea.sobrante ?? 0,
+    subtotal: linea.subtotal ?? 0,
+  }));
+}
+
+/**
+ * Quote without a plan (tool `cotizar`), in the same style as the plan quote
+ * dialog (maqueta Cotizacion): product photo, what the design needs, closed
+ * packages bought, leftovers and price. The customer can still adjust packages
+ * or remove lines; the parent owns regeneration.
+ */
+export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, referenceBlueprint, final = false }: Props) {
+  const borrador = useBorradorCotizacion(cotizacion);
+  const [editando, setEditando] = useState(false);
+  const reducir = useReducedMotion();
+  const puedeEditar = editable && Boolean(onAplicar);
+  // Lines from a plan quote carry no photo: load it from the catalog like the proposal card does (D9).
+  const { imagenes: imagenesCatalogo } = useImagenesCatalogo(idsSinFoto(cotizacion.lineas));
+  const elementosReferencia = new Set((referenceBlueprint?.elements ?? []).map((elemento) => elemento.element_id));
+
+  function aplicar(): void {
+    if (!onAplicar) return;
+    onAplicar(borrador.incluidas);
+    setEditando(false);
+  }
+
+  function cancelar(): void {
+    borrador.descartar();
+    setEditando(false);
+  }
+
+  return (
+    <motion.section
+      aria-label={final ? "Cotización final" : "Cotización"}
+      data-testid="tarjeta-cotizacion"
+      initial={reducir ? false : { opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+      className="@container mt-3 w-full overflow-hidden rounded-[20px] border border-borde-suave bg-superficie shadow-[0_1px_2px_var(--sombra),0_12px_32px_var(--sombra)]"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 px-4 pt-4 @xl:px-5.5">
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-medium text-acento">
+            {final && <BadgeCheck className="size-3.5" aria-hidden="true" />}
+            {final ? "Tu cotización final" : "Tu cotización"}
+          </p>
+          <p className="mt-0.5 text-sm text-texto-suave">Los globos se venden en paquetes cerrados.</p>
+        </div>
+        <p className="text-right">
+          {/* Fuera de edicion manda el total que firmo Python; `borrador.total` es una re-suma
+              local y solo vale como vista previa mientras el cliente ajusta paquetes. */}
+          <span className="block text-xs text-texto-suave">{editando ? "Nuevo total estimado" : cotizacion.incluyeIva ? "Total con IVA" : "Total sin IVA"}</span>
+          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto"><CountUp value={editando ? borrador.total : cotizacion.total} format={{ style: "currency", currency: "COP", maximumFractionDigits: 0 }} /></span>
+        </p>
+      </div>
+
+      {!editando && (
+        <ul className="mt-2 px-4 @xl:px-5.5" aria-label="Productos de la cotización">
+          {familiasEnOrden(filasBorrador(borrador.lineas, false), (fila) => {
+            const linea = fila.items[0]!;
+            return linea.sinReferencia ? `sin-referencia|${linea.id}` : `${linea.productId ?? linea.nombre ?? ""}|${linea.color ?? ""}`;
+          }).map((familia, indiceFamilia) => {
+            const primera = familia.items[0]!.items[0]!;
+            if (primera.sinReferencia) {
+              const detalle = [tamanoLinea(primera), primera.color].filter(Boolean).join(" · ");
+              return (
+                <li key={familia.clave} className="border-b border-borde-suave py-3 text-[13px] text-texto-suave last:border-b-0">
+                  {detalle || "Globo"} · todavía no está disponible en el catálogo
+                </li>
+              );
+            }
+            const nombre = primera.nombre ? productoCliente(primera.nombre) : primera.color || "Producto";
+            const foto = familia.items.flatMap((fila) => fila.items).map((item) => item.foto ?? (item.varianteId ? imagenesCatalogo[item.varianteId] : undefined)).find(Boolean);
+            const deLaFoto = familia.items.some((fila) => fila.items.some((item) => item.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false));
+            const agotado = familia.items.some((fila) => fila.items.some((item) => !item.disponible));
+            const subtotal = familia.items.reduce((suma, fila) => suma + fila.subtotal, 0);
+            if (familia.items.length === 1) {
+              const fila = familia.items[0]!;
+              const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+              const detalle = [tamanoLinea(primera), primera.color].filter(Boolean).join(" · ");
+              return (
+                <motion.li
+                  key={familia.clave}
+                  initial={reducir ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: reducir ? 0 : indiceFamilia * 0.05 }}
+                  className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 @xl:grid-cols-[3rem_minmax(0,1fr)_9.5rem_8rem_5.5rem]"
+                >
+                  <span className="row-span-2 grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white @xl:row-span-1">
+                    {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-texto">{nombre}</span>
+                    <span className="mt-0.5 block truncate text-xs text-texto-suave">
+                      {detalle}
+                      {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
+                      {agotado && <span className="ml-1.5 text-aviso">agotado</span>}
+                    </span>
+                  </span>
+                  <span className="text-right text-sm font-semibold tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
+                  <span className="col-start-2 @xl:col-start-auto">
+                    <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
+                    <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                      <motion.span
+                        className="block h-full origin-left rounded-full bg-acento/80"
+                        style={{ width: `${proporcion * 100}%` }}
+                        initial={reducir ? false : { scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.7, delay: reducir ? 0 : 0.2 + indiceFamilia * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                      />
+                    </span>
+                  </span>
+                  <span className="col-span-2 col-start-2 text-[13px] text-texto @xl:col-span-1 @xl:col-start-auto">
+                    {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                    <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{sobranteCliente(fila.sobrante)}</span>
+                  </span>
+                </motion.li>
+              );
+            }
+            return (
+              <motion.li
+                key={familia.clave}
+                initial={reducir ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: reducir ? 0 : indiceFamilia * 0.06 }}
+                className="border-b border-borde-suave py-3 last:border-b-0"
+              >
+                <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3">
+                  <span className="grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white">
+                    {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-texto">{nombre}</span>
+                    <span className="mt-0.5 block truncate text-xs text-texto-suave">
+                      {[primera.color, `${familia.items.length} tamaños`].filter(Boolean).join(" · ")}
+                      {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
+                      {agotado && <span className="ml-1.5 text-aviso">agotado</span>}
+                    </span>
+                  </span>
+                  <span className="text-right text-sm font-semibold tabular-nums text-texto">{pesos.format(subtotal)}</span>
+                </div>
+                {/* One compact row per size: the purchase is still per size (its own packages and leftovers). */}
+                <ul className="mt-1.5 space-y-1.5 pl-15" aria-label={`Tamaños de ${nombre}`}>
+                  {familia.items.map((fila, indice) => {
+                    const linea = fila.items[0]!;
+                    const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+                    return (
+                      <li key={`${linea.id}-${indice}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 @xl:grid-cols-[6.5rem_minmax(0,1fr)_9rem_5.5rem]">
+                        <span className="text-[13px] font-medium text-texto">{tamanoLinea(linea) ?? "Sin tamaño"}</span>
+                        <span className="text-right text-[13px] tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
+                        <span className="min-w-0">
+                          <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
+                          <span aria-hidden="true" className="mt-1 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                            <motion.span
+                              className="block h-full origin-left rounded-full bg-acento/80"
+                              style={{ width: `${proporcion * 100}%` }}
+                              initial={reducir ? false : { scaleX: 0 }}
+                              animate={{ scaleX: 1 }}
+                              transition={{ duration: 0.7, delay: reducir ? 0 : 0.2 + (indiceFamilia + indice) * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                            />
+                          </span>
+                        </span>
+                        <span className="text-[13px] text-texto">
+                          {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                          <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{sobranteCliente(fila.sobrante)}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </motion.li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editando && (
+      <ul className="mt-2 px-4 @xl:px-5.5" aria-label="Productos de la cotización">
+        {filasBorrador(borrador.lineas, editando).map((fila, indice) => {
+          const linea = fila.items[0]!;
+          const identificador = `${linea.id}-${indice}`;
+          const tamano = tamanoLinea(linea);
+          const detalle = [tamano, linea.color].filter(Boolean).join(" · ");
+          if (linea.sinReferencia) {
+            return (
+              <li key={identificador} className="border-b border-borde-suave py-3 text-[13px] text-texto-suave last:border-b-0">
+                {detalle || "Globo"} · todavía no está disponible en el catálogo
+              </li>
+            );
+          }
+          const nombre = linea.nombre ? productoCliente(linea.nombre) : detalle || "Producto";
+          const compra = { paquetes: paquetesCliente(fila.paquetes), resto: sobranteCliente(fila.sobrante) };
+          const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+          const foto = fila.items.map((item) => item.foto ?? (item.varianteId ? imagenesCatalogo[item.varianteId] : undefined)).find(Boolean);
+          const deLaFoto = fila.items.some((item) => item.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false);
+          return (
+            <motion.li
+              key={identificador}
+              initial={reducir ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: linea.excluida ? 0.55 : 1, y: 0 }}
+              transition={{ duration: 0.3, delay: reducir ? 0 : indice * 0.05 }}
+              className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 @xl:grid-cols-[3rem_minmax(0,1fr)_9.5rem_8rem_5.5rem]"
+            >
+              <span className="row-span-2 grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white @xl:row-span-1">
+                {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+              </span>
+              <span className="min-w-0">
+                <span className={`block truncate text-sm font-medium text-texto ${linea.excluida ? "line-through" : ""}`}>{nombre}</span>
+                <span className="mt-0.5 block truncate text-xs text-texto-suave">
+                  {detalle}
+                  {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
+                  {fila.items.some((item) => !item.disponible) && <span className="ml-1.5 text-aviso">agotado</span>}
+                </span>
+              </span>
+              <span className="text-right text-sm font-semibold tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
+              <span className="col-start-2 @xl:col-start-auto">
+                <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
+                <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                  <motion.span
+                    className="block h-full origin-left rounded-full bg-acento/80"
+                    style={{ width: `${proporcion * 100}%` }}
+                    initial={reducir ? false : { scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.7, delay: reducir ? 0 : 0.2 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                  />
+                </span>
+              </span>
+              <span className="col-span-2 col-start-2 text-[13px] text-texto @xl:col-span-1 @xl:col-start-auto">
+                {linea.excluida ? (
+                  editando ? (
+                    <button type="button" onClick={() => borrador.restaurar(linea.id)} className="inline-flex items-center gap-1 text-xs font-medium text-acento hover:underline focus-visible:outline-2 focus-visible:outline-acento">
+                      <RotateCcw className="size-3" aria-hidden="true" />Restaurar
+                    </button>
+                  ) : (
+                    <span className="text-xs text-texto-suave">Quitada de esta edición</span>
+                  )
+                ) : editando ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs text-texto-suave" htmlFor={`paquetes-${identificador}`}>
+                      Paquetes
+                      <input
+                        id={`paquetes-${identificador}`}
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="numeric"
+                        value={linea.paquetes ?? 1}
+                        onChange={(evento) => borrador.cambiarPaquetes(linea.id, Number(evento.target.value))}
+                        className="w-14 rounded-lg border border-borde bg-fondo px-1.5 py-1 text-center text-xs text-texto outline-none focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento"
+                      />
+                    </label>
+                    <button type="button" onClick={() => borrador.quitar(linea.id)} aria-label={`Quitar ${nombre}`} className="grid size-7 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                    </button>
+                    <span className="w-full text-xs text-texto-suave" aria-live="polite">{compra.paquetes} · {compra.resto}</span>
+                  </span>
+                ) : (
+                  <>
+                    {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                    <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{compra.resto}</span>
+                  </>
+                )}
+              </span>
+            </motion.li>
+          );
+        })}
+      </ul>
+      )}
+
+      <div className="mt-2 border-t border-borde-suave bg-superficie-suave px-4 py-3 @xl:px-5.5">
+        <p className="text-xs text-texto-suave">
+          {cotizacion.mermaPorcentaje > 0 ? `Incluye repuestos de cada globo (el ${cotizacion.mermaPorcentaje} %, al menos uno) salvo cuando comprarlos encarece de más · ` : ""}precios {cotizacion.incluyeIva ? "con IVA incluido" : "sin IVA"} · no incluye montaje ni complementos.
+        </p>
+        {puedeEditar && (
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            {editando ? (
+              <>
+                <button type="button" onClick={cancelar} className="inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-medium text-texto-suave hover:text-texto focus-visible:outline-2 focus-visible:outline-acento">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={aplicar}
+                  disabled={!borrador.hayCambios}
+                  className="ui-pressable inline-flex h-9 items-center rounded-xl bg-acento px-3.5 text-[13px] font-semibold text-sobre-acento hover:bg-acento-hover disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+                >
+                  Aplicar cambios
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => setEditando(true)} className="inline-flex h-9 items-center rounded-xl border border-borde bg-superficie px-3.5 text-[13px] font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                Editar cotización
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </motion.section>
+  );
+}

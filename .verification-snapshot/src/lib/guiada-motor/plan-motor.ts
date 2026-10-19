@@ -1,0 +1,242 @@
+import "server-only";
+import { createHash } from "node:crypto";
+import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { exigirEscritura } from "@/lib/feedback-ia/acceso";
+import {
+  armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, sobreDelMotor, sumarIdeaAEspec, VERSION_MOTOR,
+  type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
+} from "@/lib/globos3d/motor/v1";
+import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
+import { codigoSeguro, hashSeguro, idsDePiezas, type FilaAuditoriaPlan3d } from "./auditoria-plan";
+import { avisoMotorActualizado, totalGlobosDeBom, totalGlobosDelPlan } from "./aviso-motor-actualizado";
+import { planDel3dVencido } from "./continuidad";
+import { verificarPlanConConcepto } from "./verificar-plan";
+import { CuerpoBanderaFallidaSchema, CuerpoPlanMotorSchema, RUTA_PLAN_MOTOR, type CuerpoPlanMotor, type RazonBanderaFallida, type RazonFallback } from "./plan-contrato";
+import type { RespuestaMotor } from "./tipos";
+
+/**
+ * Lógica de `POST /api/guiada/motor/plan` (REQ-007, fase 2): el plan de la vista guiada armado por el motor 3D y cotizado
+ * con el servicio de precios de Python. Sin modelo y sin RAG: la propuesta y las ideas del catálogo ya traen sus piezas
+ * y colores, y el motor cuenta. La bandera, la cotización y la auditoría se inyectan para probarla sin red ni base.
+ *
+ * Reglas:
+ * - la bandera decide solo los planes NUEVOS (sin `base`): con `python` responden `bandera_python` y la vista los arma con
+ *   Python. Rehacer un plan del 3D o sumarle una idea sigue en el 3D aunque la bandera diga `python`: el plan conserva su
+ *   motor y su forma de cotizar hasta el final de la conversación (marcha atrás ordenada, P-045), con un límite: con
+ *   `python`, una línea que empezó hace más de 24 h responde `plan_3d_vencido` (`continuidad.ts`; el token nuevo hereda la
+ *   hora del primer plan, así que encadenar cambios no lo alarga);
+ * - el corte del 3D (`fuente: "corte"`) frena todo, también lo que tiene `base`: responde `motor_3d_cortado` sin verificar
+ *   ni cotizar, y la vista avisa al cliente antes de recalcular su plan con Python;
+ * - un token de Python (`backend: python`) se rechaza: cada plan tiene un solo dueño de sus cantidades;
+ * - el token del 3D va atado al navegador que pidió el plan (cookie `feedback_usuario`): copiado a otro, no sirve;
+ * - todo lo que impida el plan 3D es un fallo TIPADO (`fallback.razon`) y la vista resuelve por Python;
+ * - el navegador que no pudo leer la bandera a tiempo y creó el plan con Python avisa con `{desde:"bandera_fallida", razon}`: no
+ *   arma nada, solo deja la fila `PLAN_3D_FALLBACK` con `bandera_timeout` / `bandera_error` (sin esto el plan no dejaba rastro);
+ * - cada decisión (plan armado, o por qué no) deja una fila durable en `plan_audit_log` (`auditoria-plan.ts`): `decidir` solo
+ *   llega a stdout y a /tmp, y en Vercel eso no dura.
+ */
+export type DependenciasPlanMotor = {
+  leerBandera: (request: Request) => Promise<RespuestaMotor>;
+  auditar: (quien: string, que: string, resultado: unknown, extra?: { entrada?: unknown; motivo?: string }) => void;
+  planGuardado: (ideaId: string) => PlanIdeaGuardado | null;
+  cotizar: (bom: ResultadoMotorV1["bom"], solicitud: { requestId: string; signal: AbortSignal }) => Promise<ResultadoCotizacionBom>;
+  nuevoId: () => string;
+  /** La fila durable de lo decidido (`registrarAuditoriaPlan3d`, que espera la escritura y nunca lanza). */
+  registrarPlan: (fila: FilaAuditoriaPlan3d) => Promise<void>;
+};
+
+const SIN_CACHE = { "Cache-Control": "no-store" } as const;
+const MAX_CARACTERES_CUERPO = 700_000;
+
+function error(codigo: string, mensaje: string, estado: number, extra: Record<string, unknown> = {}): Response {
+  return Response.json({ error: mensaje, codigo, ...extra }, { status: estado, headers: SIN_CACHE });
+}
+
+class FalloDelPlan extends Error {
+  constructor(readonly razon: RazonFallback, readonly detalle?: string, readonly piezas?: Array<{ piezaId: string; motivo: string }>) { super(detalle ?? razon); }
+}
+
+const FRASE_POR_RAZON: Readonly<Record<RazonFallback, string>> = {
+  bandera_python: "Este plan se arma con el motor de siempre.",
+  motor_3d_cortado: "El motor 3D está cortado: el plan se arma con el motor de siempre (si ya era del 3D, avisando antes al cliente).",
+  plan_3d_vencido: "La bandera dice python y este plan del 3D pasó su límite: se recalcula con el motor de siempre, avisando antes al cliente.",
+  aprobacion_invalida: "La aprobación del plan del 3D ya no sirve: se recalcula con el motor de siempre, avisando antes al cliente.",
+  no_representable: "Alguna pieza de este plan todavía no la arma el motor 3D.",
+  sin_cobertura: "La tienda no vende algún globo de este plan en esa talla o color.",
+  precio_fallido: "No pude cotizar los materiales de este plan.",
+  sin_plan_guardado: "Esa idea no tiene un plan guardado.",
+  tope_de_piezas: "Sumar esa idea pasaría del máximo de piezas de un plan.",
+  sobre_invalido: "No pude armar el plan con el motor 3D.",
+};
+
+/** Los fallos que no son del armado sino de la bandera o del corte: 409 con su código; el resto, 422. */
+const RESPUESTA_POR_RAZON: Partial<Record<RazonFallback, { codigo: string; estado: number }>> = {
+  bandera_python: { codigo: "MOTOR_PYTHON", estado: 409 },
+  motor_3d_cortado: { codigo: "MOTOR_3D_CORTADO", estado: 409 },
+  plan_3d_vencido: { codigo: "PLAN_3D_VENCIDO", estado: 409 },
+};
+const RESPUESTA_NO_ARMABLE = { codigo: "PLAN_NO_ARMABLE_EN_3D", estado: 422 };
+/** Las razones cuyo detalle no trae nada del cliente: los huecos del catálogo, el servicio de precios y el tope de piezas. */
+const DETALLE_PROPIO: ReadonlySet<RazonFallback> = new Set<RazonFallback>(["sin_cobertura", "precio_fallido", "tope_de_piezas"]);
+
+import { crearContextoOrdenColorVacio, podarContextoOrdenColor, type ContextoOrdenColor } from "@/lib/globos3d/motor/v1";
+
+type BaseVerificada = { espec: EspecClienteV1; versionPlan: string; concepto: ConceptoPlan; origenEn: number; colorOrder?: ContextoOrdenColor };
+
+/** Huella (no reversible) del navegador al que se le dio el plan. */
+export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
+
+function mayuscula(texto: string): string {
+  return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
+}
+
+function conceptoDePropuesta(cuerpo: Extract<CuerpoPlanMotor, { desde: "propuesta" }>, espec: EspecClienteV1): ConceptoPlan {
+  const { brief, propuesta } = cuerpo;
+  const nombres = [...new Set(espec.piezas.map((pieza) => pieza.nombre))];
+  return {
+    titulo: brief?.tematica ? mayuscula(brief.tematica) : nombres.length ? mayuscula(nombres.slice(0, 3).join(", ").toLocaleLowerCase("es")) : "Tu decoración",
+    descripcion: propuesta.frase,
+    ...(brief?.tematica ? { estilo: brief.tematica } : {}),
+    ...(brief?.evento ? { ocasion: brief.evento } : {}),
+  };
+}
+
+type Armado = { espec: EspecClienteV1; concepto: ConceptoPlan; nuevas: string[]; globosIdea: number | null; avisosConversion: string[] };
+
+function armarEspec(cuerpo: CuerpoPlanMotor, base: BaseVerificada | null, deps: DependenciasPlanMotor): Armado {
+  if (cuerpo.desde === "propuesta") {
+    const { espec, avisos } = especDesdePropuesta(cuerpo.propuesta, cuerpo.brief);
+    return { espec, concepto: conceptoDePropuesta(cuerpo, espec), nuevas: espec.piezas.map((pieza) => pieza.id), globosIdea: null, avisosConversion: avisos };
+  }
+  const guardado = deps.planGuardado(cuerpo.idea_id);
+  if (!guardado) throw new FalloDelPlan("sin_plan_guardado", cuerpo.idea_id);
+  const { espec: deLaIdea, avisos } = especDesdeIdeaGuardada(guardado.plan, cuerpo.idea_id);
+  const concepto: ConceptoPlan = { titulo: guardado.plan.concepto.titulo, descripcion: guardado.plan.concepto.descripcion, ...(guardado.plan.concepto.estilo ? { estilo: guardado.plan.concepto.estilo } : {}), ...(guardado.plan.concepto.ocasion ? { ocasion: guardado.plan.concepto.ocasion } : {}) };
+  if (!base) return { espec: deLaIdea, concepto, nuevas: deLaIdea.piezas.map((pieza) => pieza.id), globosIdea: guardado.globos, avisosConversion: avisos };
+  const suma = sumarIdeaAEspec(base.espec, deLaIdea, cuerpo.idea_id);
+  if (!suma.ok) throw new FalloDelPlan("tope_de_piezas", `máximo ${suma.maximo} piezas`);
+  return { espec: suma.espec, concepto: base.concepto, nuevas: suma.nuevas, globosIdea: guardado.globos, avisosConversion: avisos };
+}
+
+/** P-091: una base armada con otra versión del motor se rehace con la actual; si sus globos se movieron sin que lo pedido tenga que ver, el cliente lo lee. */
+function avisoDeVersion(planBase: CuerpoPlanMotor["base"], base: BaseVerificada | null): string | null {
+  if (!planBase || !base || base.versionPlan === VERSION_MOTOR) return null;
+  const sinCambio = armarDesdeEspec(base.espec);
+  if (sinCambio.noRepresentable.length) return null;
+  const antes = totalGlobosDelPlan(planBase);
+  return antes === null ? null : avisoMotorActualizado(base.versionPlan, antes, totalGlobosDeBom(sinCambio.bom));
+}
+
+export async function atenderPlanMotor(request: Request, deps: DependenciasPlanMotor): Promise<Response> {
+  if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
+  // La identidad del navegador (cookie aleatoria por navegador): ata el token del plan al navegador que lo pidió.
+  const acceso = exigirEscritura(request);
+  if ("respuesta" in acceso) return acceso.respuesta;
+  return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
+}
+
+/** El plan se creó con Python porque la bandera no se leyó a tiempo: la fila durable que ese plan no dejaría por otra vía. */
+async function registrarBanderaFallida(razon: RazonBanderaFallida, deps: DependenciasPlanMotor): Promise<Response> {
+  await deps.registrarPlan({
+    requestId: deps.nuevoId(), superficie: RUTA_PLAN_MOTOR, estado: "PLAN_3D_FALLBACK", pedido: { desde: "bandera_fallida" },
+    resultado: { accion: "plan_3d", razon, origen: "cliente" }, motor: { bandera: null, efectivo: "python" }, error: razon,
+  });
+  return Response.json({ ok: true }, { headers: SIN_CACHE });
+}
+
+async function atender(request: Request, deps: DependenciasPlanMotor, navegador: string): Promise<Response> {
+  const texto = await request.text().catch(() => "");
+  if (!texto || texto.length > MAX_CARACTERES_CUERPO) return error("CUERPO_INVALIDO", "Cuerpo inválido.", 400);
+  let json: unknown;
+  try { json = JSON.parse(texto); } catch { return error("CUERPO_INVALIDO", "El cuerpo debe ser JSON válido.", 400); }
+  const sinBandera = CuerpoBanderaFallidaSchema.safeParse(json);
+  if (sinBandera.success) return registrarBanderaFallida(sinBandera.data.razon, deps);
+  const leido = CuerpoPlanMotorSchema.safeParse(json);
+  if (!leido.success) return error("CUERPO_INVALIDO", "La solicitud no tiene un formato válido.", 400, { detalles: leido.error.issues.slice(0, 5).map((i) => ({ ruta: i.path.join("."), mensaje: i.message })) });
+  const cuerpo = leido.data;
+  const entrada = { desde: cuerpo.desde, conBase: Boolean(cuerpo.base), ...(cuerpo.desde === "idea" ? { idea_id: cuerpo.idea_id } : { piezas: cuerpo.propuesta.piezas.map((p) => p.estructura), colores: cuerpo.propuesta.colores }) };
+  const inicio = Date.now();
+  const bandera = await deps.leerBandera(request);
+  // El id de la petición nace al primer uso (el precio a Python y la fila de auditoría llevan el mismo): un fallo temprano no gasta el del plan.
+  let idPeticion: string | undefined;
+  const requestId = (): string => (idPeticion ??= deps.nuevoId());
+  // La fila durable lleva lo que el navegador mandó solo con forma de código: el id de una idea, solo si existe en el catálogo.
+  const pedido = cuerpo.desde === "idea" ? { ...entrada, idea_id: deps.planGuardado(cuerpo.idea_id) ? codigoSeguro(cuerpo.idea_id) : "desconocida" } : entrada;
+  const guardar = (fila: Omit<FilaAuditoriaPlan3d, "requestId" | "superficie" | "pedido">): Promise<void> => deps.registrarPlan({ requestId: requestId(), superficie: RUTA_PLAN_MOTOR, pedido, ...fila });
+
+  const fallo = async (razon: RazonFallback, detalle?: string, piezas?: Array<{ piezaId: string; motivo: string }>): Promise<Response> => {
+    deps.auditar("regla:motor_guiada", "plan de la guiada: el motor 3D no lo arma y se resuelve con Python", {
+      bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}),
+    }, { entrada, motivo: FRASE_POR_RAZON[razon] });
+    // Del detalle solo el que arma el motor o el catálogo; el de `sin_plan_guardado` es el id que mandó el navegador, y el motivo de una pieza que no se arma nombra la pieza como la llamó el cliente.
+    await guardar({
+      estado: "PLAN_3D_FALLBACK", resultado: { accion: "plan_3d", razon, ...(detalle && DETALLE_PROPIO.has(razon) ? { detalle } : {}), ...(piezas ? { piezas: idsDePiezas(piezas) } : {}) },
+      motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python" }, error: razon,
+    });
+    const { codigo, estado } = RESPUESTA_POR_RAZON[razon] ?? RESPUESTA_NO_ARMABLE;
+    return error(codigo, FRASE_POR_RAZON[razon], estado, { fallback: { razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}) } });
+  };
+
+  // El corte frena todo y antes de nada (ni se verifica la base). La bandera, solo lo nuevo: un plan del 3D abierto sigue aquí.
+  if (bandera.fuente === "corte") return fallo("motor_3d_cortado");
+  if (!cuerpo.base && bandera.motor !== "3d") return fallo("bandera_python");
+  let base: BaseVerificada | null = null;
+  if (cuerpo.base) {
+    const verificada = verificarPlanConConcepto(cuerpo.base, navegador);
+    if ("codigo" in verificada) {
+      deps.auditar("regla:motor_guiada", "plan de la guiada: la base que mandó el navegador no se acepta", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: verificada.codigo, motivo: verificada.motivo }, { entrada, motivo: verificada.mensaje });
+      await guardar({
+        estado: "PLAN_3D_FALLBACK", resultado: { accion: "plan_3d", razon: verificada.codigo, motivo: codigoSeguro(verificada.motivo) },
+        motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python" }, error: verificada.codigo,
+      });
+      // Una aprobación que ya no sirve (vencida, de otro navegador, de otro plan) no deja seguir en el 3D: la vista avisa antes de recalcular.
+      return error(verificada.codigo, verificada.mensaje, verificada.estado, verificada.codigo === "APROBACION_INVALIDA" ? { fallback: { razon: "aprobacion_invalida" } } : {});
+    }
+    // La bandera no frena un plan del 3D abierto… salvo que su línea pase el límite de continuidad.
+    if (planDel3dVencido(bandera, verificada.origenEn, Date.now())) return fallo("plan_3d_vencido");
+    base = verificada;
+  }
+
+  try {
+    const { espec, concepto, nuevas, globosIdea, avisosConversion } = armarEspec(cuerpo, base, deps);
+    const resultado = armarDesdeEspec(espec);
+    if (resultado.noRepresentable.length) return fallo("no_representable", undefined, resultado.noRepresentable);
+    const avisoVersion = avisoDeVersion(cuerpo.base, base);
+    const avisos = [...new Set([...(avisoVersion ? [avisoVersion] : []), ...avisosConversion, ...resultado.avisos])];
+    const cotizada = await deps.cotizar(resultado.bom, { requestId: requestId(), signal: request.signal });
+    if (!cotizada.ok) {
+      if (cotizada.razon === "sin_cobertura") return fallo("sin_cobertura", cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}: ${f.motivo}`).join("; "));
+      return fallo(cotizada.razon === "material_no_disponible" ? "sin_cobertura" : "precio_fallido", cotizada.detalle);
+    }
+    const colorOrder = base ? (base.colorOrder ? podarContextoOrdenColor(base.colorOrder, espec) : undefined) : crearContextoOrdenColorVacio();
+    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base?.origenEn ?? Date.now(), ...(colorOrder !== undefined ? { colorOrder } : {}) });
+    if (!sobre.ok) return fallo("sobre_invalido", sobre.motivo);
+    deps.auditar("regla:motor_guiada", "plan de la guiada armado por el motor 3D y cotizado con Python", {
+      bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", ...(base && bandera.motor !== "3d" ? { conserva_motor: "plan_3d_abierto" } : {}), plan_hash: resultado.especHash, motor: resultado.motor,
+      piezas: espec.piezas.map((p) => ({ id: p.id, oficial: p.oficial })), globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0),
+      lineas: cotizada.compras.length, total_cop: cotizada.total, snapshot_precios: cotizada.snapshot, snapshot_cruce: cotizada.snapshotCruce,
+      politica_paquetes: cotizada.politica, reserva: cotizada.reserva, avisos, ms: Date.now() - inicio,
+    }, { entrada });
+    await guardar({
+      estado: !base ? "PLAN_3D_CREADO" : cuerpo.desde === "idea" ? "PLAN_3D_IDEA_SUMADA" : "PLAN_3D_REHECHO",
+      planHash: resultado.especHash,
+      resultado: {
+        accion: "plan_3d", motor: resultado.motor, ...(base && cuerpo.base ? { plan_hash_base: hashSeguro(cuerpo.base.plan_hash) ?? "otro" } : {}), piezas: espec.piezas.map((p) => ({ id: p.id, oficial: p.oficial })), nuevas,
+        globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0), lineas: cotizada.compras.length, reserva: cotizada.reserva, politica_paquetes: cotizada.politica,
+        snapshot_cruce: cotizada.snapshotCruce, avisos: avisos.length, ms: Date.now() - inicio,
+      },
+      motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d" }, totalCop: cotizada.total, snapshotPrecios: cotizada.snapshot,
+      compras: cotizada.compras.map((compra) => ({ variantId: compra.variante.variantId, paquetes: compra.paquetes, subtotal: compra.subtotal })),
+    });
+    return Response.json({ plan: sobre.plan, cotizacion: sobre.cotizacion, nuevas, globosIdea, exacto: avisos.length === 0, avisos: avisos.slice(0, 4) }, { headers: SIN_CACHE });
+  } catch (causa) {
+    if (causa instanceof FalloDelPlan) return fallo(causa.razon, causa.detalle, causa.piezas);
+    console.warn("[guiada-motor] no se pudo armar el plan con el motor 3D", causa instanceof Error ? causa.message : causa);
+    deps.auditar("regla:motor_guiada", "plan de la guiada: error inesperado del motor 3D", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: "error_inesperado", detalle: causa instanceof Error ? causa.message : "error" }, { entrada });
+    await guardar({
+      estado: "PLAN_3D_FALLBACK", resultado: { accion: "plan_3d", razon: "error_inesperado", error_tipo: causa instanceof Error ? causa.name : "desconocido" },
+      motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python" }, error: "error_inesperado",
+    });
+    return error("ERROR_DEL_MOTOR", "No pude armar el plan con el motor 3D.", 500);
+  }
+}

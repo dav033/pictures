@@ -1,0 +1,201 @@
+{
+ "caso": "idea-deco-real-16-images-31",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "b27fe211cd56f2f8c634d225242d7a25fa699fbd7e52764a075b6f17319b2909",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "044",
+     "cantidad": 11
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "390",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "940",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "044",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "390",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "044",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "390",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "940",
+     "cantidad": 10
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "044",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "390",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "940",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 71,
+   "caja": [
+    -144,
+    200,
+    -250,
+    144,
+    287,
+    -197
+   ]
+  },
+  "EST_02_BOUQUET": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "044",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "940",
+     "cantidad": 6
+    }
+   ],
+   "unidades": 12,
+   "caja": [
+    -99,
+    0,
+    11,
+    -21,
+    155,
+    69
+   ]
+  },
+  "EST_03_BOUQUET": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "044",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "390",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "940",
+     "cantidad": 4
+    }
+   ],
+   "unidades": 10,
+   "caja": [
+    21,
+    0,
+    11,
+    99,
+    155,
+    69
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "044",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "390",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "940",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "044",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "390",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "044",
+    "cantidad": 25
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "390",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "940",
+    "cantidad": 20
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "044",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "390",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "940",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 93
+ },
+ "caja": [
+  -144,
+  0,
+  -250,
+  144,
+  287,
+  69
+ ],
+ "referenciaPython": {
+  "globos": 95
+ }
+}

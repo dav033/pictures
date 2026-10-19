@@ -1,0 +1,87 @@
+{
+ "caso": "sintetico-dos-globos-cada-uno-con-su-reserva",
+ "origen": "sintetico",
+ "idea": null,
+ "snapshot": "sintetico",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "S02",
+   "cantidad": 66,
+   "productId": "P-AZUL",
+   "color": "azul",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "V-AZUL-12-X12",
+     "unidadesPaq": 12,
+     "precio": 4249
+    },
+    {
+     "variantId": "V-AZUL-12-X20",
+     "unidadesPaq": 20,
+     "precio": 6461
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "S03",
+   "cantidad": 59,
+   "productId": "P-PLATA",
+   "color": "plateado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "V-PLATA-12-X12",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "V-PLATA-12-X50",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 70273,
+  "reserva": {
+   "objetivo": 11,
+   "cubierta": 11,
+   "sinCubrir": 0,
+   "excedenteNatural": 21
+  },
+  "compras": [
+   {
+    "variantId": "V-AZUL-12-X12",
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "V-AZUL-12-X20",
+    "paquetes": 3,
+    "cantidad": 54,
+    "reserva": 6,
+    "paraReserva": true
+   },
+   {
+    "variantId": "V-PLATA-12-X12",
+    "paquetes": 2,
+    "cantidad": 24,
+    "reserva": 0,
+    "paraReserva": true
+   },
+   {
+    "variantId": "V-PLATA-12-X50",
+    "paquetes": 1,
+    "cantidad": 35,
+    "reserva": 5,
+    "paraReserva": false
+   }
+  ]
+ }
+}

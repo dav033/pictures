@@ -1,0 +1,170 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000169-1",
+  "image_sha256": "a946904de31e06d5b6720941a32cb886397b15c58fb6e31211d32d1bcfa817fc",
+  "idempotency_key": "4ea4de514e3c06625a312ff6c6a16a7991db3d83a01dc0a26d055f75a1e804f2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000169/foto-1.jpg",
+    "orden": "950000169"
+  },
+  "anotacion": {
+    "image_id": "950000169-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.fashion.raspberry",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.raspberry",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A closed three-dimensional rectangular balloon arch forms the main frame, with pink, raspberry, purple orchid, and metallic gold balloons plus floral accents."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "columna",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching vertical gold balloon columns support the frame and end in larger purple balloon bases."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "The vertical supports may also be considered integrated parts of the assembled arch."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000169-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 5-inch matte Fashion pink round latex balloons and high-shine Reflex gold round latex balloons, 12-inch matte Fashion purple orchid round latex balloons, 9-inch matte Fashion raspberry round latex balloons, mixed organically rather than graded, two matching balloon columns, one at each end of the organic balloon arch, built from 12-inch matte Fashion purple orchid round latex balloons, 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, alongside a printed sign, set against white wall and white floor.",
+    "palabras": 93,
+    "caracteres": 635,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.raspberry",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:19:08.014Z",
+    "recompilado_en": "2026-09-03T14:45:24.973Z"
+  }
+}

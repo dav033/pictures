@@ -1,0 +1,15 @@
+{
+  "version": "tokens-conteo-2026-09-28",
+  "modelo": "gemini-3.6-flash",
+  "medido": false,
+  "origen": "analisis: pase de inventario medido en tokens-analisis-2026-09-15.json (ai_call_log, 239 llamadas, p50/p95). conteo: SIN MEDIR, supuesto de la lectura conteo-referencia.v1 (misma foto que el análisis más un prompt de ~1.100 tokens; salida de hasta 12 lecturas de ~90 tokens). Reemplazar por valores medidos tras la primera corrida pagada.",
+  "analisis": {
+    "p50": { "entrada": 3347, "salida": 1489 },
+    "p95": { "entrada": 3382, "salida": 2560 }
+  },
+  "conteo": {
+    "p50": { "entrada": 2600, "salida": 400 },
+    "p95": { "entrada": 3200, "salida": 1200 }
+  },
+  "intentos_analisis": 2
+}

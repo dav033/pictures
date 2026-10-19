@@ -1,0 +1,436 @@
+import { porcentajesMayorResto } from "../escena/tamano-fisico";
+import type { SceneSpec } from "../escena/scene-spec";
+import type { ArcoResuelto } from "@/lib/plan/armado-arco";
+import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
+import type { ArmadoGuirnaldaResuelto, FormaGuirnalda, SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
+import type { ArcoOrganicoResuelto } from "@/lib/plan/armado-arco-organico";
+import type { ColumnaResuelta } from "@/lib/plan/armado-columna";
+import type { ColumnaOrganicaResuelta } from "@/lib/plan/armado-columna-organica";
+import type { GuirnaldaOrganicaResuelta } from "@/lib/plan/armado-guirnalda-organica";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { fraseFloresFlux, type FloresPieza } from "@/lib/plan/flores-pieza";
+
+/**
+ * Proporción y acabado de color POR ESTRUCTURA para el modelo de imagen y para
+ * el QA visual.
+ *
+ * El plan resuelve la mezcla real de cada estructura (color, acabado, unidades)
+ * y el estimado la conserva línea a línea, pero el prompt solo llevaba la lista
+ * de colores y un conteo global de toda la escena: un arco 85 % blanco con 15 %
+ * dorado se leía igual que uno mitad y mitad, y el observador no tenía criterio
+ * para marcarlo. Este módulo es el único dueño de esa redacción, para que el
+ * prompt y el QA describan exactamente la misma mezcla.
+ *
+ * Puro: sin proveedor, HTTP, base de datos ni variables de entorno.
+ */
+
+export type ColorDeEstructura = {
+  /** Nombre de catálogo tal como lo nombra el resto del prompt (en español). */
+  color: string;
+  /** Acabado en inglés para el modelo de imagen; null cuando el estimado no lo trae. */
+  acabado: string | null;
+  unidades: number;
+  /** Entero; el conjunto suma 100. */
+  pct: number;
+};
+
+/**
+ * Acabados canónicos del catálogo (`ACABADOS_CATALOGO_V2`) en inglés llano.
+ * A propósito NO es el mismo mapa que `FINISH_WORDS` del compilador de
+ * captions: ese habla el dialecto con el que se entrenó el LoRA y tiene que
+ * coincidir con sus captions, mientras que aquí se le explica el material a un
+ * modelo de instrucciones que nunca vio ese vocabulario.
+ */
+export const ACABADO_EN: Readonly<Record<string, string>> = {
+  reflex: "high-shine chrome",
+  metal: "metallic",
+  metalizado: "metallic",
+  cromado: "high-shine chrome",
+  satin: "satin",
+  fashion: "matte",
+  mate: "matte",
+  perlado: "pearl",
+  transparente: "translucent",
+};
+
+function plegar(texto: string): string {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+}
+
+export function acabadoEnIngles(acabado: string | null | undefined): string | null {
+  if (!acabado) return null;
+  return ACABADO_EN[plegar(acabado)] ?? null;
+}
+
+/** Id de la estructura del plan a la que pertenece un elemento (`EST_02#2` -> `EST_02`). */
+export function idDeEstructura(element: SceneSpec["elements"][number]): string {
+  return element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+}
+
+/**
+ * Frase del patrón de color de la estructura del elemento, tal como la escribió
+ * Python en `plan_resuelto.patrones_color` (ADR-0028 §12). Adaptador temporal
+ * hasta que el prompt de imagen migre a Python: aquí solo se busca la frase;
+ * nunca se redacta, se expande ni se cuenta un patrón.
+ *
+ * `undefined` cuando la estructura no tiene patrón aplicado (una sugerencia
+ * `aplicado: false` no es del plan) o cuando la frase viene vacía; en ese caso
+ * el prompt conserva su reparto orgánico y no cambia. Ningún modo de Python
+ * llega vacío desde ADR-0035 (el confeti era el último), pero la guarda se
+ * queda: una respuesta de una versión anterior del servicio no debe pegar los
+ * acentos ni el armado a una cadena vacía.
+ */
+export function frasePatronColor(
+  patrones: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+  campo: "prompt_gemini" | "prompt_lora",
+): string | undefined {
+  if (!patrones?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  const frase = patrones.find((patron) => patron.aplicado && patron.estructura_id === estructura)?.[campo].trim();
+  return frase || undefined;
+}
+
+/**
+ * Lo que el prompt lee del armado de una guirnalda (ADR-0032), tal como lo
+ * decidió Python: sobre qué va, qué forma toma, de cuántos puntos cuelga y
+ * sobre qué pieza va abrazada. Solo elige frases fijas del prompt (soporte,
+ * forma, candados); nunca redacta ni cuenta el armado.
+ */
+export type ArmadoGuirnaldaEnPrompt = {
+  soporte: SoporteGuirnalda;
+  forma: FormaGuirnalda;
+  puntos_de_anclaje?: number;
+  /** Con `soporte: "sobre_estructura"`: la pieza del plan sobre la que va. */
+  anfitriona?: string;
+  /** La frase de la estructura lleva además su patrón de color (no confeti). */
+  conPatron: boolean;
+  /** El armado resuelto lleva relleno de globos chicos (`relleno` no nulo). */
+  conRelleno: boolean;
+  /** El armado resuelto lleva remates (`remates` no vacío). */
+  conRemates: boolean;
+};
+
+/**
+ * Lo que el prompt lee del armado de un bouquet (ADR-0030), tal como lo
+ * decidió Python: cuántos bouquets forman cada instancia (`grupos`; 2 con un
+ * número a cada lado) y si lleva remate y globos número. Solo elige frases
+ * fijas (cardinalidad, candados); nunca redacta ni cuenta el armado.
+ */
+export type ArmadoBouquetEnPrompt = { grupos: number; conRemate: boolean; conNumeros: boolean };
+
+/**
+ * Lo que los constructores de prompts leen de un patrón de color o de un
+ * armado de bouquet o de guirnalda: a qué estructura pertenece, si está en el
+ * plan y las dos frases que escribió Python. Un `PatronColorResuelto` lo cumple
+ * tal cual.
+ */
+export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "aplicado" | "prompt_gemini" | "prompt_lora"> & {
+  /**
+   * Solo en la frase de un armado de bouquet (ADR-0030): cuántos bouquets
+   * forman cada instancia de la pieza, tal como lo decidió Python (`grupos`;
+   * 2 con un número a cada lado), y si lleva remate y números. El prompt lo
+   * lee para contar piezas y elegir el candado, nunca para redactar el armado.
+   * Un patrón de color no lo lleva.
+   */
+  armado?: ArmadoBouquetEnPrompt;
+  /** Solo en la frase de una guirnalda con armado (ADR-0032, E5). */
+  guirnalda?: ArmadoGuirnaldaEnPrompt;
+  /**
+   * Solo en la frase de una guirnalda armada con el motor orgánico (ADR-0034). No lleva el armado entero:
+   * el prompt no redacta nada de él —lo redactó Python— y lo único que necesita saber por su cuenta es si la
+   * pieza va en alto, para no prometer apoyos en el suelo que la convertían en un arco de pie.
+   */
+  guirnaldaOrganica?: { enAlto: boolean };
+  /**
+   * Solo en la frase de una pieza del motor ORGÁNICO (arco, columna o guirnalda orgánicos, ADR-0034): describe la
+   * FORMA de la pieza (piernas, alto y ancho, dónde carga los globos), no qué color va dónde. Es lo único de Python
+   * que el caption puede acortar, por fragmentos enteros y del final hacia el principio, cuando nada más cabe
+   * (verificador 127: la foto 06 se quedaba sin imagen con un caption de 1540). Un patrón de color nunca la lleva.
+   */
+  forma?: true;
+  /**
+   * La frase de las flores de globo de la pieza (`fraseFloresFlux`), que va delante de su frase. Se guarda aparte para
+   * que la versión sin frases del caption (`frasesEsenciales`) conserve las flores: son globos que se compran.
+   */
+  flores?: string;
+};
+
+/**
+ * Las frases que sobreviven cuando el caption no cabe con su guía (`compilarSinFrases` de /api/generate): los armados de
+ * bouquet y de guirnalda enteros, y de las demás piezas solo sus flores (la forma y el patrón los dibuja la guía).
+ */
+export function frasesEsenciales(frases: readonly FraseDeEstructura[] | undefined): FraseDeEstructura[] | undefined {
+  return frases?.flatMap((frase) => {
+    if (frase.armado || frase.guirnalda) return [frase];
+    if (!frase.flores) return [];
+    return [{ estructura_id: frase.estructura_id, aplicado: frase.aplicado, prompt_gemini: frase.flores, prompt_lora: frase.flores, flores: frase.flores }];
+  });
+}
+
+/**
+ * Une la frase del armado de una guirnalda con la de su patrón, cuando lo
+ * tiene: el armado dice cómo se arma y el patrón de qué color va cada globo
+ * (los dos de Python, tal cual). Primero el armado, luego el patrón.
+ */
+/**
+ * Lo que ``armado_guirnalda_organica_prompt`` escribe cuando la pieza va montada en alto. Es un dato suyo, no
+ * una lectura del texto: viaja en la frase porque el contrato de la pieza resuelta publica la frase y no sus
+ * mandos, y duplicar `forma.alturaM` aquí crearía un segundo dueño del umbral.
+ */
+const FRASE_EXTREMOS_LIBRES = "both ends free";
+
+/**
+ * Una pieza resuelta por el motor del diseñador con las dos frases que Python le escribió para los modelos
+ * de imagen (ADR-0035). Los tres campos son **opcionales en el contrato** a propósito: los escribe la
+ * resolución y no el motor, así que un plan resuelto antes de que esa pieza tuviera frase llega sin ellos.
+ */
+type PiezaDelMotorConFrase = {
+  estructura_id?: string;
+  prompt_gemini?: string;
+  prompt_lora?: string;
+};
+
+/** Las piezas que de verdad traen frase. Sin ella no cuentan: el prompt sigue siendo el de siempre. */
+function conFrase<T extends PiezaDelMotorConFrase>(piezas: readonly T[] | undefined): T[] {
+  return (piezas ?? []).filter((pieza) => pieza.estructura_id && (pieza.prompt_gemini?.trim() || pieza.prompt_lora?.trim()));
+}
+
+function unirFrases(armado: string, patron: string | undefined, separador: string): string {
+  const conPatron = patron?.trim();
+  return conPatron ? `${armado.trim()}${separador}${conPatron}` : armado.trim();
+}
+
+/**
+ * Las frases por estructura de un plan resuelto: sus patrones de color
+ * (ADR-0028 §12), sus armados de bouquet (ADR-0030) y sus armados de
+ * guirnalda (ADR-0032), que siempre son del plan (`aplicado: true`). Una
+ * guirnalda con armado y patrón da una sola frase: la del armado seguida de la
+ * del patrón (en Gemini con un espacio, en el caption LoRA con una coma), que
+ * reemplaza a la del patrón solo. Un arco armado con el motor (ADR-0035) entra con
+ * la frase que escribió Python y **reemplaza** la de su patrón, si lo traía: el
+ * armado ya dice qué patrón lleva y con qué colores. `undefined` cuando el plan no
+ * trae ninguno, para que la petición de siempre siga byte a byte igual.
+ *
+ * Las flores de globo de una pieza (`flores-pieza.ts`, 2026-10-07) van DELANTE de la frase de su pieza, enteras y sin
+ * comas («with 4 small balloon flowers of 5-inch pearl white petals around chrome gold centers»): el compilador solo
+ * acorta una frase de forma por fragmentos desde el final, así que la de las flores es la última en caer. Una pieza
+ * sin frase recibe solo la de sus flores. Sin flores, todo queda byte a byte como antes.
+ */
+export function frasesDeEstructuras(
+  plan: Parameters<typeof frasesDeArmados>[0] & {
+    plan?: { estructuras?: ReadonlyArray<{ estructura_id: string; repeticiones?: number; flores?: FloresPieza | undefined }> };
+    estructuras?: ReadonlyArray<{ estructura_id: string; lineas: ReadonlyArray<Record<string, unknown>> }>;
+  } | null | undefined,
+): FraseDeEstructura[] | undefined {
+  const frases = frasesDeArmados(plan);
+  const conFlores = (plan?.plan?.estructuras ?? []).flatMap((pieza) => {
+    const frase = pieza.flores ? fraseFloresFlux(pieza, plan?.estructuras?.find((item) => item.estructura_id === pieza.estructura_id)?.lineas ?? []) : null;
+    return frase ? [{ estructura_id: pieza.estructura_id, frase }] : [];
+  });
+  if (!conFlores.length) return frases;
+  const todas = [...(frases ?? [])];
+  for (const { estructura_id, frase } of conFlores) {
+    // La primera frase aplicada de la pieza es la que el caption le pone (`frasePatronColor`).
+    const indice = todas.findIndex((item) => item.aplicado && item.estructura_id === estructura_id);
+    const actual = indice >= 0 ? todas[indice]! : undefined;
+    const entrada: FraseDeEstructura = actual
+      ? { ...actual, prompt_gemini: unirFrases(frase, actual.prompt_gemini, " "), prompt_lora: unirFrases(frase, actual.prompt_lora, ", "), flores: frase }
+      : { estructura_id, aplicado: true, prompt_gemini: frase, prompt_lora: frase, flores: frase };
+    if (indice >= 0) todas[indice] = entrada;
+    else todas.push(entrada);
+  }
+  return todas;
+}
+
+function frasesDeArmados(
+  plan: {
+    patrones_color?: readonly PatronColorResuelto[];
+    armados_bouquet?: readonly ArmadoBouquetResuelto[];
+    armados_guirnalda?: readonly ArmadoGuirnaldaResuelto[];
+    armados_arco?: readonly ArcoResuelto[];
+    armados_columna?: readonly ColumnaResuelta[];
+    armados_arco_organico?: readonly ArcoOrganicoResuelto[];
+    armados_columna_organica?: readonly ColumnaOrganicaResuelta[];
+    armados_guirnalda_organica?: readonly GuirnaldaOrganicaResuelta[];
+  } | null | undefined,
+): FraseDeEstructura[] | undefined {
+  // Las cinco piezas que arma el motor del diseñador, cada una con la frase que escribió Python (ADR-0035).
+  // Una cuenta **solo si trae su frase**: un plan resuelto antes de que su pieza la tuviera no la trae, y sin
+  // ella la petición tiene que seguir siendo byte a byte la de siempre. La guirnalda orgánica se marca aparte
+  // porque de ella el prompt decide una cosa por su cuenta: si va en alto, para no pedir apoyos en el suelo.
+  // `organica`: la frase del motor orgánico dice la forma de la pieza (`forma`); la del arco y la columna de patrón
+  // dice qué color va dónde, y esa nunca se acorta.
+  const delMotor: Array<{ pieza: PiezaDelMotorConFrase; esGuirnaldaOrganica: boolean; organica: boolean }> = [
+    ...conFrase(plan?.armados_arco).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: false })),
+    ...conFrase(plan?.armados_columna).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: false })),
+    ...conFrase(plan?.armados_arco_organico).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: true })),
+    ...conFrase(plan?.armados_columna_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: true })),
+    ...conFrase(plan?.armados_guirnalda_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: true, organica: true })),
+  ];
+  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined && delMotor.length === 0)) return undefined;
+  const frases: FraseDeEstructura[] = [
+    ...(plan.patrones_color ?? []),
+    ...(plan.armados_bouquet ?? []).map((armado) => ({
+      estructura_id: armado.estructura_id,
+      aplicado: true,
+      prompt_gemini: armado.prompt_gemini,
+      prompt_lora: armado.prompt_lora,
+      armado: { grupos: armado.grupos, conRemate: armado.remate.length > 0, conNumeros: armado.numero !== null },
+    })),
+  ];
+  for (const armado of plan.armados_guirnalda ?? []) {
+    const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === armado.estructura_id && !frase.armado);
+    const patron = indice >= 0 ? frases[indice] : undefined;
+    const entrada: FraseDeEstructura = {
+      estructura_id: armado.estructura_id,
+      aplicado: true,
+      prompt_gemini: unirFrases(armado.prompt_gemini, patron?.prompt_gemini, " "),
+      prompt_lora: unirFrases(armado.prompt_lora, patron?.prompt_lora, ", "),
+      guirnalda: {
+        soporte: armado.armado.soporte,
+        forma: armado.armado.forma,
+        ...(armado.armado.puntos_de_anclaje === undefined ? {} : { puntos_de_anclaje: armado.armado.puntos_de_anclaje }),
+        ...(armado.armado.estructura_id === undefined ? {} : { anfitriona: armado.armado.estructura_id }),
+        conPatron: Boolean(patron?.prompt_gemini.trim() || patron?.prompt_lora.trim()),
+        conRelleno: armado.relleno !== null,
+        conRemates: armado.remates.length > 0,
+      },
+    };
+    if (indice >= 0) frases[indice] = entrada;
+    else frases.push(entrada);
+  }
+  // La frase del motor **reemplaza** la del patrón de esa pieza: el armado ya dice qué patrón lleva y con qué
+  // colores, y dos frases seguidas nombraban la pieza dos veces.
+  for (const { pieza, esGuirnaldaOrganica, organica } of delMotor) {
+    const entrada: FraseDeEstructura = {
+      estructura_id: pieza.estructura_id!,
+      aplicado: true,
+      prompt_gemini: pieza.prompt_gemini ?? "",
+      prompt_lora: pieza.prompt_lora ?? "",
+      // Python lo dice en su propia frase; aquí basta el hecho, que es lo único que el prompt decide solo.
+      ...(esGuirnaldaOrganica ? { guirnaldaOrganica: { enAlto: (pieza.prompt_lora ?? "").includes(FRASE_EXTREMOS_LIBRES) } } : {}),
+      ...(organica ? { forma: true as const } : {}),
+    };
+    const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === entrada.estructura_id && !frase.armado && !frase.guirnalda);
+    if (indice >= 0) frases[indice] = entrada;
+    else frases.push(entrada);
+  }
+  return frases;
+}
+
+/**
+ * El armado de guirnalda de la estructura del elemento (sus instancias
+ * repetidas incluidas), cuando su frase aplicada es la de un armado de
+ * guirnalda. `undefined` sin él: el prompt no cambia.
+ */
+export function armadoGuirnaldaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): ArmadoGuirnaldaEnPrompt | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnalda)?.guirnalda;
+}
+
+/** Lo mismo para la guirnalda armada con el motor orgánico (ADR-0034): solo si va en alto. */
+export function armadoGuirnaldaOrganicaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): { enAlto: boolean } | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnaldaOrganica)?.guirnaldaOrganica;
+}
+
+/**
+ * Si la frase que el caption pone a este elemento (la misma que `frasePatronColor`: la primera aplicada de su
+ * estructura) es de FORMA del motor orgánico (`forma`), la única que se puede acortar cuando no cabe.
+ */
+export function fraseDeFormaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): boolean {
+  if (!frases?.length) return false;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura)?.forma === true;
+}
+
+/**
+ * El armado de bouquet de la estructura del elemento (sus instancias repetidas
+ * `EST_x#n` incluidas), cuando la frase aplicada de esa estructura es la de un
+ * armado. `undefined` con un patrón de color o sin frase: el prompt no cambia.
+ */
+export function armadoDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): ArmadoBouquetEnPrompt | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.armado)?.armado;
+}
+
+/**
+ * Mezcla de color de la estructura a la que pertenece el elemento, de mayor a
+ * menor participación. Vacía cuando el estimado no trae líneas de esa
+ * estructura (camino de catálogo sin plan): en ese caso el prompt conserva su
+ * texto sin proporciones en vez de inventar una.
+ *
+ * Solo se describen colores que el elemento ya declara en `resolved_colors`:
+ * el estimado etiqueta cada línea con el primer color del producto, así que un
+ * color suyo que la estructura no aprobó no puede entrar al prompt.
+ *
+ * Un empate en unidades conserva el orden de Python, nunca el alfabético: el
+ * estimado lista las líneas de cada estructura en el orden de su despiece (por
+ * tamaño y, dentro de cada tamaño, por material en el orden en que el plan los
+ * declara), así que el primero de los empatados en aparecer es el que el plan
+ * declaró antes. Desempatar por nombre hacía que un arco «lila» que el motor
+ * arma 29/29 con blanco saliera "mostly blanco".
+ */
+export function mezclaDeColorDeEstructura(sceneSpec: SceneSpec, element: SceneSpec["elements"][number]): ColorDeEstructura[] {
+  const lineas = sceneSpec.material_estimate?.balloons ?? [];
+  if (!lineas.length) return [];
+  const estructura = idDeEstructura(element);
+  const aprobados = new Set(element.resolved_colors.map(plegar));
+  // Un `Map` recorre sus claves en orden de inserción: el de la primera línea de cada color en el estimado.
+  const grupos = new Map<string, { color: string; acabado: string | null; unidades: number }>();
+  for (const linea of lineas) {
+    if (linea.structure_id !== estructura || !linea.color) continue;
+    if (aprobados.size && !aprobados.has(plegar(linea.color))) continue;
+    const acabado = acabadoEnIngles(linea.finish);
+    const clave = JSON.stringify([plegar(linea.color), acabado]);
+    const previo = grupos.get(clave);
+    grupos.set(clave, { color: previo?.color ?? linea.color, acabado, unidades: (previo?.unidades ?? 0) + linea.design_quantity });
+  }
+  // `sort` es estable: a igualdad de unidades cada color se queda en el puesto en que Python lo listó.
+  const ordenados = [...grupos.values()].sort((a, b) => b.unidades - a.unidades);
+  const porcentajes = porcentajesMayorResto(ordenados.map((grupo) => grupo.unidades));
+  return ordenados.map((grupo, indice) => ({ ...grupo, pct: porcentajes[indice]! }));
+}
+
+function conAcabado(entrada: ColorDeEstructura): string {
+  return `${entrada.color} (~${entrada.pct}%${entrada.acabado ? `, ${entrada.acabado}` : ""})`;
+}
+
+/** "a", "a and b", "a, b and c": la enumeración del resto del prompt, en inglés. */
+function enumerar(partes: readonly string[]): string {
+  return partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}`;
+}
+
+/**
+ * "mostly blanco (~85%, matte) with dorado (~15%, high-shine chrome) as accents"
+ * solo cuando un color pasa de la mitad. Sin mayoría —también con exactamente
+ * la mitad, que es un empate— ningún color manda y la frase dice el reparto tal
+ * cual: "a balanced split of lila (~50%) and blanco (~50%)", en el orden de
+ * `mezclaDeColorDeEstructura`. Con `>= 50` un arco 50/50 se pedía como "mostly"
+ * un color, y uno 34/33/33 como un color con dos acentos del 33 %.
+ *
+ * Cadena vacía cuando no hay mezcla que describir o cuando es de un solo
+ * color (ese caso lo cubre el MONOCHROME LOCK del prompt).
+ */
+export function describirMezclaDeColor(mezcla: readonly ColorDeEstructura[]): string {
+  if (mezcla.length < 2) return "";
+  const [dominante, ...resto] = mezcla;
+  if (dominante!.pct > 50) return `mostly ${conAcabado(dominante!)} with ${resto.map((entrada) => `${conAcabado(entrada)} as accents`).join(" and ")}`;
+  return `a balanced split of ${enumerar(mezcla.map(conAcabado))}`;
+}

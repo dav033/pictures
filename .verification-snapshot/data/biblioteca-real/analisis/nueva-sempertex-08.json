@@ -1,0 +1,324 @@
+{
+  "id": "nueva-sempertex-08",
+  "fuente": "sempertex-08.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-28-aro-blanco-dorado-y-nude.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "54585060-f7d3-44a6-8508-c123c19f066b",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Balloon Wreath Hoop Installation",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large circular ring frame fully wrapped with round latex balloons in pearl white, chrome gold, and nude tan, accented with two multi-petal balloon flowers.",
+          "reference_bbox": {
+            "x": 0.051,
+            "y": 0.088,
+            "width": 0.8959999999999999,
+            "height": 0.8230000000000001
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl white",
+              "chrome gold",
+              "nude tan"
+            ],
+            "measured_colors": [
+              {
+                "color": "nude",
+                "share": 0.3977
+              },
+              {
+                "color": "blanco",
+                "share": 0.3379
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex, foil, plastic",
+            "shape": "tall dense asymmetrical circular hoop, on the center, raised off the floor",
+            "composition": "40% pearl white balloons, 35% chrome gold balloons, 25% nude tan balloons forming a dense circular wreath structure with two large balloon flower toppers on the left and right sides.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "blanco",
+                "dorado",
+                "beige"
+              ],
+              "pesos": [
+                40,
+                35,
+                25
+              ],
+              "confianza": 0.95
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 72,
+              "exacto": false,
+              "estimado_total": 85,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.5452,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "806",
+                "familia": "silk",
+                "nombre": "Blanco Nácar",
+                "nombre_completo": "Silk Blanco Nácar",
+                "parte": 0.3038,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decorative focal element of the event setup.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Balloon circular hoop wreath arrangement with balloon flower accents",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pearl white",
+          "chrome gold",
+          "nude tan"
+        ],
+        "priority": [
+          "pearl white",
+          "chrome gold",
+          "nude tan"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "88e77ab7aeb353cec337b7f80a1350fab32d38ecabdc5bdec6ad7512b831e081",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 1000,
+            "height": 1000
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 94860,
+            "deLaCaja": 193698
+          },
+          "colores": [
+            {
+              "hex": "#8a774e",
+              "parte": 0.5452,
+              "pixeles": 51718,
+              "cruce": {
+                "hex": "#8a774e",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 13.8,
+                    "distancia": 4.6,
+                    "tono": 1.9,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ffffff",
+              "parte": 0.3038,
+              "pixeles": 28820,
+              "cruce": {
+                "hex": "#ffffff",
+                "candidatas": [
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 15.7,
+                    "distancia": 9,
+                    "tono": 70.9,
+                    "razonCroma": 0
+                  },
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 10.8,
+                    "distancia": 10.9,
+                    "tono": 150.3,
+                    "razonCroma": 0
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#bfbdae",
+              "parte": 0.151,
+              "pixeles": 14322,
+              "cruce": {
+                "hex": "#bfbdae",
+                "candidatas": [
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 15.4,
+                    "distancia": 9,
+                    "tono": 16.8,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 11.8,
+                    "distancia": 10.8,
+                    "tono": 122,
+                    "razonCroma": 6.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

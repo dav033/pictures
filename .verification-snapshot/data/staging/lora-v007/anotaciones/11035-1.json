@@ -1,0 +1,74 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11035-1",
+  "image_sha256": "1d778371b3a373c5d0e69056e3e368d6a5717529993ec1808a09a128afeddec0",
+  "idempotency_key": "0c7f9ada16d4541bf3cb95f53c8ddb23ca4aea431be5ecfe9de180c80b502842",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11035/foto-1.jpg",
+    "orden": "11035"
+  },
+  "anotacion": {
+    "image_id": "11035-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a white tablecloth on an outdoor patio table with white plastic chairs",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "a mason jar wrapped in burlap and gingham ribbon holding white daisies, set at the center of the table"
+      }
+    ],
+    "non_purchased_elements": [
+      "a glass pitcher of red juice",
+      "red and white gingham napkins",
+      "red plastic cutlery",
+      "wrapped kraft paper party favors"
+    ],
+    "uncertainties": [
+      "no balloon products are visible in this photo, so it may not depict the expected balloon order"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "SERVILLETA PICNIC ROJO"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "11035-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:30.783Z",
+    "recompilado_en": "2026-09-03T14:45:21.901Z"
+  }
+}

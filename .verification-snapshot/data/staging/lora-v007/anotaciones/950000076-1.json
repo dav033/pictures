@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000076-1",
+  "image_sha256": "04b3673fe2c7b5711ace27e9187f14f24ab9cac5f912355db0aa9161953a54d4",
+  "idempotency_key": "0db26ba78e29bd50c7b04cf093bbad532aa31f7da9f3774f4fab42f038e3a46a",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000076/foto-1.jpg",
+    "orden": "950000076"
+  },
+  "anotacion": {
+    "image_id": "950000076-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white wall; floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.peach",
+          "balloon.round.latex.pastel_dusk.blue",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.peach",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical column of stacked round balloons in gold, peach, eucalyptus green, muted blue, and dusty rose; strings extend below the crop."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The base or anchoring point is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000076-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 5-inch matte Fashion dusty rose round latex balloons and high-shine Reflex gold round latex balloons, 9-inch matte Fashion round latex balloons in eucalyptus green and peach and muted Pastel Dusk blue round latex balloons, mixed organically rather than graded, set against white wall; floor not visible.",
+    "palabras": 56,
+    "caracteres": 380,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:01:03.129Z",
+    "recompilado_en": "2026-09-03T14:45:24.039Z"
+  }
+}

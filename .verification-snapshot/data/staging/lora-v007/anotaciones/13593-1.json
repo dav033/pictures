@@ -1,0 +1,246 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13593-1",
+  "image_sha256": "af0a6a981a3d09c4899ab5ffafef68009fb8b099de980fcd32087adc9a22094c",
+  "idempotency_key": "1995a76d9b99f533815bdeb878ac7716b8e2b54053475d57fd0459c5efbd6afc",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13593/foto-1.jpg",
+    "orden": "13593"
+  },
+  "anotacion": {
+    "image_id": "13593-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a metal security gate and light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "13593-1-s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "13593-1-s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic rainbow-colored garland of green, yellow, orange, blue and dark navy balloons draped over the top and right side of the dessert table backdrop."
+      },
+      {
+        "structure_id": "13593-1-s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Iridescent sequin panel behind the dessert table with gold foil \"HBD\" letter balloons mounted on it."
+      },
+      {
+        "structure_id": "13593-1-s3",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.violet",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.fashion.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.violet",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Front panel of the main dessert table densely packed with green, blue, purple, pink, yellow and orange balloons inside a glass-fronted frame."
+      },
+      {
+        "structure_id": "13593-1-s4",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Illuminated number \"6\" marquee light standing on the floor to the left of the dessert table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a cake",
+      "cupcakes on a stand",
+      "HBD foil letters",
+      "a number 6 marquee light"
+    ],
+    "uncertainties": [
+      "Room lighting makes some colors in the upper garland (especially the dark navy section) hard to separate from the confirmed blue concept."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13593-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion round latex balloons in blue, lime green, orange and yellow, all at a single 9-inch size, a decorated backdrop, installed against the rear wall, a balloon wall, placed on the main table, built from matte Fashion round latex balloons in blue, lime green, orange, pink, violet and yellow, all at a single 9-inch size, with a decorative accessory, standing to one side, alongside a cake, cupcakes on a stand, HBD foil letters and a number marquee light, set against a metal security gate and light tiled floor.",
+    "palabras": 101,
+    "caracteres": 617,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.violet",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:53.321Z",
+    "recompilado_en": "2026-09-03T14:45:22.255Z"
+  }
+}

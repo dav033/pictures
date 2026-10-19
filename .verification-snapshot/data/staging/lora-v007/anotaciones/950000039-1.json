@@ -1,0 +1,155 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000039-1",
+  "image_sha256": "96d81cced3404ef6ed34b1347302c8443430e7ab935b27fa9fa3b6a45e751327",
+  "idempotency_key": "5d26cbb2327380306cc3991c9adbaf107df9ae68f7b74213968c8dc667efdd39",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000039/foto-1.jpg",
+    "orden": "950000039"
+  },
+  "anotacion": {
+    "image_id": "950000039-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no real wall or floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.assorted_colors.printed_greeting_lettering",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.fashion.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.mustard",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clear",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "balloon bouquet with silver and blue printed 'Feliz Dia' balloons, a yellow balloon, a clear bubble balloon holding a blue balloon, and black hat-shaped accents, arranged on a round polka-dot box"
+      }
+    ],
+    "non_purchased_elements": [
+      "a polka dot box"
+    ],
+    "uncertainties": [
+      "studio product photo on white background, not an on-site venue shot"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.reflex.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000039-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from 5-inch matte Fashion round latex balloons in black and royal blue and high-shine Reflex blue round latex balloons, 9-inch matte Fashion clear round latex balloons, 12-inch matte Fashion mustard round latex balloons and round latex balloons in assorted colors with a Reflex high-shine finish and printed greeting lettering, mixed organically rather than graded, alongside a polka dot box, set against plain white studio backdrop, no real wall or floor visible.",
+    "palabras": 81,
+    "caracteres": 536,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.reflex.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:53:35.610Z",
+    "recompilado_en": "2026-09-03T14:45:23.600Z"
+  }
+}

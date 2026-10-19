@@ -1,0 +1,312 @@
+import { z } from "zod";
+import { buscarCatalogoRag, type FiltrosExploracion, type ProductoCandidato } from "@/lib/rag/chat/buscar";
+import { listarColoresCatalogo } from "@/lib/rag/chat/colores-catalogo";
+import { claveColores, coloresParaExplorar } from "@/lib/rag/chat/cache-exploracion";
+import { getRagPool } from "@/lib/rag/db";
+import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/nucleo/python-adapter";
+import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
+import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
+import { PlanEditError } from "@/lib/plan/edicion-error";
+import { exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
+import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
+import { filtrarCandidatosCompatibles } from "@/lib/plan/edicion-compatibilidad";
+import {
+  abrirContextoExigido,
+  aplicarEdicionPlan,
+  correlationDesde,
+} from "@/lib/plan/aplicar-edicion";
+import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFloresSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { conRegistro } from "@/lib/registro/servidor";
+import { rechazarTokenDelMotor3d } from "@/lib/plan/token-motor";
+import { agregarColorPlan, agregarPiezaPlan, editarPiezaPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
+import { OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA } from "@/lib/plan/pieza-nueva";
+
+/** Candidates a search returns when the caller does not say (what the inline editor always got). */
+const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
+/** Python's own cap: with a target line it is asked for everything so the compatibility filter cannot starve the page. */
+const LIMITE_PYTHON_MAXIMO = 50;
+/** Python never reads this text when the search has filters and no text (`sinTexto`): it only labels the request. */
+const ETIQUETA_EXPLORACION = "catalogo";
+
+const FiltrosBusquedaSchema = z.object({
+  colores: z.array(z.string().trim().min(1).max(60)).max(8).optional(),
+  tamanos_pulgadas: z.array(z.number().positive().max(100)).max(8).optional(),
+  formas: z.array(z.string().trim().min(1).max(40)).max(4).optional(),
+  acabados: z.array(z.string().trim().min(1).max(40)).max(4).optional(),
+}).strict();
+
+function exploracionDe(filtros: z.infer<typeof FiltrosBusquedaSchema> | undefined): FiltrosExploracion | undefined {
+  if (!filtros) return undefined;
+  const exploracion: FiltrosExploracion = {
+    ...(filtros.colores?.length ? { colores: filtros.colores } : {}),
+    ...(filtros.formas?.length ? { formas: filtros.formas } : {}),
+    ...(filtros.acabados?.length ? { acabados: filtros.acabados } : {}),
+    ...(filtros.tamanos_pulgadas?.length ? { diametros_pulgadas: filtros.tamanos_pulgadas } : {}),
+  };
+  return Object.keys(exploracion).length ? exploracion : undefined;
+}
+
+const BodySchema = z.discriminatedUnion("modo", [
+  z.object({
+    modo: z.literal("buscar"),
+    /** Free text; it may be empty (or one character) only when `filtros` carries at least one filter. */
+    consulta: z.string().trim().max(240),
+    approval_token: z.string().min(1).max(256 * 1024).optional(),
+    /** Line the search would replace ("Modificar"): a balloon only accepts balloons of the same shape. */
+    linea_objetivo: z.object({
+      forma: z.string().trim().min(1).max(40).nullable().optional(),
+      diam_pulg: z.number().positive().max(100).nullable().optional(),
+    }).strict().optional(),
+    /** What the customer clicked in the explorer; explicit requirements, never relaxed. */
+    filtros: FiltrosBusquedaSchema.optional(),
+    /** How many candidates to return (default 8). */
+    limite: z.number().int().min(1).max(40).optional(),
+  }).strict().superRefine((valor, contexto) => {
+    if (valor.consulta.length < 2 && exploracionDe(valor.filtros) === undefined) {
+      contexto.addIssue({ code: "custom", path: ["consulta"], message: "Escribe al menos 2 caracteres o elige algún filtro." });
+    }
+  }),
+  z.object({
+    modo: z.literal("colores"),
+    approval_token: z.string().min(1).max(256 * 1024).optional(),
+  }).strict(),
+  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1) }).strict(),
+  // «Ajustar mi plan» de la guiada (ajuste-plan-entero.ts): quitar UNA pieza o añadir un color sin modelo; Python
+  // vuelve a resolver y a firmar, y lo demás queda igual.
+  z.object({ modo: z.literal("quitar_pieza"), base: BasePlanSchema, estructura_id: z.string().regex(/^EST_\d{2}_[A-Z_]+$/) }).strict(),
+  z.object({
+    modo: z.literal("agregar_color"),
+    base: BasePlanSchema,
+    color: z.string().trim().min(1).max(40),
+    product_id: z.string().trim().min(1).max(160),
+    variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+    // Solo en estas piezas («agrégale dorado a las columnas», pedido por chat en la guiada); sin ellas, en todas.
+    estructura_ids: z.array(z.string().regex(/^EST_\d{2}_[A-Z_]+$/)).max(24).optional(),
+  }).strict(),
+  // «Cambiar» un color por otro globo del catálogo (ajuste-plan-entero.ts): mismo lugar, misma parte, en todas sus medidas.
+  z.object({
+    modo: z.literal("reemplazar_color"),
+    base: BasePlanSchema,
+    color: z.string().trim().min(1).max(40),
+    product_id_anterior: z.string().trim().min(1).max(160).optional(),
+    estructura_ids: z.array(z.string().regex(/^EST_\d{2}_[A-Z_]+$/)).max(24).optional(),
+    color_nuevo: z.string().trim().min(1).max(40),
+    product_id: z.string().trim().min(1).max(160),
+    variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+  }).strict(),
+  // El CRUD por chat de la guiada (pieza-nueva.ts): sumar UNA pieza («agrégale una guirnalda en medio») conservando las
+  // demás, y mover o renombrar una. Python cuenta y firma; las piezas de antes compran exactamente lo mismo.
+  z.object({
+    modo: z.literal("agregar_pieza"),
+    base: BasePlanSchema,
+    estructura: z.enum(OFICIALES_AGREGABLES),
+    ubicacion: z.enum(UBICACIONES_PIEZA_NUEVA).nullable(),
+    medidas: z.object({ ancho_m: z.number().min(0.3).max(12).optional(), alto_m: z.number().min(0.3).max(12).optional(), largo_m: z.number().min(0.3).max(12).optional() }).strict().optional(),
+    organica: z.boolean().optional(),
+    // Familias de color del plan que lleva la pieza; vacío = las del plan.
+    colores: z.array(z.string().trim().min(1).max(40)).max(6).optional(),
+    // Colores que el plan no lleva: el globo del catálogo que eligió la vista, con todos sus tamaños.
+    globos: z.array(z.object({
+      color: z.string().trim().min(1).max(40),
+      product_id: z.string().trim().min(1).max(160),
+      variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+    }).strict()).max(3).optional(),
+  }).strict(),
+  z.object({
+    modo: z.literal("editar_pieza"),
+    base: BasePlanSchema,
+    estructura_id: z.string().regex(/^EST_\d{2}_[A-Z_]+$/),
+    ubicacion: z.enum(UBICACIONES_PIEZA_NUEVA).optional(),
+    nombre: z.string().trim().min(1).max(60).optional(),
+  }).strict().refine((valor) => valor.ubicacion !== undefined || valor.nombre !== undefined, { message: "Di a dónde va la pieza o cómo se llama." }),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema, EdicionFloresSchema]) }).strict(),
+]);
+
+const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";
+
+/**
+ * Variants kept per product. The explorer shows one option per size and color and folds the package sizes into it,
+ * so cutting the list would hide sizes or colors the customer could pick. The catalog's most-varied product has 20
+ * (measured); 48 leaves room without letting one product bloat the answer.
+ */
+const MAX_VARIANTES_POR_PRODUCTO = 48;
+
+function serializarCandidatos(candidatos: readonly ProductoCandidato[], limite: number) {
+  return candidatos.slice(0, limite).map((candidato) => ({
+    productId: candidato.productId,
+    titulo: candidato.titulo,
+    categoria: candidato.categoria,
+    imagen: candidato.imagen,
+    disponible: candidato.disponible,
+    variantes: candidato.variantes.slice(0, MAX_VARIANTES_POR_PRODUCTO),
+  }));
+}
+
+function requestIdDe(request: Request): string {
+  const cabecera = request.headers.get("x-request-id");
+  return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
+}
+
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-editar", atenderPOST);
+
+async function atenderPOST(request: Request) {
+  // Every response carries X-Request-ID, so a failed edit can be traced (E2E 2026-09-14).
+  const requestIdHttp = requestIdDe(request);
+  const cabeceras = { "X-Request-ID": requestIdHttp };
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch (error) {
+    // A malformed body is the client's error, not a 500.
+    const uiError = traducirErrorServidor(error instanceof SyntaxError ? error : new SyntaxError(MENSAJE_JSON_INVALIDO), requestIdHttp);
+    registrarFalloUi("/api/plan-editar", uiError);
+    return Response.json({ error: MENSAJE_JSON_INVALIDO, ui_error: uiError }, { status: 400, headers: cabeceras });
+  }
+  try {
+    const body = BodySchema.parse(json);
+    // Un plan del motor 3D no se edita aquí: cada plan tiene un solo dueño de sus cantidades (REQ-007).
+    rechazarTokenDelMotor3d("base" in body ? body.base.approval_token : body.approval_token);
+    const pool = getRagPool();
+
+    if (body.modo === "buscar") {
+      // Con un token de plan Python la búsqueda queda fijada al snapshot firmado;
+      // sin token (o con uno de Next) conserva el comportamiento anterior.
+      const contextoBusqueda = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
+      const catalogSnapshotId = contextoBusqueda?.backend === "python" ? exigirContextoPython(contextoBusqueda) : undefined;
+      // La lectura usa filtros del cliente y el snapshot firmado, sin restringir por modo de generación.
+      const exploracion = exploracionDe(body.filtros);
+      const sinTexto = body.consulta.length < 2;
+      const limite = body.limite ?? LIMITE_BUSQUEDA_PREDETERMINADO;
+      const limitePython = body.linea_objetivo ? LIMITE_PYTHON_MAXIMO : body.limite;
+      const resultado = await buscarCatalogoRag(pool, sinTexto ? ETIQUETA_EXPLORACION : body.consulta, {
+        ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
+        ...(exploracion === undefined ? {} : { exploracion }),
+        ...(sinTexto ? { sinTexto: true } : {}),
+        ...(limitePython === undefined ? {} : { limite: limitePython }),
+      });
+      const compatibles = filtrarCandidatosCompatibles(resultado.candidatos, body.linea_objetivo);
+      // `hayMas`: there are candidates beyond the page (the compatible ones exceed it, or Python filled the page it was asked for).
+      const hayMas = compatibles.length > limite || (limitePython !== undefined && resultado.candidatos.length >= limitePython);
+      return Response.json(
+        { status: resultado.status, candidatos: serializarCandidatos(compatibles, limite), filtroRelajado: resultado.filtroRelajado, hayMas },
+        { headers: cabeceras },
+      );
+    }
+
+    if (body.modo === "colores") {
+      // Mismo snapshot firmado que `buscar`.
+      const contextoColores = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
+      const catalogSnapshotId = contextoColores?.backend === "python" ? exigirContextoPython(contextoColores) : undefined;
+      // La lista de un snapshot publicado no cambia: se recuerda por snapshot (cache-exploracion.ts).
+      const colores = await coloresParaExplorar(
+        claveColores(catalogSnapshotId),
+        catalogSnapshotId !== undefined,
+        () => listarColoresCatalogo({
+          ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
+          requestId: requestIdHttp,
+        }),
+      );
+      return Response.json({ colores }, { headers: cabeceras });
+    }
+
+    if (body.modo === "recomendadas") {
+      // Python owns which alternatives are sellable (/catalog/recommendations).
+      // A token without a signed catalog snapshot (the retired Next backend)
+      // is rejected with SIN_SNAPSHOT_CATALOGO instead of falling back to SQL.
+      const contextoPlan = abrirContextoExigido(body.approval_token);
+      exigirContextoPython(contextoPlan);
+      const candidatos = await recomendarAlternativasPython({
+        contexto: contextoPlan,
+        variantId: body.variant_id,
+        correlationId: correlationDesde(contextoPlan.requestId),
+        signal: request.signal,
+      });
+      return Response.json({ candidatos }, { headers: cabeceras });
+    }
+
+    if (body.modo === "quitar_pieza") {
+      const { plan: resuelto, cotizacion } = await quitarPiezaPlan({ base: body.base, estructuraId: body.estructura_id, pool, signal: request.signal });
+      return Response.json({ plan: resuelto, cotizacion }, { headers: cabeceras });
+    }
+    if (body.modo === "agregar_color") {
+      const { plan: resuelto, cotizacion, piezas } = await agregarColorPlan({ base: body.base, color: body.color, productId: body.product_id, variantIds: body.variant_ids, ...(body.estructura_ids?.length ? { estructuraIds: body.estructura_ids } : {}), pool, signal: request.signal });
+      return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
+    }
+    if (body.modo === "reemplazar_color") {
+      const { plan: resuelto, cotizacion, piezas } = await reemplazarColorPlan({
+        base: body.base,
+        color: body.color,
+        ...(body.product_id_anterior ? { productIdAnterior: body.product_id_anterior } : {}),
+        ...(body.estructura_ids?.length ? { estructuraIds: body.estructura_ids } : {}),
+        colorNuevo: body.color_nuevo,
+        productId: body.product_id,
+        variantIds: body.variant_ids,
+        pool,
+        signal: request.signal,
+      });
+      return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
+    }
+    if (body.modo === "agregar_pieza") {
+      const { plan: resuelto, cotizacion, nuevas, nombre, ubicacion, medidas } = await agregarPiezaPlan({
+        base: body.base,
+        pieza: {
+          estructura: body.estructura,
+          ubicacion: body.ubicacion,
+          ...(body.medidas && Object.keys(body.medidas).length ? { medidas: body.medidas } : {}),
+          ...(body.organica ? { organica: true } : {}),
+          ...(body.colores?.length ? { colores: body.colores } : {}),
+        },
+        ...(body.globos?.length ? { globos: body.globos.map((globo) => ({ color: globo.color, productId: globo.product_id, variantIds: globo.variant_ids })) } : {}),
+        pool,
+        signal: request.signal,
+      });
+      return Response.json({ plan: resuelto, cotizacion, nuevas, pieza: { nombre, ubicacion, medidas } }, { headers: cabeceras });
+    }
+    if (body.modo === "editar_pieza") {
+      const { plan: resuelto, cotizacion, nombre, ubicacion } = await editarPiezaPlan({
+        base: body.base,
+        estructuraId: body.estructura_id,
+        ...(body.ubicacion ? { ubicacion: body.ubicacion } : {}),
+        ...(body.nombre ? { nombre: body.nombre } : {}),
+        pool,
+        signal: request.signal,
+      });
+      return Response.json({ plan: resuelto, cotizacion, pieza: { nombre, ubicacion } }, { headers: cabeceras });
+    }
+
+    // The signed-approval / re-resolution / admission logic lives in
+    // `aplicarEdicionPlan` (src/lib/plan/aplicar-edicion.ts) so the chat tool
+    // `ajustar_plan_decoracion` (src/lib/ia/herramientas/registro-herramientas.ts) can call
+    // the exact same checks instead of a second implementation.
+    const { plan: resuelto, cotizacion, avisos } = await aplicarEdicionPlan({
+      base: body.base,
+      edicion: body.edicion,
+      pool,
+      signal: request.signal,
+    });
+    // `avisos` only when the edit has something to say (a rebuilt color pattern).
+    return Response.json({ plan: resuelto, cotizacion, ...(avisos.length ? { avisos } : {}) }, { headers: cabeceras });
+  } catch (error) {
+    // Los campos legacy (`error`, `causa`, `detalles`, sobre operational.v1) se
+    // conservan para los consumidores actuales; `ui_error` (ui-error.v1) es lo
+    // que muestra la interfaz.
+    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : requestIdHttp);
+    registrarFalloUi("/api/plan-editar", uiError);
+    const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status, headers: cabeceras });
+    if (error instanceof z.ZodError) return responder({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, 400);
+    if (error instanceof PlanEditError) {
+      return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}), ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}) }, error.status);
+    }
+    if (error instanceof PlanBackendNoDisponibleError) return responder({ error: error.message, causa: error.motivo }, 409);
+    if (error instanceof AllowlistProductoVarianteError) return responder({ error: error.message, causa: error.causa }, 422);
+    if (error instanceof Error && /^FLUX_/.test(error.message)) return responder({ error: error.message }, 409);
+    if (isPythonAdapterError(error)) {
+      return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
+    }
+    if (error instanceof PythonPlanMappingError) return responder({ error: error.message }, 502);
+    console.error("[plan-edit] error inesperado:", error);
+    return responder({ error: "No se pudo actualizar el plan contra el catálogo real." }, 500);
+  }
+}

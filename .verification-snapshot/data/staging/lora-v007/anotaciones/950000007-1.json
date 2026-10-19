@@ -1,0 +1,309 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000007-1",
+  "image_sha256": "4b40615b22f4b5743774e0374908b9e420ad00ff4f88e175351fc42d6388d789",
+  "idempotency_key": "83eb148ada91e53f8f8d6741dd82f7e49de467677db936050e58b9104495de61",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000007/foto-1.png",
+    "orden": "950000007"
+  },
+  "anotacion": {
+    "image_id": "950000007-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white marble-look wall panel and a gold tablecloth surface",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.metal.gold",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_matte.malibu_peach",
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.reflex.silver",
+          "balloon.star.foil.matte_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.metal.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.star.foil.matte_gold",
+            "size_code": "18 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "wide organic top garland over the backdrop mixing gold, silver, sand, cream, peach and champagne round balloons of clearly different sizes plus gold star foils"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "flat white marble-pattern panel behind the table with foil letters, no balloon volume of its own"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 3,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.metal.gold",
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "three clear acrylic cylinders on the table, each filled with same-size round balloons"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "matching floating balloon bouquets on either side of the setup with clusters resting on the floor below"
+      }
+    ],
+    "non_purchased_elements": [
+      "gold tablecloth",
+      "acrylic cylinder stands",
+      "dessert cup display",
+      "silver charger plates"
+    ],
+    "uncertainties": [
+      "Cannot confirm the small twisted modeling balloons (T260) are present as a distinct visible element",
+      "Foil letters spelling HBD are visible but not in the allowed product list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.sand",
+      "balloon.modeling.latex.metallic.gold",
+      "balloon.modeling.latex.pastel_dusk.cream",
+      "balloon.modeling.latex.pastel_matte.malibu_peach",
+      "balloon.modeling.latex.reflex.champagne",
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.foil.gold.printed_birthday_lettering",
+      "balloon.round.foil.muted_pastel.printed_birthday_lettering",
+      "balloon.round.foil.silver.printed_birthday_lettering",
+      "balloon.round.latex.fashion.clear.printed_confetti",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.silver",
+      "balloon.star.foil.matte_gold",
+      "balloon.star.foil.sand"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "18 IN",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000007-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from 9-inch matte Fashion sand round latex balloons, muted Pastel Dusk cream round latex balloons and Pastel Matte malibu peach round latex balloons, 5-inch Metallic gold round latex balloons and high-shine Reflex round latex balloons in champagne and silver, 18-inch Metallic matte gold star-shaped foil balloons, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, with three matching balloon columns, placed on the main table, built from 9-inch matte Fashion sand round latex balloons and muted Pastel Dusk cream round latex balloons, 5-inch Metallic gold round latex balloons and high-shine Reflex silver round latex balloons and two matching balloon bouquets, one at each end of the decorated backdrop, built from 9-inch matte Fashion sand round latex balloons and muted Pastel Dusk cream round latex balloons, 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside gold tablecloth, acrylic cylinder stands, dessert cup display and silver charger plates, set against a white marble-look wall panel and a gold tablecloth surface.",
+    "palabras": 177,
+    "caracteres": 1212,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.silver",
+      "balloon.star.foil.matte_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.metal.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.metal.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.star.foil.matte_gold",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.metal.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:26.260Z",
+    "recompilado_en": "2026-09-03T14:45:23.259Z"
+  }
+}

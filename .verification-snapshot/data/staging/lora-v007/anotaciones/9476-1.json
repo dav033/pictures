@@ -1,0 +1,121 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9476-1",
+  "image_sha256": "061c90ca7fa797ec11fb20d4d1a3bae596283f5f529e7f66d34bedb0367ed290",
+  "idempotency_key": "efa66a67c0cf910e822d79e72084f8850ba9e216840a31e401048f48c5d6574d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9476/foto-1.jpg",
+    "orden": "9476"
+  },
+  "anotacion": {
+    "image_id": "9476-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white patterned tile walls and a light floor with a green mat",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.pastel_matte.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "asymmetric balloon column rising from the floor beside the cake table, transitioning from red to yellow to pale blue and white"
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "a plush Mickey Mouse toy",
+      "an illuminated letter sign",
+      "a bunting banner"
+    ],
+    "uncertainties": [
+      "Top of the balloon structure is cropped out of frame, so it is unclear whether it closes into a full arch or continues as a garland",
+      "White balloons at the bottom of the column are not in the allowed concept list so were left untagged"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "9476-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, standing to one side, built from matte Fashion round latex balloons in red and yellow and Pastel Matte blue round latex balloons, all at a single 12-inch size, alongside a birthday cake, a plush Mickey Mouse toy, an illuminated letter sign and a bunting banner, set against white patterned tile walls and a light floor with a green mat.",
+    "palabras": 64,
+    "caracteres": 392,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:39.873Z",
+    "recompilado_en": "2026-09-03T14:45:23.199Z"
+  }
+}

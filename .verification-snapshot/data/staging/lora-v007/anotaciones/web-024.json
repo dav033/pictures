@@ -1,0 +1,90 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-024",
+  "image_sha256": "1cac28ad90929724abf845ff7662bf814df68ce30d3382156179b57eada7e380",
+  "idempotency_key": "76799ac13ecfc08ccdff972898ba961624b47614a89af1fac649d558b08014c5",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-024.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Love_b7ee16c2-9f8d-43b5-a8f6-5838fb77cdbd.jpg?v=1755275968",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-024",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background; floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.metallic.fuchsia",
+          "balloon.round.latex.metallic.red",
+          "balloon.round.latex.satin.fuchsia",
+          "balloon.round.latex.satin.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Upright balloon bouquet with a central printed foil balloon and clustered red, fuchsia, and white latex balloons in multiple sizes."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed balloon"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.metallic.fuchsia",
+      "balloon.round.latex.metallic.red",
+      "balloon.round.latex.satin.fuchsia",
+      "balloon.round.latex.satin.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-024",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from Metallic round latex balloons in fuchsia and red and Satin round latex balloons in fuchsia and white, alongside a printed balloon, set against plain white background; floor not visible.",
+    "palabras": 39,
+    "caracteres": 263,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.metallic.fuchsia",
+      "balloon.round.latex.metallic.red",
+      "balloon.round.latex.satin.fuchsia",
+      "balloon.round.latex.satin.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:06:19.815Z"
+  }
+}

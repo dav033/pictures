@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12813-1",
+  "image_sha256": "1d4edc50ab3ff63288a9f978b46f9f06c27842696a27f14ccfb24dc9bd4c9f85",
+  "idempotency_key": "6a5657cc0d29b2329c6c792abf5a86eedfb60ac40603609f58cd0c5972441bb2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12813/foto-1.jpg",
+    "orden": "12813"
+  },
+  "anotacion": {
+    "image_id": "12813-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls with a window and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large organic cluster of gold, black, white and silver balloons cascading over the top bar of a metal frame and down its front, colors and sizes mixed without a repeating order."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Bare rectangular gold metal frame stand with an acrylic script sign reading a birthday greeting attached to its upright, holding up the balloon garland."
+      }
+    ],
+    "non_purchased_elements": [
+      "a window",
+      "a sheer curtain",
+      "a metal stand"
+    ],
+    "uncertainties": [
+      "Not fully certain the balloon mass should be classified as guirnalda rather than semiarco given how it wraps the frame's top corner.",
+      "Cannot confirm if the acrylic sign is a separate purchased accessory or part of a rental frame kit."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "KIT DIY GUIRNALDA LUXURY GALA"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "12813-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:06.192Z",
+    "recompilado_en": "2026-09-03T14:45:22.089Z"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "_nota": "git archive escribe aquí el commit (export-subst en .gitattributes): app/registro.py lo pone en cada línea. No editar a mano.",
+  "commit": "$Format:%H$"
+}

@@ -1,0 +1,1131 @@
+import { z } from "zod";
+import type { IdeaVisibleGuiada, PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { ESTRUCTURAS_OFICIALES, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { campoPrincipal, esOficialAgregable, OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA, type OficialAgregable, type UbicacionPiezaNueva } from "@/lib/plan/pieza-nueva";
+import { FEMENINAS } from "@/lib/plan/piezas-individuales";
+import { MAX_FLORES_PIEZA, pedidoFloresDeTexto } from "@/lib/plan/flores-pieza";
+import { coloresConTonosDelCliente } from "@/lib/plan/tonos-color";
+import { ALIAS_COLORES_V2, COLORES_PROPUESTA_V2, familiaDeColorPropuesta, plegarTexto, tonoClaroDe, TONOS_CLAROS_V2, TONOS_V2, type ColorPropuestaV2 } from "@/lib/rag/taxonomy/v2";
+
+/**
+ * Editar el plan vigente POR CHAT en la vista guiada, sin rehacerlo (probador 104, 2026-10-07): «el azul cámbialo por
+ * celeste clarito en las dos columnas, el resto igual» llamaba `proponer_composicion` y /api/chat rehacía el plan desde
+ * cero (título, acabados y cantidades nuevos; el ajuste anterior perdido; las dos columnas distintas). Ahora:
+ *
+ * 1. Las REGLAS de aquí leen el pedido del cliente (`detectarPedidoEdicion`) y deciden qué herramientas tiene el modelo en
+ *    ese turno: con un cambio puntual, solo la de edición (no puede rehacer el plan).
+ * 2. El modelo llama una herramienta de edición (`herramientasEdicionPlan`); el servidor valida sus argumentos contra el
+ *    plan y las reglas (`pedidoDesdeHerramienta`) y devuelve un `PedidoEdicionPlan`.
+ * 3. La vista lo convierte en los MISMOS cambios del editor «Ajustar mi plan» (`ajuste/edicion-chat-guiada.ts`) y
+ *    `/api/plan-editar` los aplica sobre el plan firmado: Python vuelve a contar y a firmar, y lo demás queda igual.
+ *
+ * Elegir una idea por chat («me quedo con el primero, el semiarco con centros de mesa») va por el mismo camino:
+ * `detectarEleccionIdea` + la herramienta `elegir_idea` → la vista hace lo mismo que «Me gusta esta».
+ *
+ * El CRUD completo por chat (dueño, 2026-10-07: «¿puedes agregar una guirnalda en medio?» armaba un plan NUEVO con solo
+ * la guirnalda): AGREGAR una pieza (`agregar_pieza`, el servidor la suma con `pieza-nueva.ts` y Python la cuenta sin
+ * tocar las demás), CONSULTAR («¿qué lleva mi plan?», `detectarConsultaPlan`: se responde con el plan, sin cambiarlo),
+ * ACTUALIZAR (colores, medidas, tamaño y además `colores_pieza` —«cambia la guirnalda a dorado»—, `mover_pieza` y
+ * `renombrar_pieza`) y QUITAR (piezas y colores). «Hazla de 4 m» sin nombrar la pieza habla de la que nombró el último
+ * mensaje del asistente («Listo: añadí una guirnalda…»). Solo lo que no cabe en estas operaciones rehace el plan.
+ *
+ * Puro (sin servidor, red ni modelo): lo importan la ruta del asistente, la vista y las pruebas.
+ */
+
+// --- Contrato del pedido --------------------------------------------------------------------------------------------
+
+const MAX_PIEZAS = 8;
+const NombrePiezaSchema = z.string().trim().min(1).max(120);
+const ColorDelPlanSchema = z.string().trim().min(1).max(40);
+const ColorNuevoSchema = z.enum(COLORES_PROPUESTA_V2);
+const DireccionSchema = z.union([z.literal(1), z.literal(-1)]);
+const MedidasPedidasSchema = z.object({
+  ancho_m: z.number().positive().max(100).optional(),
+  alto_m: z.number().positive().max(100).optional(),
+  largo_m: z.number().positive().max(100).optional(),
+}).strict();
+
+const UbicacionPiezaSchema = z.enum(UBICACIONES_PIEZA_NUEVA);
+
+/**
+ * Una pieza que el cliente pide sumar («una guirnalda en medio», «otra columna de 2,5 m», «un arco en dorado»):
+ * su oficial, dónde (null = no lo dijo), su medida si la dijo, y sus colores (vacío = los del plan).
+ */
+export const PiezaNuevaChatSchema = z.object({
+  estructura: z.enum(OFICIALES_AGREGABLES),
+  ubicacion: UbicacionPiezaSchema.nullable(),
+  medidas: MedidasPedidasSchema.optional(),
+  colores: z.array(ColorNuevoSchema).max(4),
+  /** «Arco orgánico»: mezcla de tamaños aunque su oficial no sea de las orgánicas. */
+  organica: z.boolean().optional(),
+}).strict();
+export type PiezaNuevaChat = z.infer<typeof PiezaNuevaChatSchema>;
+
+/**
+ * Lo que la vista aplica sobre el plan firmado. `piezas` son los nombres de las piezas tal como los tiene el plan
+ * («Columna izquierda»); vacío = todas las que llevan ese color (o, en un cambio de tamaño, toda la decoración).
+ * `color` es el color del plan (su familia del catálogo: «azul»); `colorNuevo`, el que pidió el cliente («celeste»).
+ * `agregar_pieza` suma una pieza; `colores_pieza` deja esas piezas en esos colores; `mover_pieza` y `renombrar_pieza`
+ * cambian el lugar o el nombre de una.
+ */
+export const PedidoEdicionPlanSchema = z.discriminatedUnion("tipo", [
+  z.object({ tipo: z.literal("reemplazar_color"), color: ColorDelPlanSchema, colorNuevo: ColorNuevoSchema, piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("agregar_color"), colores: z.array(ColorNuevoSchema).min(1).max(2), piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("quitar_color"), color: ColorDelPlanSchema, piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("protagonismo"), color: ColorDelPlanSchema, direccion: DireccionSchema, piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("quitar_pieza"), piezas: z.array(NombrePiezaSchema).min(1).max(MAX_PIEZAS - 1) }).strict(),
+  z.object({ tipo: z.literal("tamano"), direccion: DireccionSchema, piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("medidas"), medidas: MedidasPedidasSchema, piezas: z.array(NombrePiezaSchema).min(1).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("agregar_pieza"), pieza: PiezaNuevaChatSchema }).strict(),
+  z.object({ tipo: z.literal("colores_pieza"), colores: z.array(ColorNuevoSchema).min(1).max(3), piezas: z.array(NombrePiezaSchema).min(1).max(MAX_PIEZAS) }).strict(),
+  z.object({ tipo: z.literal("mover_pieza"), pieza: NombrePiezaSchema, ubicacion: UbicacionPiezaSchema }).strict(),
+  z.object({ tipo: z.literal("renombrar_pieza"), pieza: NombrePiezaSchema, nombre: z.string().trim().min(1).max(60) }).strict(),
+  // Flores de globo como adorno de las piezas (flores-pieza.ts): ponerlas, cambiarlas o quitarlas («ponle flores»,
+  // «agrega 3 flores doradas a la columna»). Colores null = los de la pieza; cantidad null = las de siempre; piezas vacío = todas.
+  z.object({
+    tipo: z.literal("flores"),
+    quitar: z.boolean(),
+    cantidad: z.number().int().min(1).max(MAX_FLORES_PIEZA).nullable(),
+    colorPetalo: ColorDelPlanSchema.nullable(),
+    colorCentro: ColorDelPlanSchema.nullable(),
+    piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS),
+  }).strict(),
+]);
+export type PedidoEdicionPlan = z.infer<typeof PedidoEdicionPlanSchema>;
+
+/** Las piezas del plan que nombra un pedido (vacío: todas o ninguna en concreto). */
+export function piezasDelPedido(pedido: PedidoEdicionPlan): string[] {
+  switch (pedido.tipo) {
+    case "agregar_pieza": return [];
+    case "mover_pieza":
+    case "renombrar_pieza": return [pedido.pieza];
+    default: return pedido.piezas;
+  }
+}
+
+/** La idea que el cliente eligió por chat: la vista hace lo mismo que «Me gusta esta». */
+export const IdeaElegidaSchema = z.object({ id: z.string().regex(/^(?:ej|deco)-[a-z0-9-]+$/), titulo: z.string().min(1).max(160), posicion: z.number().int().min(1).max(12) }).strict();
+export type IdeaElegida = z.infer<typeof IdeaElegidaSchema>;
+
+export const HERRAMIENTAS_EDICION = ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "flores_plan", "editar_pieza_plan"] as const;
+export type HerramientaEdicion = (typeof HERRAMIENTAS_EDICION)[number];
+export const HERRAMIENTA_ELEGIR_IDEA = "elegir_idea";
+
+const HERRAMIENTA_DE_TIPO: Readonly<Record<PedidoEdicionPlan["tipo"], HerramientaEdicion>> = {
+  reemplazar_color: "cambiar_color_plan",
+  agregar_color: "agregar_color_plan",
+  quitar_color: "quitar_color_plan",
+  protagonismo: "mas_o_menos_color",
+  quitar_pieza: "quitar_pieza_plan",
+  tamano: "cambiar_tamano_plan",
+  medidas: "cambiar_tamano_plan",
+  agregar_pieza: "agregar_pieza_plan",
+  colores_pieza: "colores_pieza_plan",
+  mover_pieza: "editar_pieza_plan",
+  renombrar_pieza: "editar_pieza_plan",
+  flores: "flores_plan",
+};
+
+export function esHerramientaEdicion(nombre: string): nombre is HerramientaEdicion {
+  return (HERRAMIENTAS_EDICION as readonly string[]).includes(nombre);
+}
+
+// --- Las piezas y los colores del plan, como los ve el chat ---------------------------------------------------------
+
+type GrupoPieza = "semiarco" | "arco" | "columna" | "guirnalda" | "pared" | "centro de mesa" | "bouquet" | "techo" | "aro" | "figura";
+
+/** Palabra del cliente → grupo de piezas. El semiarco va antes que el arco y se tapa al buscar el arco. */
+const GRUPOS: ReadonlyArray<{ grupo: GrupoPieza; patron: RegExp; ids: readonly EstructuraOficialId[] }> = [
+  { grupo: "semiarco", patron: /\b(?:semiarcos?|medios? arcos?)\b/g, ids: ["semiarco", "semiarco_asimetrico"] },
+  { grupo: "centro de mesa", patron: /\bcentros? de mesa\b/g, ids: ["centro_mesa"] },
+  { grupo: "arco", patron: /\barcos?\b/g, ids: ["arco", "arco_asimetrico", "arco_no_denso"] },
+  { grupo: "columna", patron: /\b(?:columnas?|torres?)\b/g, ids: ["columna", "columna_asimetrica", "columna_no_densa"] },
+  { grupo: "guirnalda", patron: /\bguirnaldas?\b/g, ids: ["guirnalda"] },
+  { grupo: "pared", patron: /\b(?:paredes?|muros?|fondos?)\b/g, ids: ["pared_densa", "pared_no_densa", "pared_organica", "racimo_pared"] },
+  { grupo: "bouquet", patron: /\b(?:bouquets?|ramos?|ramilletes?)\b/g, ids: ["bouquet"] },
+  { grupo: "techo", patron: /\btechos?\b/g, ids: ["techo_globos"] },
+  { grupo: "aro", patron: /\baros?\b/g, ids: ["aro_circular"] },
+  { grupo: "figura", patron: /\bfiguras?\b/g, ids: ["figura"] },
+];
+
+function grupoDe(estructura: EstructuraOficialId): GrupoPieza | null {
+  return GRUPOS.find((item) => item.ids.includes(estructura))?.grupo ?? null;
+}
+
+export type PiezaChat = {
+  /** Como la tiene el plan y la ve el cliente («Columna izquierda»). */
+  nombre: string;
+  clave: string;
+  estructura: EstructuraOficialId;
+  grupo: GrupoPieza | null;
+  lado: "izquierda" | "derecha" | null;
+  /** Familias de color que lleva (las de Python). */
+  colores: string[];
+};
+
+function plegar(texto: string): string {
+  return plegarTexto(texto);
+}
+
+/** Las piezas del plan vigente para el chat (nombre, grupo, lado y colores). */
+export function piezasDelPlanActual(plan: PlanActualGuiado): PiezaChat[] {
+  return plan.piezas.map((pieza) => {
+    const nombre = (pieza.nombre?.trim() || ESTRUCTURAS_OFICIALES[pieza.estructura].nombre).slice(0, 120);
+    const clave = plegar(nombre);
+    const lado = pieza.ubicacion === "lateral_izquierdo" || / izquierd[ao]$/.test(clave) ? "izquierda" : pieza.ubicacion === "lateral_derecho" || / derech[ao]$/.test(clave) ? "derecha" : null;
+    const colores = [...new Set((pieza.participacion?.map((parte) => parte.color) ?? plan.colores).map(plegar).filter(Boolean))];
+    return { nombre, clave, estructura: pieza.estructura, grupo: grupoDe(pieza.estructura), lado, colores };
+  });
+}
+
+/** Las familias de color del plan (plegadas: «azul», «dorado rosa»). */
+export function coloresDelPlanActual(plan: PlanActualGuiado): string[] {
+  return [...new Set([...plan.colores, ...plan.piezas.flatMap((pieza) => pieza.participacion?.map((parte) => parte.color) ?? [])].map(plegar).filter(Boolean))];
+}
+
+// --- Colores nombrados, con su lugar en el texto --------------------------------------------------------------------
+
+type MencionColor = { color: ColorPropuestaV2; familia: string; inicio: number; fin: number };
+
+function escapar(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Los tonos van primero: «celeste» es un tono aunque la familia azul también lo tenga como alias. */
+const ENTRADAS_COLOR: ReadonlyArray<{ alias: string; color: ColorPropuestaV2 }> = [
+  ...TONOS_CLAROS_V2.flatMap((tono) => TONOS_V2[tono].aliases.map((alias) => ({ alias: plegar(alias), color: tono as ColorPropuestaV2 }))),
+  ...ALIAS_COLORES_V2.flatMap((item) => item.aliases.map((alias) => ({ alias: plegar(alias), color: item.value as ColorPropuestaV2 }))),
+].filter((entrada) => entrada.alias.length > 0);
+
+function mencionesDeColor(texto: string): MencionColor[] {
+  const hallados: Array<MencionColor & { orden: number }> = [];
+  ENTRADAS_COLOR.forEach((entrada, orden) => {
+    const patron = new RegExp(`(?:^| )(${escapar(entrada.alias)})(?= |$)`, "g");
+    for (const coincidencia of texto.matchAll(patron)) {
+      const inicio = (coincidencia.index ?? 0) + coincidencia[0].length - entrada.alias.length;
+      hallados.push({ color: entrada.color, familia: familiaDeColorPropuesta(entrada.color), inicio, fin: inicio + entrada.alias.length, orden });
+    }
+  });
+  hallados.sort((a, b) => a.inicio - b.inicio || (b.fin - b.inicio) - (a.fin - a.inicio) || a.orden - b.orden);
+  const elegidos: MencionColor[] = [];
+  for (const hallado of hallados) {
+    if (!elegidos.some((otro) => hallado.inicio < otro.fin && otro.inicio < hallado.fin)) elegidos.push({ color: hallado.color, familia: hallado.familia, inicio: hallado.inicio, fin: hallado.fin });
+  }
+  return elegidos.sort((a, b) => a.inicio - b.inicio);
+}
+
+/** «celeste clarito» → «celeste claro»; ñ y tildes fuera; signos como espacios. */
+function normalizarPedido(texto: string): string {
+  return plegar(texto.replace(/clarit[oa]s?/gi, "claro").replace(/\bpastelit[oa]s?/gi, "pastel"));
+}
+
+// --- Piezas nombradas -----------------------------------------------------------------------------------------------
+
+type PiezasNombradas = { nombres: string[]; ambigua: boolean; ajenas: GrupoPieza[]; primera: number; antesDeLaPrimera: string };
+
+const PLURAL_ANTES = /(?:las dos|los dos|ambas|ambos|todas las|todos los|cada|las|los|2)\s*$/;
+const LADO_DESPUES = /^\s*(?:de la |del lado |de |)(izquierd[ao]|derech[ao])\b/;
+
+/**
+ * Qué piezas nombra un trozo del pedido: por su nombre exacto, por su grupo («las dos columnas» son todas; «la columna»
+ * con dos columnas es ambigua) o por su lado. `primera`: dónde empieza la primera mención, en el mismo texto (para
+ * saber si se nombra antes una pieza o un color); `ajenas`: grupos que el plan no tiene («agrégale un arco»).
+ */
+function piezasNombradas(texto: string, piezas: readonly PiezaChat[]): PiezasNombradas {
+  const nombres = new Set<string>();
+  let ambigua = false;
+  const ajenas = new Set<GrupoPieza>();
+  let primera = Number.POSITIVE_INFINITY;
+  // Con un espacio a cada lado: los índices de aquí son los del texto + 1.
+  let tapado = ` ${texto} `;
+  const anotar = (indice: number) => { primera = Math.min(primera, Math.max(0, indice - 1)); };
+  // 1) Por su nombre exacto («columna izquierda», «semiarco organico»).
+  for (const pieza of [...piezas].sort((a, b) => b.clave.length - a.clave.length)) {
+    const indice = tapado.indexOf(` ${pieza.clave} `);
+    if (indice < 0) continue;
+    nombres.add(pieza.nombre);
+    anotar(indice + 1);
+    tapado = `${tapado.slice(0, indice + 1)}${"_".repeat(pieza.clave.length)}${tapado.slice(indice + 1 + pieza.clave.length)}`;
+  }
+  // 2) Por su grupo («las dos columnas», «la columna derecha», «el semiarco»).
+  for (const { grupo, patron } of GRUPOS) {
+    patron.lastIndex = 0;
+    for (const coincidencia of [...tapado.matchAll(patron)]) {
+      const indice = coincidencia.index ?? 0;
+      const palabra = coincidencia[0];
+      tapado = `${tapado.slice(0, indice)}${"_".repeat(palabra.length)}${tapado.slice(indice + palabra.length)}`;
+      anotar(indice);
+      const delGrupo = piezas.filter((pieza) => pieza.grupo === grupo);
+      if (!delGrupo.length) { ajenas.add(grupo); continue; }
+      const plural = /s$/.test(palabra.split(" ")[0]!) || PLURAL_ANTES.test(tapado.slice(Math.max(0, indice - 14), indice));
+      const lado = LADO_DESPUES.exec(tapado.slice(indice + palabra.length))?.[1];
+      if (lado) {
+        const conLado = delGrupo.filter((pieza) => pieza.lado === (lado.startsWith("izquierd") ? "izquierda" : "derecha"));
+        if (conLado.length) { conLado.forEach((pieza) => nombres.add(pieza.nombre)); continue; }
+      }
+      if (!plural && delGrupo.length > 1) ambigua = true;
+      delGrupo.forEach((pieza) => nombres.add(pieza.nombre));
+    }
+  }
+  // 3) Solo el lado («la de la izquierda»): si una sola pieza está a ese lado.
+  for (const coincidencia of tapado.matchAll(/\b(?:la|el|los|las) (?:de la |del lado )?(izquierd[ao]|derech[ao])\b/g)) {
+    const lado = coincidencia[1]!.startsWith("izquierd") ? "izquierda" : "derecha";
+    const conLado = piezas.filter((pieza) => pieza.lado === lado);
+    if (conLado.length === 1) { nombres.add(conLado[0]!.nombre); anotar(coincidencia.index ?? 0); }
+  }
+  return {
+    nombres: piezas.filter((pieza) => nombres.has(pieza.nombre)).map((pieza) => pieza.nombre),
+    ambigua, ajenas: [...ajenas], primera,
+    antesDeLaPrimera: Number.isFinite(primera) ? texto.slice(0, primera) : texto,
+  };
+}
+
+// --- Qué pide el cliente (reglas) -----------------------------------------------------------------------------------
+
+/** Una pregunta sobre el plan vigente («¿qué lleva mi plan?», «¿de qué color es la guirnalda?»): se responde, no se cambia. */
+export type ConsultaPlan = { tipo: "resumen" | "globos" | "colores" | "medidas"; piezas: string[] };
+
+export type DeteccionEdicion =
+  | { estado: "edicion"; herramienta: HerramientaEdicion; pedido: PedidoEdicionPlan; motivo: string }
+  | { estado: "incompleta"; herramienta: HerramientaEdicion; motivo: string }
+  | { estado: "consulta"; consulta: ConsultaPlan; motivo: string }
+  | { estado: "no_cabe"; motivo: string }
+  | { estado: "ninguna" };
+
+/** Lo que dijo el asistente justo antes («Listo: añadí una guirnalda…»): «hazla de 4 m» habla de esa pieza. */
+export type ContextoEdicion = { ultimoAsistente?: string | null };
+
+/** Pedidos que cambian el plan entero: no caben en una edición puntual y van por `proponer_composicion`. */
+const NO_CABE = /\b(?:mas sencill\w*|menos globos|mas globos|mas barat\w*|menos car\w*|economic\w*|otros colores|otro estilo|otra tematica|otro tema|cambia(?:lo|la|r)? todo|todo nuevo|toda nueva|desde cero|otra propuesta|otro plan|otra decoracion|mas elegante|mas llamativ\w*|mas complet\w*)\b/;
+const QUITAR = /\b(?:quita\w*|quitar|saca\w*|sacar|elimina\w*|eliminar|borra\w*|borrar|retira\w*|retirar|remueve|remover)\b/;
+/** «sin la columna derecha», «ya no quiero el dorado»: solo si lo que se quita va JUSTO después («sin tocar…» no quita nada). */
+const QUITAR_DIRECTO = /\b(?:sin|ya no quiero|no quiero)\s+(?:el |la |los |las )?/g;
+const CAMBIAR = /\b(?:cambia\w*|cambie\w*|cambiar|cambio|reemplaza\w*|reemplace\w*|reemplazar|sustitu\w*|en vez|en lugar|convierte\w*|convertir)\b/;
+const PONER = /\b(?:pon|ponle|ponles|ponlo|ponla|ponlos|ponlas|poner|ponga\w*|agrega\w*|anade\w*|mete\w*)\b/;
+const AGREGAR = /\b(?:agrega\w*|agregue\w*|agregar|anade\w*|anadir|anada\w*|suma\w*|sumar|incluy\w*|incluir|mete\w*|meter|ponle|ponles|ponga\w*|tambien|un toque de|algo de|un poco de)\b/;
+const GRANDE = /\b(?:mas grandes?|agrand\w*|mas alt[oa]s?|mas larg[oa]s?|mas anch[oa]s?|aument\w*|crezca\w*|crecer)\b/;
+const PEQUENA = /\b(?:mas pequen[oa]s?|mas chic[oa]s?|mas chiquit[oa]s?|achic\w*|reduc\w*|mas baj[oa]s?|mas cort[oa]s?|mas angost[oa]s?|menos alt[oa]s?|disminu\w*)\b/;
+/** «con globos más grandes» habla del tamaño de los globos, no del de la pieza. */
+const GLOBOS_GRANDES = /\bglobos? (?:mas )?(?:grandes?|pequen\w*|chic\w*)\b/;
+const MEDIDA = /(\d+(?:[.,]\d+)?)\s*(m|mt|mts|metro|metros|cm|cms|centimetros?)\b/;
+/** Lo que va antes de una pieza cuando se pide una MÁS («agrégale una columna», «otro arco»). */
+const PIEZA_NUEVA = /\b(?:un|una|otr[ao]s?|dos|tres|cuatro|mas)\s*$/;
+
+/** «2,5 m» → 2.5; «180 cm» → 1.8. Fuera de 0,3–12 m no es una medida de pieza. */
+function medidaEnMetros(texto: string): number | null {
+  const coincidencia = MEDIDA.exec(texto.toLocaleLowerCase("es"));
+  if (!coincidencia) return null;
+  const valor = Number.parseFloat(coincidencia[1]!.replace(",", "."));
+  const metros = /^c/.test(coincidencia[2]!) ? valor / 100 : valor;
+  return Number.isFinite(metros) && metros >= 0.3 && metros <= 12 ? Math.round(metros * 100) / 100 : null;
+}
+
+type CampoMedida = "ancho_m" | "alto_m" | "largo_m";
+
+/** La medida que se nombra, o la natural de la pieza: una columna se mide en alto, una guirnalda en largo, un arco en ancho. */
+function campoMedida(texto: string, piezas: readonly PiezaChat[]): CampoMedida {
+  if (/\b(?:alto|alta|altos|altas|altura)\b/.test(texto)) return "alto_m";
+  if (/\b(?:ancho|ancha|anchos|anchas|anchura)\b/.test(texto)) return "ancho_m";
+  if (/\b(?:largo|larga|largos|largas)\b/.test(texto)) return "largo_m";
+  const grupos = new Set(piezas.map((pieza) => pieza.grupo));
+  if ([...grupos].every((grupo) => grupo === "columna")) return "alto_m";
+  if ([...grupos].every((grupo) => grupo === "guirnalda" || grupo === "techo")) return "largo_m";
+  return "ancho_m";
+}
+
+// --- Sumar, mover y renombrar piezas, la pieza de la que se habla y las preguntas (el CRUD por chat) ---------------
+
+/** Verbos de sumar una pieza («agrega», «ponle», «súmale», «coloca», «también»). */
+const VERBO_PIEZA = /\b(?:agrega\w*|agregue\w*|agregar|anade\w*|anadir|anada\w*|suma\w*|sumar|incluy\w*|incluir|mete\w*|meter|pon|ponle|ponles|ponga\w*|poner|coloca\w*|colocar|tambien|falta\w*)\b/;
+/** Una pieza de la que ya se habla («la guirnalda», «a las columnas»): no es una nueva. */
+const ARTICULO_DEFINIDO = /\b(?:el|la|los|las|al|del|esa|ese|esta|este|mi|tu|su)\s*$/;
+/** Varias piezas a la vez («dos columnas», «unas guirnaldas»): no cabe en una edición. */
+const VARIAS = /\b(?:dos|tres|cuatro|cinco|unas|unos|otras|otros|varias|varios)\s*$/;
+const ORGANICA = /^\s*(?:de globos\s+)?organic[oa]s?\b/;
+const LIGERA = /^\s*(?:de globos\s+)?(?:no dens[oa]s?|liger[oa]s?)\b/;
+
+/** La oficial de cada grupo cuando el plan no tiene ninguna de ese grupo (una pared es la densa: un fondo completo). */
+const OFICIAL_DEL_GRUPO: Readonly<Partial<Record<GrupoPieza, OficialAgregable>>> = {
+  semiarco: "semiarco", arco: "arco", columna: "columna", guirnalda: "guirnalda", pared: "pared_densa",
+  "centro de mesa": "centro_mesa", techo: "techo_globos", aro: "aro_circular",
+};
+
+/** Dónde pide el cliente la pieza, en sus palabras. «Entre las columnas» es en medio. */
+const LUGARES: ReadonlyArray<readonly [RegExp, UbicacionPiezaNueva]> = [
+  [/\b(?:en (?:el )?medio|al medio|en el centro|al centro|centrad[ao]|central|entre (?:las|los|ambas|ambos) (?:dos )?\w+|entre (?:ellas|ellos))\b/, "centro"],
+  [/\b(?:arriba|encima|en lo alto|por arriba|en la parte de arriba)\b/, "arriba"],
+  [/\b(?:en el techo|al techo|del techo|colgando del techo)\b/, "techo"],
+  [/\b(?:al fondo|de fondo|en el fondo|en la pared|contra la pared|atras|detras)\b/, "fondo"],
+  [/\b(?:a la izquierda|al lado izquierdo|del lado izquierdo|en el lado izquierdo|a mano izquierda)\b/, "izquierda"],
+  [/\b(?:a la derecha|al lado derecho|del lado derecho|en el lado derecho|a mano derecha)\b/, "derecha"],
+  [/\b(?:en el piso|en el suelo|abajo|al frente|adelante|por delante)\b/, "piso"],
+  [/\b(?:en la entrada|a la entrada|de entrada)\b/, "entrada"],
+  [/\b(?:en la mesa|sobre la mesa|para la mesa)\b/, "mesa"],
+];
+
+/** El primer lugar que nombra el texto, o null. */
+function ubicacionPedida(texto: string): UbicacionPiezaNueva | null {
+  let mejor: { indice: number; lugar: UbicacionPiezaNueva } | null = null;
+  for (const [patron, lugar] of LUGARES) {
+    const coincidencia = patron.exec(texto);
+    if (coincidencia && (!mejor || coincidencia.index < mejor.indice)) mejor = { indice: coincidencia.index, lugar };
+  }
+  return mejor?.lugar ?? null;
+}
+
+/** Las piezas que nombra un texto (por su grupo), en orden: «una guirnalda», «la columna», «el medio arco». */
+function mencionesDePieza(texto: string): Array<{ grupo: GrupoPieza; inicio: number; palabra: string }> {
+  const hallados: Array<{ grupo: GrupoPieza; inicio: number; palabra: string }> = [];
+  let tapado = texto;
+  for (const { grupo, patron } of GRUPOS) {
+    patron.lastIndex = 0;
+    for (const coincidencia of [...tapado.matchAll(patron)]) {
+      const inicio = coincidencia.index ?? 0;
+      hallados.push({ grupo, inicio, palabra: coincidencia[0] });
+      tapado = `${tapado.slice(0, inicio)}${"_".repeat(coincidencia[0].length)}${tapado.slice(inicio + coincidencia[0].length)}`;
+    }
+  }
+  return hallados.sort((a, b) => a.inicio - b.inicio);
+}
+
+/** La oficial de la pieza pedida: la que ya tiene el plan en ese grupo (otra igual), la orgánica o ligera si lo dijo, o la del grupo. */
+function oficialPedida(grupo: GrupoPieza, despues: string, piezas: readonly PiezaChat[]): { estructura: OficialAgregable; organica?: true } | null {
+  if (ORGANICA.test(despues)) {
+    if (grupo === "columna") return { estructura: "columna_asimetrica" };
+    if (grupo === "semiarco") return { estructura: "semiarco_asimetrico" };
+    if (grupo === "pared") return { estructura: "pared_organica" };
+    // «Arco orgánico» es el arco completo con mezcla de tamaños (como en hechos-cliente.ts).
+    if (grupo === "arco") return { estructura: "arco", organica: true };
+  }
+  if (LIGERA.test(despues)) {
+    if (grupo === "columna") return { estructura: "columna_no_densa" };
+    if (grupo === "arco") return { estructura: "arco_no_denso" };
+    if (grupo === "pared") return { estructura: "pared_no_densa" };
+  }
+  const delPlan = [...piezas].reverse().find((pieza) => pieza.grupo === grupo && esOficialAgregable(pieza.estructura));
+  if (delPlan && esOficialAgregable(delPlan.estructura)) return { estructura: delPlan.estructura };
+  const porDefecto = OFICIAL_DEL_GRUPO[grupo];
+  return porDefecto ? { estructura: porDefecto } : null;
+}
+
+type LecturaPiezaNueva = { pieza: PiezaNuevaChat } | { noCabe: string } | null;
+
+/**
+ * Si el cliente pide SUMAR una pieza: un verbo de sumar y una pieza nueva («una guirnalda», «otra columna», o una que
+ * el plan no tiene, sin artículo: «agrega guirnalda»). «La guirnalda» con el plan que ya la tiene es otra cosa (un
+ * color, una medida). Varias a la vez, o un bouquet o una figura (que se cuentan globo a globo), no caben.
+ */
+function leerPiezaNueva(limpio: string, texto: string, piezas: readonly PiezaChat[]): LecturaPiezaNueva {
+  if (!VERBO_PIEZA.test(limpio)) return null;
+  for (const mencion of mencionesDePieza(limpio)) {
+    const antes = limpio.slice(Math.max(0, mencion.inicio - 16), mencion.inicio);
+    const despues = limpio.slice(mencion.inicio + mencion.palabra.length);
+    const delPlan = piezas.some((pieza) => pieza.grupo === mencion.grupo);
+    const nueva = PIEZA_NUEVA.test(antes) || (!delPlan && !ARTICULO_DEFINIDO.test(antes));
+    if (!nueva) continue;
+    if (/s$/.test(mencion.palabra.split(" ")[0]!) || VARIAS.test(antes)) return { noCabe: "pide sumar varias piezas a la vez" };
+    const oficial = oficialPedida(mencion.grupo, despues, piezas);
+    if (!oficial) return { noCabe: `pide sumar ${mencion.palabra}, que se arma globo a globo` };
+    const colores = [...new Set(mencionesDeColor(despues).map((color) => color.color))].slice(0, 4);
+    const metros = medidaEnMetros(texto);
+    const campo = /\b(?:alto|alta|altura)\b/.test(limpio) ? "alto_m" : /\b(?:ancho|ancha|anchura)\b/.test(limpio) ? "ancho_m" : /\b(?:largo|larga)\b/.test(limpio) ? "largo_m" : campoPrincipal(oficial.estructura);
+    return {
+      pieza: {
+        estructura: oficial.estructura,
+        ubicacion: ubicacionPedida(despues) ?? ubicacionPedida(limpio),
+        ...(metros !== null ? { medidas: { [campo]: metros } } : {}),
+        colores,
+        ...(oficial.organica ? { organica: true } : {}),
+      },
+    };
+  }
+  return null;
+}
+
+/**
+ * La pieza que el cliente pide sumar, sin plan todavía (la lectura de una foto pendiente: «¿puedes agregar una guirnalda
+ * en medio?» suma la guirnalda a las piezas de la foto). Null si no pide sumar una pieza, o si son varias.
+ */
+export function detectarPiezaNueva(texto: string): PiezaNuevaChat | null {
+  const lectura = leerPiezaNueva(normalizarPedido(texto), texto, []);
+  return lectura && "pieza" in lectura ? lectura.pieza : null;
+}
+
+/** El género del pronombre con que se habla de una pieza («hazla», «cámbialo», «que la»), o null si no hay. */
+function generoDelPronombre(limpio: string): "f" | "m" | null {
+  const verbo = "(?:haz|hag|pon|dej|cambi|pint|agrand|achic|muev|pas|llev|alarg|acort|sub|baj|quit|sac|ensanch|llam|renombr)\\w*?";
+  if (new RegExp(`\\b${verbo}(?:la|las)\\b|\\bque (?:la|las) |\\b(?:la|las) quiero\\b`).test(limpio)) return "f";
+  if (new RegExp(`\\b${verbo}(?:lo|los)\\b|\\bque (?:lo|los) |\\b(?:lo|los) quiero\\b`).test(limpio)) return "m";
+  return null;
+}
+
+/**
+ * La pieza de la que habla el cliente sin nombrarla: la única que nombró el último mensaje del asistente («Listo: añadí
+ * una guirnalda de 2,4 m en el centro» → «hazla de 4 m» es la guirnalda). Con un pronombre, del mismo género.
+ */
+function piezaReferida(limpio: string, contexto: ContextoEdicion, piezas: readonly PiezaChat[]): PiezaChat | null {
+  if (!contexto.ultimoAsistente || piezas.length < 2) return null;
+  const nombradas = piezasNombradas(normalizarPedido(contexto.ultimoAsistente), piezas);
+  if (nombradas.ambigua || nombradas.nombres.length !== 1) return null;
+  const pieza = piezas.find((item) => item.nombre === nombradas.nombres[0]) ?? null;
+  const genero = generoDelPronombre(limpio);
+  if (!pieza || (genero && (genero === "f") !== FEMENINAS.has(pieza.estructura))) return null;
+  return pieza;
+}
+
+/** Mover una pieza: «muévela», «pásala», «pon la guirnalda arriba», «cámbiala de lugar». */
+const MOVER = /\b(?:muev\w*|mover|pasa(?:la|lo|las|los)?|cambia(?:la|lo)? de (?:lugar|sitio|lado)|reubic\w*|lleva(?:la|lo)|corre(?:la|lo)|coloca(?:la|lo)?|pon|ponla|ponlo)\b/;
+/** Renombrar una pieza: «renombra la guirnalda como Cascada», «que la columna izquierda se llame Torre rosa». */
+const RENOMBRAR = /\b(?:renombra\w*|cambia(?:le|r)? el nombre|ponle (?:de |por |como )?(?:el )?nombre|llamal[ao]|que se llame|bautiza\w*)\b/;
+/** Dejar piezas en unos colores: «cambia la guirnalda a dorado», «pon las columnas en blanco», «hazla dorada». */
+const PINTAR = /\b(?:cambi\w*|haz\w*|hag\w*|pon|ponla|ponlo|ponlas|ponlos|dej\w*|sea|sean|quede|queden|pint\w*)\b/;
+
+/** El nombre nuevo que dijo el cliente, de su texto original: entre comillas o tras «como», «por», «se llame». */
+function nombreNuevo(texto: string): string | null {
+  const limpio = texto.trim().replace(/[.!?¡¿]+$/, "").trim();
+  // El último conector manda («cámbiale el nombre a la columna izquierda por Torre rosa» → «Torre rosa»).
+  const candidatos = [
+    /[«"“']([^»"”']{1,60})[»"”']/.exec(limpio)?.[1],
+    /^.*\b(?:como|por|se llame)\s+(.+)$/i.exec(limpio)?.[1],
+    /^.*\bll[aá]mal[ao]\s+(.+)$/i.exec(limpio)?.[1],
+    /^.*\bnombre(?:\s+de)?\s+(.+)$/i.exec(limpio)?.[1],
+  ];
+  const nombre = (candidatos.find((candidato) => candidato?.trim()) ?? "").replace(/^(?:el|la)\s+/i, "").trim();
+  if (!nombre || nombre.length > 60) return null;
+  return nombre.charAt(0).toLocaleUpperCase("es") + nombre.slice(1);
+}
+
+const PRECIO = /\b(?:cuesta\w*|cuestan|vale|valen|sale|salen|precio\w*|pagar|pago|cotiza\w*|costo\w*|presupuesto)\b/;
+const INTERROGATIVA = /^(?:y |oye |hola |)(?:que|cual|cuales|cuanto|cuanta|cuantos|cuantas|como|de que|dime|me dices|me puedes decir|puedes decirme|recuerdame|repiteme|cuentame)\b/;
+const VERBOS_DE_CAMBIO = /\b(?:pon|ponle|ponla|ponlo|muev\w*|mover|renombra\w*|hazla|hazlo|haz|dej\w*|pinta\w*|agrega\w*|anade\w*|suma\w*|quita\w*|saca\w*|elimina\w*|cambi\w*|reemplaz\w*|agrand\w*|achic\w*)\b/;
+/** Pedir consejo no es preguntar por el plan («¿qué colores me recomiendas?», «¿qué otra pieza le pondrías?»). */
+const CONSEJO = /\b(?:recomiend\w*|recomendar\w*|sugier\w*|suger\w*|aconsej\w*|combin\w*|quedaria\w*|quedan bien|podria\w*|pondrias|deberia\w*|mejor|otr[oa]s?)\b/;
+
+/**
+ * Una PREGUNTA sobre el plan vigente, sin pedir ningún cambio: qué lleva, cuántos globos (de una pieza o en total), de
+ * qué color es y cuánto mide. El precio no (lo abre «costear»). La respuesta sale del plan (`consulta-plan-chat.ts`).
+ */
+export function detectarConsultaPlan(texto: string, plan: PlanActualGuiado): ConsultaPlan | null {
+  const limpio = normalizarPedido(texto);
+  if (!limpio || PRECIO.test(limpio) || VERBOS_DE_CAMBIO.test(limpio) || CONSEJO.test(limpio) || GRANDE.test(limpio) || PEQUENA.test(limpio)) return null;
+  if (!texto.includes("?") && !INTERROGATIVA.test(limpio)) return null;
+  const tipo: ConsultaPlan["tipo"] | null = /\bcuant[oa]s? globos\b|\bcuantos son\b/.test(limpio) ? "globos"
+    : /\b(?:que|cuales?) colou?r(?:es)?\b|\bcolou?r(?:es)? (?:tiene|lleva|son|es|va)\b/.test(limpio) ? "colores"
+      : /\b(?:cuanto (?:mide|miden)|que (?:medidas?|tamanos?)|de que tamano|que tan (?:alt|larg|anch|grand)\w*|cuanto de (?:alto|largo|ancho))\b/.test(limpio) ? "medidas"
+        : /\b(?:que (?:lleva|tiene|incluye|trae|hay)|cuantas piezas|que piezas|cuales piezas|de que se compone|como (?:es|va|esta|quedo|queda) (?:mi|el) (?:plan|decoracion)|resume\w*)\b/.test(limpio) ? "resumen"
+          : null;
+  if (!tipo) return null;
+  return { tipo, piezas: piezasNombradas(limpio, piezasDelPlanActual(plan)).nombres };
+}
+
+const PREPOSICION_DESTINO = /^(?:\s*(?:el|la|los|las|un|una|uno|color|tono|de|en))*\s*$/;
+
+/** Un color distinto del que se cambia: otra familia, o un tono claro de la misma («azul» → «celeste»). */
+function distinto(de: MencionColor, a: MencionColor): boolean {
+  return de.familia !== a.familia || (tonoClaroDe(a.color) !== null && a.color !== de.color);
+}
+
+/**
+ * De qué color a qué color: «el azul cámbialo por celeste», «cámbialo a celeste», «que el azul sea celeste», «en vez
+ * del azul, celeste», «quita el azul y pon celeste». El de origen tiene que estar en el plan.
+ */
+function reemplazoNombrado(texto: string, menciones: readonly MencionColor[], coloresPlan: ReadonlySet<string>): { de: MencionColor; a: MencionColor } | null {
+  if (menciones.length < 2) return null;
+  const enPlan = (mencion: MencionColor) => coloresPlan.has(mencion.familia);
+  // «X por Y», «X a Y», «que X sea Y»: el destino va justo después del conector.
+  let conConector = false;
+  for (const conector of texto.matchAll(/\b(?:por|a|sea|sean|quede|queden)\b/g)) {
+    const fin = (conector.index ?? 0) + conector[0].length;
+    const a = menciones.find((mencion) => mencion.inicio >= fin && PREPOSICION_DESTINO.test(texto.slice(fin, mencion.inicio)));
+    if (!a) continue;
+    conConector = true;
+    const de = [...menciones].reverse().find((mencion) => mencion.fin <= (conector.index ?? 0) && enPlan(mencion) && distinto(mencion, a));
+    if (de) return { de, a };
+  }
+  // «en vez del azul, celeste» / «celeste en lugar del azul».
+  const enVez = /\b(?:en vez|en lugar)\b/.exec(texto);
+  if (enVez) {
+    const de = menciones.find((mencion) => mencion.inicio > (enVez.index ?? 0) && enPlan(mencion));
+    const a = de ? menciones.find((mencion) => mencion !== de && distinto(de, mencion)) : undefined;
+    if (de && a) return { de, a };
+  }
+  // «quita el azul y pon celeste»: lo que se quita y lo que se pone.
+  const quita = QUITAR.exec(texto);
+  const pon = quita ? PONER.exec(texto.slice((quita.index ?? 0) + quita[0].length)) : null;
+  if (quita && pon) {
+    const finQuita = (quita.index ?? 0) + quita[0].length;
+    const inicioPon = finQuita + (pon.index ?? 0) + pon[0].length;
+    const de = menciones.find((mencion) => mencion.inicio >= finQuita && mencion.inicio < inicioPon && enPlan(mencion));
+    const a = menciones.find((mencion) => mencion.inicio >= inicioPon);
+    if (de && a && distinto(de, a)) return { de, a };
+  }
+  // Sin conector: dos colores y uno solo es del plan, ese es el que se cambia.
+  if (conConector) return null;
+  const delPlan = menciones.filter((mencion) => enPlan(mencion) && tonoClaroDe(mencion.color) === null);
+  const otros = menciones.filter((mencion) => !delPlan.includes(mencion));
+  if (menciones.length === 2 && delPlan.length === 1 && otros.length === 1 && distinto(delPlan[0]!, otros[0]!)) return { de: delPlan[0]!, a: otros[0]! };
+  return null;
+}
+
+/** Las piezas que llevan un color (todas si el plan no dice los colores de cada una). */
+function conColor(piezas: readonly PiezaChat[], nombres: readonly string[], familia: string): string[] {
+  return piezas.filter((pieza) => nombres.includes(pieza.nombre) && (!pieza.colores.length || pieza.colores.includes(familia))).map((pieza) => pieza.nombre);
+}
+
+function edicion(pedido: PedidoEdicionPlan, motivo: string): DeteccionEdicion {
+  return { estado: "edicion", herramienta: HERRAMIENTA_DE_TIPO[pedido.tipo], pedido, motivo };
+}
+
+/** Quitar: lo primero que se nombra después del verbo dice si se quita un color o una pieza. */
+function pedidoQuitar(resto: string, piezas: readonly PiezaChat[], coloresPlan: ReadonlySet<string>, directo: boolean): DeteccionEdicion | null {
+  const color = mencionesDeColor(resto)[0];
+  const enResto = piezasNombradas(resto, piezas);
+  // «sin…», «ya no quiero…»: solo si el color o la pieza va justo después.
+  if (directo && !(color?.inicio === 0 || enResto.primera === 0)) return null;
+  if (color && color.inicio <= enResto.primera) {
+    if (!coloresPlan.has(color.familia)) return { estado: "incompleta", herramienta: "quitar_color_plan", motivo: `quiere quitar ${color.color}, que el plan no lleva` };
+    return edicion({ tipo: "quitar_color", color: color.familia, piezas: conColor(piezas, enResto.nombres, color.familia) }, "quitar un color");
+  }
+  if (enResto.ajenas.length && !enResto.nombres.length) return { estado: "incompleta", herramienta: "quitar_pieza_plan", motivo: `nombra una pieza que el plan no tiene (${enResto.ajenas.join(", ")})` };
+  if (!enResto.nombres.length) return null;
+  if (enResto.ambigua) return { estado: "incompleta", herramienta: "quitar_pieza_plan", motivo: "no dice cuál de las piezas iguales quitar" };
+  if (enResto.nombres.length >= piezas.length) return { estado: "incompleta", herramienta: "quitar_pieza_plan", motivo: "quitaría todas las piezas" };
+  return edicion({ tipo: "quitar_pieza", piezas: enResto.nombres }, "quitar piezas nombradas");
+}
+
+/**
+ * Lo que pide el cliente sobre su plan vigente, por reglas: una edición completa (se aplica tal cual), una edición a la
+ * que le falta algo (el modelo pregunta o completa con la herramienta), una pregunta sobre el plan (se responde con
+ * sus datos), un pedido que no cabe en una edición (rehacer con `proponer_composicion`) o ninguno. Orden: preguntar,
+ * sumar una pieza, cambiar un color por otro, quitar, renombrar o mover una pieza, dejar piezas en unos colores,
+ * más/menos de un color, añadir un color, medida escrita, más grande o más pequeña. `contexto.ultimoAsistente`: la
+ * pieza de la que se habla sin nombrarla («hazla de 4 m» tras «añadí una guirnalda»).
+ */
+export function detectarPedidoEdicion(texto: string, plan: PlanActualGuiado, contexto: ContextoEdicion = {}): DeteccionEdicion {
+  const limpio = normalizarPedido(texto);
+  if (!limpio) return { estado: "ninguna" };
+  // R · Una pregunta sobre el plan no lo cambia.
+  const consulta = detectarConsultaPlan(texto, plan);
+  if (consulta) return { estado: "consulta", consulta, motivo: "pregunta por su plan: se responde con sus datos, sin cambiarlo" };
+  if (NO_CABE.test(limpio)) return { estado: "no_cabe", motivo: "pide cambiar el plan entero (más sencillo, más barato, otros colores u otro estilo)" };
+  const piezas = piezasDelPlanActual(plan);
+  const coloresPlan = new Set(coloresDelPlanActual(plan));
+  const menciones = mencionesDeColor(limpio);
+  const nombradas = piezasNombradas(limpio, piezas);
+  const piezasPedidas = nombradas.nombres;
+  const referida = piezaReferida(limpio, contexto, piezas);
+
+  // Flores de globo (flores-pieza.ts): «ponle flores», «agrega 3 flores doradas a la columna», «quítale las flores».
+  // Antes que sumar una pieza: una flor es un adorno de la pieza, no una pieza nueva. Sin pieza nombrada: la de la que
+  // se habla o, si no, todas.
+  const flores = pedidoFloresDeTexto(texto);
+  if (flores) {
+    if (nombradas.ambigua) return { estado: "incompleta", herramienta: "flores_plan", motivo: "no dice en cuál de las piezas iguales van las flores" };
+    const destino = piezasPedidas.length ? piezasPedidas : referida && generoDelPronombre(limpio) ? [referida.nombre] : [];
+    return edicion({ tipo: "flores", quitar: flores.quitar, cantidad: flores.cantidad, colorPetalo: flores.colorPetalo, colorCentro: flores.colorCentro, piezas: destino }, flores.quitar ? "quitar las flores de globo de las piezas" : "poner flores de globo en las piezas");
+  }
+
+  // C · Sumar una pieza («¿puedes agregar una guirnalda en medio?», «agrégale otra columna», «ponle un arco»).
+  const nueva = leerPiezaNueva(limpio, texto, piezas);
+  if (nueva && "noCabe" in nueva) return { estado: "no_cabe", motivo: nueva.noCabe };
+  if (nueva) {
+    if (QUITAR.test(limpio) || /\b(?:en vez|en lugar|reemplaza\w*|sustitu\w*|cambi\w*)\b/.test(limpio)) return { estado: "no_cabe", motivo: "pide quitar o cambiar algo y además sumar una pieza: se rehace con lo demás igual" };
+    return edicion({ tipo: "agregar_pieza", pieza: nueva.pieza }, "sumar una pieza al plan sin tocar las demás");
+  }
+
+  // Cambiar un color por otro (también «quita el azul y pon celeste»).
+  const conCambio = CAMBIAR.test(limpio) || /\b(?:por|en vez|en lugar|sea|sean)\b/.test(limpio) || (QUITAR.test(limpio) && PONER.test(limpio));
+  const reemplazo = conCambio ? reemplazoNombrado(limpio, menciones, coloresPlan) : null;
+  if (reemplazo) {
+    const piezasDelColor = piezasPedidas.length ? conColor(piezas, piezasPedidas, reemplazo.de.familia) : [];
+    if (piezasPedidas.length && !piezasDelColor.length) return { estado: "incompleta", herramienta: "cambiar_color_plan", motivo: `las piezas nombradas no llevan ${reemplazo.de.familia}` };
+    if (nombradas.ambigua) return { estado: "incompleta", herramienta: "cambiar_color_plan", motivo: "no dice en cuál de las piezas iguales" };
+    return edicion({ tipo: "reemplazar_color", color: reemplazo.de.familia, colorNuevo: reemplazo.a.color, piezas: piezasDelColor }, "cambiar un color por otro, con colores y piezas nombrados");
+  }
+
+  const quitar = QUITAR.exec(limpio);
+  if (quitar) {
+    const resultado = pedidoQuitar(limpio.slice((quitar.index ?? 0) + quitar[0].length).trim(), piezas, coloresPlan, false);
+    if (resultado) return resultado;
+    // «quítala» tras «añadí una guirnalda…»: la pieza de la que se habla.
+    if (referida && generoDelPronombre(limpio) && !menciones.length) return edicion({ tipo: "quitar_pieza", piezas: [referida.nombre] }, "quitar la pieza de la que se habla (la del último mensaje)");
+  }
+  for (const directo of limpio.matchAll(QUITAR_DIRECTO)) {
+    const resultado = pedidoQuitar(limpio.slice((directo.index ?? 0) + directo[0].length), piezas, coloresPlan, true);
+    if (resultado) return resultado;
+  }
+
+  // U · Renombrar una pieza («renombra la guirnalda como Cascada», «que la columna izquierda se llame Torre rosa»).
+  if (RENOMBRAR.test(limpio)) {
+    const nombre = nombreNuevo(texto);
+    const sinNombre = nombre ? limpio.replace(normalizarPedido(nombre), " ") : limpio;
+    const enTexto = piezasNombradas(sinNombre, piezas);
+    const objetivo = enTexto.nombres.length === 1 && !enTexto.ambigua ? enTexto.nombres[0]! : !enTexto.nombres.length && referida ? referida.nombre : null;
+    if (!nombre || !objetivo) return { estado: "incompleta", herramienta: "editar_pieza_plan", motivo: nombre ? "no dice qué pieza renombrar" : "no dice el nombre nuevo" };
+    return edicion({ tipo: "renombrar_pieza", pieza: objetivo, nombre }, "renombrar una pieza");
+  }
+
+  // U · Mover una pieza («pon la guirnalda arriba», «pásala a la izquierda», «mueve la columna al centro»).
+  const lugar = ubicacionPedida(limpio);
+  if (lugar && MOVER.test(limpio) && !menciones.length) {
+    const objetivo = piezasPedidas.length === 1 && !nombradas.ambigua ? piezasPedidas[0]! : !piezasPedidas.length && referida && generoDelPronombre(limpio) ? referida.nombre : null;
+    if (objetivo) return edicion({ tipo: "mover_pieza", pieza: objetivo, ubicacion: lugar }, "mover una pieza a otro lugar");
+    if (nombradas.ambigua) return { estado: "incompleta", herramienta: "editar_pieza_plan", motivo: "no dice cuál de las piezas iguales mover" };
+  }
+
+  // U · Dejar piezas en unos colores («cambia la guirnalda a dorado», «pon las columnas en blanco», «hazla dorada»).
+  if (menciones.length && (CAMBIAR.test(limpio) || PINTAR.test(limpio))) {
+    const primera = menciones[0]!;
+    const masMenos = menciones.some((mencion) => /\b(?:mas|menos)\s+(?:de\s+)?(?:color\s+)?$/.test(limpio.slice(Math.max(0, mencion.inicio - 16), mencion.inicio)));
+    const objetivo = piezasPedidas.length && !nombradas.ambigua ? piezasPedidas : !piezasPedidas.length && referida && generoDelPronombre(limpio) ? [referida.nombre] : [];
+    const destino = nombradas.primera < primera.inicio || (!piezasPedidas.length && objetivo.length > 0) || /\b(?:a|al|en|de|color)\s+$/.test(limpio.slice(Math.max(0, primera.inicio - 8), primera.inicio));
+    if (objetivo.length && !masMenos && destino && (CAMBIAR.test(limpio) || nombradas.primera < primera.inicio || !piezasPedidas.length)) {
+      return edicion({ tipo: "colores_pieza", colores: [...new Set(menciones.map((mencion) => mencion.color))].slice(0, 3), piezas: objetivo }, "dejar piezas nombradas en esos colores");
+    }
+  }
+
+  if (CAMBIAR.test(limpio) && menciones.length) {
+    const delPlan = menciones.filter((mencion) => coloresPlan.has(mencion.familia));
+    if (!delPlan.length) {
+      // «cámbialo a rosado» con un plan de un solo color: ese color. Con varios, «cambiemos a rosado y dorado» es otra paleta.
+      if (coloresPlan.size === 1 && menciones.length === 1) {
+        const [unico] = [...coloresPlan] as [string];
+        return edicion({ tipo: "reemplazar_color", color: unico, colorNuevo: menciones[0]!.color, piezas: [] }, "el plan lleva un solo color: ese es el que se cambia");
+      }
+      return { estado: "no_cabe", motivo: "pide otros colores sin decir cuál cambia: es una paleta nueva" };
+    }
+    return { estado: "incompleta", herramienta: "cambiar_color_plan", motivo: "pide cambiar un color sin decir cuál por cuál" };
+  }
+
+  // Más o menos de un color.
+  for (const coincidencia of limpio.matchAll(/\b(mas|menos) (?:de )?(?:color )?/g)) {
+    const fin = (coincidencia.index ?? 0) + coincidencia[0].length;
+    const color = menciones.find((mencion) => mencion.inicio === fin);
+    if (!color) continue;
+    if (!coloresPlan.has(color.familia)) return { estado: "incompleta", herramienta: "agregar_color_plan", motivo: `pide más ${color.color}, que el plan no lleva` };
+    if (nombradas.ambigua) return { estado: "incompleta", herramienta: "mas_o_menos_color", motivo: "no dice en cuál de las piezas iguales" };
+    return edicion({ tipo: "protagonismo", color: color.familia, direccion: coincidencia[1] === "mas" ? 1 : -1, piezas: conColor(piezas, piezasPedidas, color.familia) }, "más o menos de un color del plan");
+  }
+
+  // Añadir un color (una pieza nueva ya la leyó `leerPiezaNueva`; aquí solo queda lo que no se pudo leer como pieza).
+  const agregar = AGREGAR.exec(limpio);
+  if (agregar) {
+    const resto = limpio.slice((agregar.index ?? 0) + agregar[0].length).trim();
+    const enResto = piezasNombradas(resto, piezas);
+    const nuevos = mencionesDeColor(resto).filter((mencion) => !coloresPlan.has(mencion.familia) || tonoClaroDe(mencion.color) !== null);
+    const piezaPrimero = enResto.primera < (nuevos[0]?.inicio ?? Number.POSITIVE_INFINITY);
+    if (piezaPrimero && (enResto.ajenas.length || PIEZA_NUEVA.test(enResto.antesDeLaPrimera))) return { estado: "no_cabe", motivo: "pide agregar una pieza" };
+    if (nuevos.length) {
+      if (enResto.ambigua) return { estado: "incompleta", herramienta: "agregar_color_plan", motivo: "no dice en cuál de las piezas iguales" };
+      return edicion({ tipo: "agregar_color", colores: [...new Set(nuevos.map((mencion) => mencion.color))].slice(0, 2), piezas: enResto.nombres }, "añadir un color que el plan no lleva");
+    }
+  }
+
+  // Una medida escrita («que las columnas midan 2,5 m»; «hazla de 4 m» tras «añadí una guirnalda…»).
+  const metros = medidaEnMetros(texto);
+  if (metros !== null) {
+    const destino = piezasPedidas.length ? piezas.filter((pieza) => piezasPedidas.includes(pieza.nombre)) : piezas.length === 1 ? piezas : referida ? [referida] : [];
+    if (!destino.length) return { estado: "incompleta", herramienta: "cambiar_tamano_plan", motivo: "da una medida sin decir de qué pieza" };
+    return edicion({ tipo: "medidas", medidas: { [campoMedida(limpio, destino)]: metros }, piezas: destino.map((pieza) => pieza.nombre) }, "una medida escrita para piezas nombradas");
+  }
+
+  // Más grande o más pequeña (sin piezas nombradas: toda la decoración).
+  const grande = GRANDE.test(limpio);
+  const pequena = PEQUENA.test(limpio);
+  if (grande !== pequena && !GLOBOS_GRANDES.test(limpio)) {
+    return edicion({ tipo: "tamano", direccion: grande ? 1 : -1, piezas: piezasPedidas }, piezasPedidas.length ? "cambiar el tamaño de piezas nombradas" : "cambiar el tamaño de toda la decoración");
+  }
+  return { estado: "ninguna" };
+}
+
+// --- Herramientas del modelo -----------------------------------------------------------------------------------------
+
+export type DefinicionHerramienta = { nombre: string; descripcion: string; esquema: Record<string, unknown> };
+
+/** Las herramientas de edición con los nombres de las piezas y los colores de ESTE plan como únicos valores posibles. */
+export function herramientasEdicionPlan(plan: PlanActualGuiado): DefinicionHerramienta[] {
+  const nombres = [...new Set(piezasDelPlanActual(plan).map((pieza) => pieza.nombre))];
+  const colores = coloresDelPlanActual(plan);
+  const piezas = { type: "array", description: "Piezas del plan, con su nombre exacto. Vacío: todas las que llevan ese color.", items: { type: "string", enum: nombres }, maxItems: MAX_PIEZAS };
+  const colorPlan = { type: "string", enum: colores };
+  const colorNuevo = { type: "string", enum: [...COLORES_PROPUESTA_V2], description: "Usa el tono que dijo el cliente si es uno de los claros (celeste, rosa pastel, durazno), no su familia." };
+  return [
+    { nombre: "cambiar_color_plan", descripcion: "Cambia un color del plan vigente por otro globo del catálogo, en todas las piezas que lo llevan o solo en las que nombre el cliente. Medidas, piezas y título no cambian; al volver a contar, las cifras de los otros colores pueden moverse.", esquema: { type: "object", properties: { color_actual: colorPlan, color_nuevo: colorNuevo, piezas }, required: ["color_actual", "color_nuevo"], additionalProperties: false } },
+    { nombre: "agregar_color_plan", descripcion: "Añade un color nuevo al plan vigente (en todas las piezas que lo admiten o solo en las nombradas). Lo demás queda igual.", esquema: { type: "object", properties: { color: colorNuevo, piezas }, required: ["color"], additionalProperties: false } },
+    { nombre: "quitar_color_plan", descripcion: "Quita un color del plan vigente (de todas las piezas o de las nombradas); los otros colores toman su lugar y las medidas quedan igual.", esquema: { type: "object", properties: { color: colorPlan, piezas }, required: ["color"], additionalProperties: false } },
+    { nombre: "mas_o_menos_color", descripcion: "Pone más o menos de un color que el plan ya lleva («más rosado», «menos dorado»), en todas las piezas o en las nombradas.", esquema: { type: "object", properties: { color: colorPlan, direccion: { type: "string", enum: ["mas", "menos"] }, piezas }, required: ["color", "direccion"], additionalProperties: false } },
+    { nombre: "quitar_pieza_plan", descripcion: "Quita una o varias piezas concretas del plan vigente; las demás quedan exactamente igual.", esquema: { type: "object", properties: { piezas: { ...piezas, description: "Las piezas que se quitan, con su nombre exacto.", minItems: 1 } }, required: ["piezas"], additionalProperties: false } },
+    { nombre: "cambiar_tamano_plan", descripcion: "Agranda o achica piezas del plan vigente (un 10 %), o les pone una medida en metros. Sin piezas: toda la decoración.", esquema: { type: "object", properties: { cambio: { type: "string", enum: ["agrandar", "achicar", "medida"] }, piezas: { ...piezas, description: "Piezas que cambian, con su nombre exacto. Vacío: todas." }, alto_m: { type: "number", minimum: 0.3, maximum: 12 }, ancho_m: { type: "number", minimum: 0.3, maximum: 12 }, largo_m: { type: "number", minimum: 0.3, maximum: 12 } }, required: ["cambio"], additionalProperties: false } },
+    { nombre: "agregar_pieza_plan", descripcion: "Suma UNA pieza nueva al plan vigente (una guirnalda, otra columna, un arco…) en los colores del plan o en los que diga el cliente; las demás piezas quedan exactamente igual. Úsala cuando pida agregar, poner o sumar una pieza: nunca rehagas el plan para eso.", esquema: { type: "object", properties: { estructura: { type: "string", enum: [...OFICIALES_AGREGABLES] }, ubicacion: { type: "string", enum: [...UBICACIONES_PIEZA_NUEVA], description: "Dónde la pidió («en medio» o «entre las columnas» = centro). Omítela si no lo dijo." }, medida_m: { type: "number", minimum: 0.3, maximum: 12, description: "Solo si dijo la medida: el largo de una guirnalda, el alto de una columna o el ancho de un arco." }, colores: { type: "array", items: colorNuevo, maxItems: 4, description: "Solo si pidió colores para esta pieza; vacío: los del plan." } }, required: ["estructura"], additionalProperties: false } },
+    { nombre: "colores_pieza_plan", descripcion: "Deja piezas concretas del plan en los colores que pide el cliente («cambia la guirnalda a dorado»): cambia, añade o quita colores solo en esas piezas; medidas y demás piezas quedan igual.", esquema: { type: "object", properties: { piezas: { ...piezas, description: "Las piezas que cambian de color, con su nombre exacto.", minItems: 1 }, colores: { type: "array", items: colorNuevo, minItems: 1, maxItems: 3 } }, required: ["piezas", "colores"], additionalProperties: false } },
+    { nombre: "flores_plan", descripcion: "Pone, cambia o quita flores de globo (grupitos de globos de 5″: pétalos de un color y un centro de otro) como adorno de piezas del plan vigente. Úsala cuando pida flores («ponle flores», «agrega 3 flores doradas a la columna», «quítale las flores»); las piezas, medidas y demás globos quedan igual.", esquema: { type: "object", properties: { piezas: { ...piezas, description: "Piezas que llevan (o pierden) las flores, con su nombre exacto. Vacío: todas." }, quitar: { type: "boolean", description: "true para quitar las flores." }, cantidad: { type: "integer", minimum: 1, maximum: MAX_FLORES_PIEZA, description: "Flores por pieza, solo si lo dijo." }, color_petalo: colorPlan, color_centro: colorPlan }, additionalProperties: false } },
+    { nombre: "editar_pieza_plan", descripcion: "Mueve UNA pieza del plan a otro lugar o le cambia el nombre; medidas, colores y globos quedan igual.", esquema: { type: "object", properties: { pieza: { type: "string", enum: nombres }, ubicacion: { type: "string", enum: [...UBICACIONES_PIEZA_NUEVA] }, nombre: { type: "string", minLength: 1, maxLength: 60 } }, required: ["pieza"], additionalProperties: false } },
+  ];
+}
+
+const ArgsPiezas = z.array(z.string().trim().min(1).max(120)).max(MAX_PIEZAS).nullish();
+const ArgsSchemas = {
+  cambiar_color_plan: z.object({ color_actual: z.string().trim().min(1).max(40), color_nuevo: z.string().trim().min(1).max(40), piezas: ArgsPiezas }).strict(),
+  agregar_color_plan: z.object({ color: z.string().trim().min(1).max(40), piezas: ArgsPiezas }).strict(),
+  quitar_color_plan: z.object({ color: z.string().trim().min(1).max(40), piezas: ArgsPiezas }).strict(),
+  mas_o_menos_color: z.object({ color: z.string().trim().min(1).max(40), direccion: z.enum(["mas", "menos"]), piezas: ArgsPiezas }).strict(),
+  quitar_pieza_plan: z.object({ piezas: z.array(z.string().trim().min(1).max(120)).min(1).max(MAX_PIEZAS) }).strict(),
+  cambiar_tamano_plan: z.object({ cambio: z.enum(["agrandar", "achicar", "medida"]), piezas: ArgsPiezas, alto_m: z.number().nullish(), ancho_m: z.number().nullish(), largo_m: z.number().nullish() }).strict(),
+  agregar_pieza_plan: z.object({ estructura: z.string().trim().min(1).max(40), ubicacion: z.string().trim().max(40).nullish(), medida_m: z.number().nullish(), colores: z.array(z.string().trim().min(1).max(40)).max(4).nullish() }).strict(),
+  colores_pieza_plan: z.object({ piezas: z.array(z.string().trim().min(1).max(120)).min(1).max(MAX_PIEZAS), colores: z.array(z.string().trim().min(1).max(40)).min(1).max(3) }).strict(),
+  editar_pieza_plan: z.object({ pieza: z.string().trim().min(1).max(120), ubicacion: z.string().trim().max(40).nullish(), nombre: z.string().trim().max(60).nullish() }).strict(),
+  flores_plan: z.object({ piezas: ArgsPiezas, quitar: z.boolean().nullish(), cantidad: z.number().int().nullish(), color_petalo: z.string().trim().max(40).nullish(), color_centro: z.string().trim().max(40).nullish() }).strict(),
+} as const;
+
+export type ResultadoHerramientaEdicion =
+  | { ok: true; pedido: PedidoEdicionPlan; origen: "reglas" | "modelo"; correcciones: string[] }
+  | { ok: false; motivo: string; accion_requerida: string };
+
+function falla(motivo: string, accion: string): ResultadoHerramientaEdicion {
+  return { ok: false, motivo, accion_requerida: accion };
+}
+
+/** El nombre de pieza del modelo → el del plan (sin tildes ni mayúsculas; «izquierda» sola vale si es única). */
+function nombreDelPlan(nombre: string, piezas: readonly PiezaChat[]): string | null {
+  const clave = plegar(nombre);
+  const exacta = piezas.find((pieza) => pieza.clave === clave);
+  if (exacta) return exacta.nombre;
+  const contenida = piezas.filter((pieza) => pieza.clave.includes(clave) || clave.includes(pieza.clave));
+  return contenida.length === 1 ? contenida[0]!.nombre : null;
+}
+
+/** Color del plan que nombra el modelo («Azul», «celeste» cuando el plan dice azul) → su familia, si el plan la lleva. */
+function colorDelPlan(color: string, coloresPlan: ReadonlySet<string>): string | null {
+  const plegado = plegar(color);
+  if (coloresPlan.has(plegado)) return plegado;
+  const familia = plegar(familiaDeColorPropuesta(plegado));
+  if (coloresPlan.has(familia)) return familia;
+  const nombrado = mencionesDeColor(plegado)[0];
+  return nombrado && coloresPlan.has(nombrado.familia) ? nombrado.familia : null;
+}
+
+function colorPermitido(color: string): ColorPropuestaV2 | null {
+  const plegado = plegar(color);
+  const exacto = COLORES_PROPUESTA_V2.find((valor) => valor === plegado);
+  if (exacto) return exacto;
+  return mencionesDeColor(plegado)[0]?.color ?? null;
+}
+
+/**
+ * Los argumentos que mandó el modelo → el pedido que aplica la vista. Si las reglas ya leyeron una edición completa de
+ * la MISMA herramienta, mandan las reglas (son las palabras del cliente; el modelo puede equivocar la pieza o el tono).
+ * Si no, se valida lo del modelo contra el plan: piezas y colores que existen, el tono que dijo el cliente y que no se
+ * quede sin piezas. Un error vuelve al modelo como `ok: false` con qué hacer.
+ */
+export function pedidoDesdeHerramienta(nombre: HerramientaEdicion, args: unknown, contexto: { plan: PlanActualGuiado; ultimoUsuario: string; deteccion: DeteccionEdicion }): ResultadoHerramientaEdicion {
+  const { plan, ultimoUsuario, deteccion } = contexto;
+  if (deteccion.estado === "edicion" && deteccion.herramienta === nombre) return { ok: true, pedido: deteccion.pedido, origen: "reglas", correcciones: [] };
+  const piezas = piezasDelPlanActual(plan);
+  const coloresPlan = new Set(coloresDelPlanActual(plan));
+  const listaPiezas = piezas.map((pieza) => `«${pieza.nombre}»`).join(", ");
+  const correcciones: string[] = [];
+  const resolverPiezas = (pedidas: readonly string[] | null | undefined): string[] | null => {
+    const nombres: string[] = [];
+    for (const pedida of pedidas ?? []) {
+      const delPlan = nombreDelPlan(pedida, piezas);
+      if (!delPlan) return null;
+      if (!nombres.includes(delPlan)) nombres.push(delPlan);
+    }
+    return nombres;
+  };
+  const tonoDelCliente = (color: ColorPropuestaV2): ColorPropuestaV2 => {
+    const conTono = coloresConTonosDelCliente([color], [ultimoUsuario])[0] ?? color;
+    if (conTono !== color) correcciones.push(`${color} → ${conTono} (lo que dijo el cliente)`);
+    return conTono as ColorPropuestaV2;
+  };
+  switch (nombre) {
+    case "cambiar_color_plan": {
+      const entrada = ArgsSchemas.cambiar_color_plan.parse(args);
+      const color = colorDelPlan(entrada.color_actual, coloresPlan);
+      if (!color) return falla("color_no_esta_en_el_plan", `El plan lleva ${[...coloresPlan].join(", ")}: pregunta cuál quiere cambiar.`);
+      const permitido = colorPermitido(entrada.color_nuevo);
+      if (!permitido) return falla("color_nuevo_no_disponible", "Ese color no está en la paleta: ofrece uno parecido de la paleta.");
+      const colorNuevo = tonoDelCliente(permitido);
+      if (plegar(familiaDeColorPropuesta(colorNuevo)) === color && !tonoClaroDe(colorNuevo)) return falla("mismo_color", "Es el mismo color que ya lleva: pregunta por cuál lo quiere cambiar.");
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      const delColor = nombres.length ? conColor(piezas, nombres, color) : [];
+      if (nombres.length && !delColor.length) return falla("piezas_sin_ese_color", `Esas piezas no llevan ${color}.`);
+      return { ok: true, pedido: { tipo: "reemplazar_color", color, colorNuevo, piezas: delColor }, origen: "modelo", correcciones };
+    }
+    case "agregar_color_plan": {
+      const entrada = ArgsSchemas.agregar_color_plan.parse(args);
+      const permitido = colorPermitido(entrada.color);
+      if (!permitido) return falla("color_no_disponible", "Ese color no está en la paleta: ofrece uno parecido de la paleta.");
+      const color = tonoDelCliente(permitido);
+      if (coloresPlan.has(plegar(color)) && !tonoClaroDe(color)) return falla("ya_lo_lleva", "El plan ya lleva ese color: ofrece poner más con mas_o_menos_color o cambiar otro color por él.");
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      return { ok: true, pedido: { tipo: "agregar_color", colores: [color], piezas: nombres }, origen: "modelo", correcciones };
+    }
+    case "quitar_color_plan": {
+      const entrada = ArgsSchemas.quitar_color_plan.parse(args);
+      const color = colorDelPlan(entrada.color, coloresPlan);
+      if (!color) return falla("color_no_esta_en_el_plan", `El plan lleva ${[...coloresPlan].join(", ")}.`);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      return { ok: true, pedido: { tipo: "quitar_color", color, piezas: nombres.length ? conColor(piezas, nombres, color) : [] }, origen: "modelo", correcciones };
+    }
+    case "mas_o_menos_color": {
+      const entrada = ArgsSchemas.mas_o_menos_color.parse(args);
+      const color = colorDelPlan(entrada.color, coloresPlan);
+      if (!color) return falla("color_no_esta_en_el_plan", `El plan lleva ${[...coloresPlan].join(", ")}; para un color nuevo usa agregar_color_plan.`);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      return { ok: true, pedido: { tipo: "protagonismo", color, direccion: entrada.direccion === "mas" ? 1 : -1, piezas: nombres.length ? conColor(piezas, nombres, color) : [] }, origen: "modelo", correcciones };
+    }
+    case "quitar_pieza_plan": {
+      const entrada = ArgsSchemas.quitar_pieza_plan.parse(args);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres?.length) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: pregunta cuál quiere quitar.`);
+      if (nombres.length >= piezas.length) return falla("quitaria_todo", "El plan necesita al menos una pieza: pregunta qué quiere conservar.");
+      return { ok: true, pedido: { tipo: "quitar_pieza", piezas: nombres }, origen: "modelo", correcciones };
+    }
+    case "cambiar_tamano_plan": {
+      const entrada = ArgsSchemas.cambiar_tamano_plan.parse(args);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      if (entrada.cambio !== "medida") return { ok: true, pedido: { tipo: "tamano", direccion: entrada.cambio === "agrandar" ? 1 : -1, piezas: nombres }, origen: "modelo", correcciones };
+      const medidas = Object.fromEntries((["alto_m", "ancho_m", "largo_m"] as const).flatMap((campo) => {
+        const valor = entrada[campo];
+        return typeof valor === "number" && valor >= 0.3 && valor <= 12 ? [[campo, Math.round(valor * 100) / 100]] : [];
+      }));
+      if (!Object.keys(medidas).length) return falla("sin_medida", "Pregunta la medida en metros (entre 0,3 y 12).");
+      const destino = nombres.length ? nombres : piezas.length === 1 ? [piezas[0]!.nombre] : [];
+      if (!destino.length) return falla("sin_pieza", `Pregunta a qué pieza le pone esa medida: ${listaPiezas}.`);
+      return { ok: true, pedido: { tipo: "medidas", medidas, piezas: destino }, origen: "modelo", correcciones };
+    }
+    case "agregar_pieza_plan": {
+      const entrada = ArgsSchemas.agregar_pieza_plan.parse(args);
+      const estructura = plegar(entrada.estructura).replace(/ /g, "_");
+      if (!esOficialAgregable(estructura)) return falla("pieza_no_agregable", `Por chat se suman ${OFICIALES_AGREGABLES.map((id) => ESTRUCTURAS_OFICIALES[id].nombre.toLocaleLowerCase("es")).join(", ")}; un bouquet o una figura rehacen el plan con proponer_composicion.`);
+      const ubicacion = entrada.ubicacion ? UbicacionPiezaSchema.safeParse(plegar(entrada.ubicacion)) : null;
+      if (ubicacion && !ubicacion.success) return falla("ubicacion_desconocida", `Los lugares son ${UBICACIONES_PIEZA_NUEVA.join(", ")}: usa uno de esos u omítelo.`);
+      const colores: ColorPropuestaV2[] = [];
+      for (const color of entrada.colores ?? []) {
+        const permitido = colorPermitido(color);
+        if (!permitido) return falla("color_no_disponible", "Ese color no está en la paleta: ofrece uno parecido de la paleta.");
+        const conTono = tonoDelCliente(permitido);
+        if (!colores.includes(conTono)) colores.push(conTono);
+      }
+      const medida = typeof entrada.medida_m === "number" && entrada.medida_m >= 0.3 && entrada.medida_m <= 12 ? Math.round(entrada.medida_m * 100) / 100 : null;
+      return { ok: true, pedido: { tipo: "agregar_pieza", pieza: { estructura, ubicacion: ubicacion?.success ? ubicacion.data : null, ...(medida !== null ? { medidas: { [campoPrincipal(estructura)]: medida } } : {}), colores } }, origen: "modelo", correcciones };
+    }
+    case "colores_pieza_plan": {
+      const entrada = ArgsSchemas.colores_pieza_plan.parse(args);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres?.length) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      const colores: ColorPropuestaV2[] = [];
+      for (const color of entrada.colores) {
+        const permitido = colorPermitido(color);
+        if (!permitido) return falla("color_no_disponible", "Ese color no está en la paleta: ofrece uno parecido de la paleta.");
+        const conTono = tonoDelCliente(permitido);
+        if (!colores.includes(conTono)) colores.push(conTono);
+      }
+      return { ok: true, pedido: { tipo: "colores_pieza", colores, piezas: nombres }, origen: "modelo", correcciones };
+    }
+    case "editar_pieza_plan": {
+      const entrada = ArgsSchemas.editar_pieza_plan.parse(args);
+      const pieza = nombreDelPlan(entrada.pieza, piezas);
+      if (!pieza) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      if (entrada.ubicacion) {
+        const ubicacion = UbicacionPiezaSchema.safeParse(plegar(entrada.ubicacion));
+        if (!ubicacion.success) return falla("ubicacion_desconocida", `Los lugares son ${UBICACIONES_PIEZA_NUEVA.join(", ")}.`);
+        return { ok: true, pedido: { tipo: "mover_pieza", pieza, ubicacion: ubicacion.data }, origen: "modelo", correcciones };
+      }
+      const nombre = entrada.nombre?.trim();
+      if (!nombre) return falla("sin_cambio", "Pregunta a dónde la lleva o cómo quiere llamarla.");
+      if (piezas.some((otra) => otra.nombre !== pieza && otra.clave === plegar(nombre))) return falla("nombre_repetido", "Otra pieza ya se llama así: pregunta otro nombre.");
+      return { ok: true, pedido: { tipo: "renombrar_pieza", pieza, nombre: nombre.slice(0, 60) }, origen: "modelo", correcciones };
+    }
+    case "flores_plan": {
+      const entrada = ArgsSchemas.flores_plan.parse(args);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      // Los globos de las flores son los del plan (su allowlist firmada): un color que el plan no lleva no se inventa.
+      const colorPetalo = entrada.color_petalo ? colorDelPlan(entrada.color_petalo, coloresPlan) : null;
+      const colorCentro = entrada.color_centro ? colorDelPlan(entrada.color_centro, coloresPlan) : null;
+      if ((entrada.color_petalo && !colorPetalo) || (entrada.color_centro && !colorCentro)) return falla("color_no_esta_en_el_plan", `Las flores se arman con los globos del plan (${[...coloresPlan].join(", ")}): ofrece uno de esos o agregar primero el color.`);
+      const cantidad = typeof entrada.cantidad === "number" ? Math.max(1, Math.min(MAX_FLORES_PIEZA, Math.round(entrada.cantidad))) : null;
+      return { ok: true, pedido: { tipo: "flores", quitar: entrada.quitar === true, cantidad, colorPetalo, colorCentro, piezas: nombres }, origen: "modelo", correcciones };
+    }
+  }
+}
+
+// --- Lo que se dice del pedido ---------------------------------------------------------------------------------------
+
+function nombreColor(color: string): string {
+  const tono = tonoClaroDe(color);
+  return tono ? TONOS_V2[tono].nombre.toLocaleLowerCase("es") : color;
+}
+
+function lista(elementos: readonly string[]): string {
+  if (elementos.length <= 1) return elementos[0] ?? "";
+  return `${elementos.slice(0, -1).join(", ")} y ${elementos.at(-1)}`;
+}
+
+function enPiezas(piezas: readonly string[]): string {
+  return piezas.length ? ` en ${lista(piezas.map((pieza) => pieza.toLocaleLowerCase("es")))}` : "";
+}
+
+/** «Cambio el azul por celeste en columna izquierda y columna derecha; las medidas no cambian.» (respaldo de la respuesta). */
+export function fraseDelPedido(pedido: PedidoEdicionPlan): string {
+  switch (pedido.tipo) {
+    case "reemplazar_color": return `Cambio el ${nombreColor(pedido.color)} por ${nombreColor(pedido.colorNuevo)}${enPiezas(pedido.piezas)}; las medidas no cambian.`;
+    case "agregar_color": return `Añado ${lista(pedido.colores.map(nombreColor))}${enPiezas(pedido.piezas)}; medidas y demás colores quedan igual.`;
+    case "quitar_color": return `Quito el ${nombreColor(pedido.color)}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+    case "protagonismo": return `Pongo ${pedido.direccion > 0 ? "más" : "menos"} ${nombreColor(pedido.color)}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+    case "quitar_pieza": return `Quito ${lista(pedido.piezas.map((pieza) => pieza.toLocaleLowerCase("es")))}; lo demás queda igual.`;
+    case "tamano": return `${pedido.direccion > 0 ? "Agrando" : "Achico"} ${pedido.piezas.length ? lista(pedido.piezas.map((pieza) => pieza.toLocaleLowerCase("es"))) : "tu decoración"} un poco; lo demás queda igual.`;
+    case "medidas": return `Ajusto ${lista(pedido.piezas.map((pieza) => pieza.toLocaleLowerCase("es")))} a ${Object.values(pedido.medidas).map((valor) => `${String(valor).replace(".", ",")} m`).join(" × ")}; lo demás queda igual.`;
+    case "agregar_pieza": {
+      const medida = Object.values(pedido.pieza.medidas ?? {})[0];
+      return `Sumo ${piezaIndefinida(pedido.pieza.estructura)}${medida ? ` de ${String(medida).replace(".", ",")} m` : ""}${pedido.pieza.ubicacion ? ` ${LUGAR_EN_PALABRAS[pedido.pieza.ubicacion]}` : ""}${pedido.pieza.colores.length ? ` en ${lista(pedido.pieza.colores.map(nombreColor))}` : ""} a tu plan; lo demás queda igual.`;
+    }
+    case "colores_pieza": return `Dejo ${lista(pedido.piezas.map((pieza) => pieza.toLocaleLowerCase("es")))} en ${lista(pedido.colores.map(nombreColor))}; lo demás queda igual.`;
+    case "mover_pieza": return `Paso ${pedido.pieza.toLocaleLowerCase("es")} ${LUGAR_EN_PALABRAS[pedido.ubicacion]}; lo demás queda igual.`;
+    case "renombrar_pieza": return `Le cambio el nombre a ${pedido.pieza.toLocaleLowerCase("es")}: ahora se llama «${pedido.nombre}».`;
+    case "flores": {
+      if (pedido.quitar) return `Quito las flores de globo${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+      const cuantas = pedido.cantidad ? `${pedido.cantidad} ${pedido.cantidad === 1 ? "flor" : "flores"}` : "flores";
+      const colores = pedido.colorPetalo ? ` ${nombreColor(pedido.colorPetalo)}${pedido.colorCentro ? ` con centro ${nombreColor(pedido.colorCentro)}` : ""}` : pedido.colorCentro ? ` con centro ${nombreColor(pedido.colorCentro)}` : "";
+      return `Pongo ${cuantas} de globo${colores}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+    }
+  }
+}
+
+/** El lugar pedido, en palabras del cliente. */
+export const LUGAR_EN_PALABRAS: Readonly<Record<UbicacionPiezaNueva, string>> = {
+  centro: "en el centro", arriba: "arriba", fondo: "al fondo", izquierda: "a la izquierda", derecha: "a la derecha",
+  piso: "en el piso", entrada: "en la entrada", mesa: "en la mesa", techo: "en el techo",
+};
+
+/** «una guirnalda», «un arco», «una columna orgánica»: la pieza con su artículo indefinido. */
+export function piezaIndefinida(oficial: EstructuraOficialId): string {
+  return `${FEMENINAS.has(oficial) ? "una" : "un"} ${ESTRUCTURAS_OFICIALES[oficial].nombre.toLocaleLowerCase("es")}`;
+}
+
+/** Las piezas y colores del plan para el estado del modelo: así nombra las piezas igual que el plan. */
+export function textoPiezasParaModelo(plan: PlanActualGuiado): string {
+  return piezasDelPlanActual(plan).map((pieza) => `«${pieza.nombre}»${pieza.colores.length ? ` (${pieza.colores.join(", ")})` : ""}`).join("; ");
+}
+
+// --- Elegir una idea por chat ----------------------------------------------------------------------------------------
+
+/** Elegir de verdad («me quedo con», «elijo», «me gusta»): con ellos basta nombrar el título. */
+const ELECCION_FUERTE = /\b(?:me quedo|quedo con|me quedare|nos quedamos|elijo|escojo|escogo|elegimos|escogemos|prefiero|preferimos|me gusta|me gusto|me gustan|me encanta|me encanto|vamos con|voy con)\b/;
+/** «Quiero la primera», «dame la segunda»: con ellos hace falta la posición. */
+const ELECCION_DEBIL = /\b(?:quiero|queremos|dame|mejor)\b/;
+const NEGACION = /\b(?:no me gusta\w*|no me gusto|no quiero|ninguna|ninguno|no me convence\w*)\b/;
+/** Pedir más ideas o editar el plan no es elegir una idea («muéstrame otras como la primera», «quita la primera columna»). */
+const NO_ES_ELECCION = /\b(?:quita\w*|saca\w*|elimina\w*|cambia\w*|agrega\w*|anade\w*|agrand\w*|achic\w*|otras|otros|muestra\w*|ensena\w*|parecid\w*|ver)\b/;
+const ARTICULO = "(?:el|la|lo|los|las|con|por)\\s+";
+const ORDINALES: ReadonlyArray<readonly [RegExp, number]> = [
+  [new RegExp(`\\b${ARTICULO}(?:primer[oa]?|1ra|1ro|1a|1o)\\b(?! vez)`), 1],
+  [new RegExp(`\\b${ARTICULO}(?:segund[oa]|2da|2do)\\b(?! vez)`), 2],
+  [new RegExp(`\\b${ARTICULO}(?:tercer[oa]?|3ra|3ro)\\b(?! vez)`), 3],
+  [new RegExp(`\\b${ARTICULO}(?:cuart[oa]|4ta|4to)\\b`), 4],
+  [new RegExp(`\\b${ARTICULO}(?:quint[oa]|5ta|5to)\\b`), 5],
+  [new RegExp(`\\b${ARTICULO}(?:sext[oa]|6ta|6to)\\b`), 6],
+];
+const NUMERO_IDEA = /\b(?:idea|opcion|numero|la|el)\s+(?:#\s*)?(\d|uno|dos|tres|cuatro|cinco|seis)\b(?! (?:columnas?|arcos?|piezas?|globos?))/;
+const PALABRA_NUMERO: Readonly<Record<string, number>> = { uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 };
+const PALABRAS_VACIAS = new Set(["de", "del", "con", "y", "para", "en", "el", "la", "los", "las", "un", "una", "globos", "globo", "decoracion", "idea", "estilo", "tu", "mi", "sus"]);
+
+function posicionNombrada(texto: string, total: number): number | null {
+  if (new RegExp(`\\b${ARTICULO}ultim[oa]\\b`).test(texto)) return total;
+  if (new RegExp(`\\b${ARTICULO}penultim[oa]\\b`).test(texto)) return total > 1 ? total - 1 : null;
+  for (const [patron, posicion] of ORDINALES) if (patron.test(texto)) return posicion <= total ? posicion : null;
+  const numero = NUMERO_IDEA.exec(texto)?.[1];
+  if (!numero) return null;
+  const posicion = PALABRA_NUMERO[numero] ?? Number.parseInt(numero, 10);
+  return Number.isInteger(posicion) && posicion >= 1 && posicion <= total ? posicion : null;
+}
+
+/** La idea cuyo título nombra el cliente: la que más palabras de su título repite (al menos dos, o todas si tiene una). */
+function ideaPorTitulo(texto: string, ideas: readonly IdeaVisibleGuiada[]): number | null {
+  const palabras = new Set(texto.split(" "));
+  const tiene = (palabra: string) => palabras.has(palabra) || palabras.has(`${palabra}s`) || (palabra.endsWith("s") && palabras.has(palabra.slice(0, -1)));
+  const puntajes = ideas.map((idea) => {
+    const propias = [...new Set(plegar(idea.titulo).split(" ").filter((palabra) => palabra.length >= 3 && !PALABRAS_VACIAS.has(palabra)))];
+    const dichas = propias.filter(tiene).length;
+    return { dichas, completa: propias.length > 0 && dichas === propias.length };
+  });
+  const mejor = Math.max(0, ...puntajes.map((puntaje) => puntaje.dichas));
+  if (mejor === 0) return null;
+  const empatadas = puntajes.flatMap((puntaje, indice) => (puntaje.dichas === mejor ? [indice] : []));
+  if (empatadas.length !== 1) return null;
+  const indice = empatadas[0]!;
+  return mejor >= 2 || puntajes[indice]!.completa ? indice + 1 : null;
+}
+
+export type DeteccionIdea = { idea: IdeaVisibleGuiada; posicion: number; por: "posicion" | "titulo" | "ambas"; motivo: string };
+
+/**
+ * «Me quedo con el primero, el semiarco con centros de mesa»: la idea que elige el cliente entre las que tiene a la
+ * vista, por su posición o por su título. Si dice las dos y no coinciden, manda el título (es más preciso). Null si no
+ * elige ninguna o si en realidad pide editar el plan.
+ */
+export function detectarEleccionIdea(texto: string, ideas: readonly IdeaVisibleGuiada[]): DeteccionIdea | null {
+  const limpio = plegar(texto);
+  const fuerte = ELECCION_FUERTE.test(limpio);
+  if (!ideas.length || !limpio || !(fuerte || ELECCION_DEBIL.test(limpio)) || NEGACION.test(limpio) || NO_ES_ELECCION.test(limpio)) return null;
+  const porPosicion = posicionNombrada(limpio, ideas.length);
+  // El título solo con un verbo de elegir: «quiero algo rosado con columnas» describe, no elige.
+  const porTitulo = fuerte ? ideaPorTitulo(limpio, ideas) : null;
+  const posicion = porTitulo ?? porPosicion;
+  if (!posicion) return null;
+  const por = porTitulo && porPosicion ? "ambas" : porTitulo ? "titulo" : "posicion";
+  const motivo = porTitulo && porPosicion && porTitulo !== porPosicion ? `nombró la posición ${porPosicion} y el título de la ${porTitulo}: manda el título` : `eligió por ${por === "ambas" ? "posición y título" : por}`;
+  return { idea: ideas[posicion - 1]!, posicion, por, motivo };
+}
+
+export function herramientaElegirIdea(ideas: readonly IdeaVisibleGuiada[]): DefinicionHerramienta {
+  return {
+    nombre: HERRAMIENTA_ELEGIR_IDEA,
+    descripcion: "Elige una de las ideas del catálogo que el cliente tiene a la vista, cuando la nombra con palabras («me quedo con la primera», «la del semiarco»). Hace lo mismo que si la tocara.",
+    esquema: { type: "object", properties: { posicion: { type: "integer", minimum: 1, maximum: ideas.length }, titulo: { type: "string", enum: ideas.map((idea) => idea.titulo) } }, additionalProperties: false },
+  };
+}
+
+/** Lo que mandó el modelo → la idea, validada contra las que se ven (y contra las reglas, si ya la leyeron). */
+export function ideaDesdeHerramienta(args: unknown, ideas: readonly IdeaVisibleGuiada[], deteccion: DeteccionIdea | null): { ok: true; idea: IdeaElegida; origen: "reglas" | "modelo" } | { ok: false; motivo: string; accion_requerida: string } {
+  if (deteccion) return { ok: true, idea: { id: deteccion.idea.id, titulo: deteccion.idea.titulo, posicion: deteccion.posicion }, origen: "reglas" };
+  const entrada = z.object({ posicion: z.number().int().nullish(), titulo: z.string().trim().max(200).nullish() }).strict().parse(args);
+  const porTitulo = entrada.titulo ? ideas.findIndex((idea) => plegar(idea.titulo) === plegar(entrada.titulo!)) : -1;
+  const indice = porTitulo >= 0 ? porTitulo : entrada.posicion && entrada.posicion >= 1 && entrada.posicion <= ideas.length ? entrada.posicion - 1 : -1;
+  if (indice < 0) return { ok: false, motivo: "idea_no_identificada", accion_requerida: `Pregunta cuál de estas ideas quiere: ${ideas.map((idea, posicion) => `${posicion + 1}. «${idea.titulo}»`).join(", ")}.` };
+  const idea = ideas[indice]!;
+  return { ok: true, idea: { id: idea.id, titulo: idea.titulo, posicion: indice + 1 }, origen: "modelo" };
+}
+
+// --- Las herramientas del turno ----------------------------------------------------------------------------------------
+
+/**
+ * Las herramientas del modelo en un turno, por reglas: las de siempre más las de edición (con plan vigente) y
+ * `elegir_idea` (con ideas a la vista). Con un cambio puntual del plan, SOLO las de edición (la que leyeron las reglas,
+ * o todas si falta un dato): sin `proponer_composicion` el modelo ya no puede rehacer el plan entero. Con una idea
+ * elegida con palabras, solo `elegir_idea`. `motivo`: por qué se restringió (null si no).
+ */
+export function herramientasConEdicion(entrada: { base: readonly DefinicionHerramienta[]; plan: PlanActualGuiado | null | undefined; ideas: readonly IdeaVisibleGuiada[]; deteccion: DeteccionEdicion; eleccion: DeteccionIdea | null }): { herramientas: DefinicionHerramienta[]; motivo: string | null } {
+  const { base, plan, ideas, deteccion, eleccion } = entrada;
+  const deEdicion = plan ? herramientasEdicionPlan(plan) : [];
+  if (plan && (deteccion.estado === "edicion" || deteccion.estado === "incompleta")) {
+    const permitidas: readonly string[] = deteccion.estado === "edicion" ? [deteccion.herramienta] : HERRAMIENTAS_EDICION;
+    return { herramientas: deEdicion.filter((herramienta) => permitidas.includes(herramienta.nombre)), motivo: `cambio puntual del plan (${deteccion.estado}): solo herramientas de edición` };
+  }
+  // Una pregunta sobre el plan se responde con sus datos: sin herramientas, el modelo no puede cambiarlo.
+  if (plan && deteccion.estado === "consulta") return { herramientas: [], motivo: "pregunta por su plan: se responde sin herramientas" };
+  if (eleccion && ideas.length) return { herramientas: [herramientaElegirIdea(ideas)], motivo: "eligió una idea con palabras: solo elegir_idea" };
+  return { herramientas: [...base, ...deEdicion, ...(ideas.length ? [herramientaElegirIdea(ideas)] : [])], motivo: null };
+}
+
+/** Las ideas a la vista para el estado del modelo: «1. «Semiarco con centros de mesa»; 2. …». */
+export function textoIdeasParaModelo(ideas: readonly IdeaVisibleGuiada[]): string {
+  return ideas.map((idea, indice) => `${indice + 1}. «${idea.titulo}»`).join("; ");
+}

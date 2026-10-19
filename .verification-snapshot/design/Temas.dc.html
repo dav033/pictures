@@ -1,0 +1,336 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Geist, system-ui, sans-serif; }
+    a { color: #6d3fe0; } a:hover { color: #5a2fc4; }
+    @keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes brillo { 0%, 100% { opacity: .3; } 50% { opacity: .95; } }
+    .flota { animation: flotar 5s ease-in-out infinite; }
+    .brilla { animation: brillo 3s ease-in-out infinite; }
+    .tema { overflow: hidden; border: 1px solid #ddd0f0; border-radius: 14px; background: #ffffff; }
+    .arte { position: relative; height: 118px; overflow: hidden; }
+    .arte svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .pie { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 14px; }
+    .nom { color: #1c1425; font-size: 13.5px; font-weight: 600; }
+    .cla { color: #6b6178; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10.5px; }
+    .sw { display: flex; gap: 4px; margin-top: 6px; }
+    .sw span { width: 15px; height: 15px; border-radius: 4px; }
+  </style>
+</helmet>
+
+<div style="width: 1200px; background: #f7f5fb; padding: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px">
+    <h1 style="margin: 0; color: #1c1425; font-size: 26px; font-weight: 600; letter-spacing: -0.02em">Sistema de temas generativos</h1>
+    <p style="margin: 0; max-width: 640px; color: #6b6178; font-size: 14px; line-height: 1.55; text-wrap: pretty">
+      El nombre del paquete decide su arte. Se busca una palabra clave en <span style="font-family: 'Geist Mono', monospace; font-size: 12.5px">name</span> y se pinta paleta + motivo por código — sin imágenes que mantener. Un paquete nuevo en Happia sale con su arte solo; si no coincide con ninguno, cae al tema de marca.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+
+    <!-- TROPICAL -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(155deg, #0f766e 0%, #14b8a6 46%, #fb7185 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <circle cx="214" cy="30" r="26" fill="#fde68a" opacity="0.88"></circle>
+          <g fill="#065f46" opacity="0.48">
+            <path d="M-6 118 C 26 76, 44 62, 38 26 C 62 68, 50 92, 30 118 Z"></path>
+            <path d="M262 118 C 240 80, 254 56, 274 38 C 268 74, 280 96, 284 118 Z"></path>
+          </g>
+          <path d="M14 118 C 38 78, 28 50, 6 28 C 54 44, 66 88, 56 118 Z" fill="#a3e635" opacity="0.52"></path>
+          <g fill="#ffffff">
+            <circle class="flota" cx="120" cy="36" r="3" opacity="0.7"></circle>
+            <circle class="flota" cx="164" cy="72" r="2.4" opacity="0.55" style="animation-delay:1.3s"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Tropical</span>
+        <span class="cla">"tropical"</span>
+        <div class="sw"><span style="background:#0f766e"></span><span style="background:#14b8a6"></span><span style="background:#fb7185"></span><span style="background:#a3e635"></span></div>
+      </div>
+    </div>
+
+    <!-- NEÓN -->
+    <div class="tema">
+      <div class="arte" style="background: #0d0b14">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="tC" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.85"></stop><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"></stop></radialGradient>
+            <radialGradient id="tM" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f0abfc" stop-opacity="0.8"></stop><stop offset="100%" stop-color="#f0abfc" stop-opacity="0"></stop></radialGradient>
+          </defs>
+          <g stroke="#2dd4bf" stroke-width="0.5" opacity="0.2"><path d="M0 40h268M0 80h268M60 0v118M130 0v118M200 0v118"></path></g>
+          <circle class="brilla" cx="66" cy="46" r="58" fill="url(#tC)"></circle>
+          <circle class="brilla" cx="206" cy="76" r="62" fill="url(#tM)" style="animation-delay:1.4s"></circle>
+          <path d="M24 86 C 68 34, 110 102, 152 50 C 188 12, 226 74, 252 40" fill="none" stroke="#22d3ee" stroke-width="2.6" stroke-linecap="round"></path>
+          <path d="M24 86 C 68 34, 110 102, 152 50 C 188 12, 226 74, 252 40" fill="none" stroke="#ffffff" stroke-width="0.9" stroke-linecap="round" opacity="0.8"></path>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Neón</span>
+        <span class="cla">"neon" · "neón"</span>
+        <div class="sw"><span style="background:#0d0b14"></span><span style="background:#22d3ee"></span><span style="background:#f0abfc"></span><span style="background:#2dd4bf"></span></div>
+      </div>
+    </div>
+
+    <!-- CORAZONES -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #9f1239 0%, #e11d48 48%, #fda4af 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#ffffff" opacity="0.3">
+            <path d="M40 30c0-7 10-10 14-3 4-7 14-4 14 3 0 9-14 17-14 17S40 39 40 30z"></path>
+            <path d="M188 76c0-6 8-8 11-2.4 3-5.6 11-3.6 11 2.4 0 7.2-11 13.6-11 13.6S188 83.2 188 76z"></path>
+          </g>
+          <g fill="#fff1f2" opacity="0.85">
+            <path class="flota" d="M120 40c0-9 13-13 18-4 5-9 18-5 18 4 0 11.6-18 22-18 22S120 51.6 120 40z"></path>
+          </g>
+          <g fill="#ffffff" opacity="0.55">
+            <path class="flota" d="M70 84c0-5 7-7 9.6-2 2.4-5 9.6-3 9.6 2 0 6.4-9.6 12-9.6 12S70 90.4 70 84z" style="animation-delay:1.6s"></path>
+            <path d="M230 26c0-4.4 6-6 8.4-1.6 2-4.4 8.4-2.8 8.4 1.6 0 5.6-8.4 10.4-8.4 10.4S230 31.6 230 26z"></path>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Corazones</span>
+        <span class="cla">"corazon"</span>
+        <div class="sw"><span style="background:#9f1239"></span><span style="background:#e11d48"></span><span style="background:#fda4af"></span><span style="background:#fff1f2"></span></div>
+      </div>
+    </div>
+
+    <!-- HUELLITAS -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #78350f 0%, #b45309 50%, #fcd34d 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#ffffff" opacity="0.55">
+            <g transform="translate(44 34) rotate(-14)">
+              <ellipse cx="0" cy="8" rx="9" ry="7.5"></ellipse>
+              <circle cx="-8" cy="-4" r="3.2"></circle><circle cx="-2.6" cy="-8" r="3.2"></circle><circle cx="3.4" cy="-8" r="3.2"></circle><circle cx="8.6" cy="-3.4" r="3.2"></circle>
+            </g>
+            <g transform="translate(150 74) rotate(12)">
+              <ellipse cx="0" cy="8" rx="10.5" ry="8.6"></ellipse>
+              <circle cx="-9" cy="-4.6" r="3.7"></circle><circle cx="-3" cy="-9.2" r="3.7"></circle><circle cx="4" cy="-9.2" r="3.7"></circle><circle cx="10" cy="-4" r="3.7"></circle>
+            </g>
+          </g>
+          <g fill="#fffbeb" opacity="0.85">
+            <g class="flota" transform="translate(214 32) rotate(-8)">
+              <ellipse cx="0" cy="9" rx="11.5" ry="9.4"></ellipse>
+              <circle cx="-10" cy="-5" r="4"></circle><circle cx="-3.4" cy="-10" r="4"></circle><circle cx="4.4" cy="-10" r="4"></circle><circle cx="11" cy="-4.4" r="4"></circle>
+            </g>
+          </g>
+          <g fill="#ffffff" opacity="0.32"><g transform="translate(90 98) rotate(20)"><ellipse cx="0" cy="6" rx="7" ry="5.8"></ellipse><circle cx="-6" cy="-3" r="2.5"></circle><circle cx="-2" cy="-6" r="2.5"></circle><circle cx="2.6" cy="-6" r="2.5"></circle><circle cx="6.6" cy="-2.6" r="2.5"></circle></g></g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Huellitas</span>
+        <span class="cla">"huellita"</span>
+        <div class="sw"><span style="background:#78350f"></span><span style="background:#b45309"></span><span style="background:#fcd34d"></span><span style="background:#fffbeb"></span></div>
+      </div>
+    </div>
+
+    <!-- DESTELLOS -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(155deg, #451a03 0%, #b45309 42%, #fbbf24 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#fffbeb">
+            <path class="brilla" d="M74 22 L79 39 L96 44 L79 49 L74 66 L69 49 L52 44 L69 39 Z"></path>
+            <path class="brilla" d="M188 56 L192 69 L205 73 L192 77 L188 90 L184 77 L171 73 L184 69 Z" style="animation-delay:1.1s"></path>
+            <path class="brilla" d="M136 18 L139 27 L148 30 L139 33 L136 42 L133 33 L124 30 L133 27 Z" style="animation-delay:2.1s" opacity="0.85"></path>
+          </g>
+          <g fill="#fde68a" opacity="0.7">
+            <circle class="flota" cx="34" cy="78" r="3"></circle>
+            <circle class="flota" cx="232" cy="26" r="2.4" style="animation-delay:1.5s"></circle>
+            <circle cx="110" cy="92" r="2"></circle><circle cx="246" cy="94" r="2.6"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Destellos</span>
+        <span class="cla">"destello"</span>
+        <div class="sw"><span style="background:#451a03"></span><span style="background:#b45309"></span><span style="background:#fbbf24"></span><span style="background:#fffbeb"></span></div>
+      </div>
+    </div>
+
+    <!-- PUNTOS -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #4c1d95 0%, #7c3aed 52%, #c084fc 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g>
+            <circle class="flota" cx="46" cy="32" r="11" fill="#fbbf24"></circle>
+            <circle class="flota" cx="106" cy="66" r="9" fill="#f472b6" style="animation-delay:.8s"></circle>
+            <circle class="flota" cx="168" cy="28" r="12" fill="#22d3ee" style="animation-delay:1.6s"></circle>
+            <circle class="flota" cx="222" cy="70" r="10" fill="#a3e635" style="animation-delay:2.3s"></circle>
+            <circle cx="76" cy="94" r="6" fill="#ffffff" opacity="0.75"></circle>
+            <circle cx="140" cy="98" r="5" fill="#fbbf24" opacity="0.7"></circle>
+            <circle cx="200" cy="102" r="6.5" fill="#f472b6" opacity="0.65"></circle>
+            <circle cx="252" cy="34" r="5" fill="#ffffff" opacity="0.6"></circle>
+            <circle cx="16" cy="76" r="6" fill="#22d3ee" opacity="0.6"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Puntos</span>
+        <span class="cla">"punto"</span>
+        <div class="sw"><span style="background:#7c3aed"></span><span style="background:#fbbf24"></span><span style="background:#f472b6"></span><span style="background:#22d3ee"></span></div>
+      </div>
+    </div>
+
+    <!-- VERDE FRONDOSO -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #14532d 0%, #16a34a 55%, #86efac 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#052e16" opacity="0.34">
+            <path d="M0 118 C 28 82, 24 50, 4 22 C 52 42, 62 90, 50 118 Z"></path>
+            <path d="M268 118 C 246 86, 256 52, 278 28 C 268 74, 280 94, 284 118 Z"></path>
+          </g>
+          <g fill="#bbf7d0" opacity="0.5">
+            <path d="M82 118 C 100 90, 96 62, 80 42 C 116 58, 122 94, 112 118 Z"></path>
+            <path class="flota" d="M180 118 C 164 92, 170 66, 188 48 C 184 86, 198 100, 202 118 Z"></path>
+          </g>
+          <g fill="#ffffff"><circle class="flota" cx="140" cy="34" r="3" opacity="0.6"></circle><circle cx="228" cy="58" r="2.2" opacity="0.5"></circle></g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Verde Frondoso</span>
+        <span class="cla">"verde" · "frondoso"</span>
+        <div class="sw"><span style="background:#14532d"></span><span style="background:#16a34a"></span><span style="background:#86efac"></span><span style="background:#bbf7d0"></span></div>
+      </div>
+    </div>
+
+    <!-- AZUL ENCANTADOR -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(155deg, #1e3a8a 0%, #3b82f6 50%, #bfdbfe 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#ffffff">
+            <path class="brilla" d="M62 26 L66 38 L78 42 L66 46 L62 58 L58 46 L46 42 L58 38 Z" opacity="0.9"></path>
+            <path class="brilla" d="M196 62 L199 71 L208 74 L199 77 L196 86 L193 77 L184 74 L193 71 Z" opacity="0.8" style="animation-delay:1.3s"></path>
+          </g>
+          <path d="M0 96 C 46 74, 82 108, 134 88 C 186 68, 224 100, 268 82" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.4"></path>
+          <path d="M0 108 C 52 90, 88 118, 140 100 C 192 82, 228 110, 268 96" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.28"></path>
+          <g fill="#dbeafe">
+            <circle class="flota" cx="120" cy="34" r="3.4" opacity="0.8"></circle>
+            <circle class="flota" cx="238" cy="30" r="2.6" opacity="0.7" style="animation-delay:1.8s"></circle>
+            <circle cx="30" cy="66" r="2.2" opacity="0.6"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Azul Encantador</span>
+        <span class="cla">"azul"</span>
+        <div class="sw"><span style="background:#1e3a8a"></span><span style="background:#3b82f6"></span><span style="background:#bfdbfe"></span><span style="background:#dbeafe"></span></div>
+      </div>
+    </div>
+
+    <!-- ROSA BRILLANTE -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #831843 0%, #ec4899 50%, #fbcfe8 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="#ffffff">
+            <path class="brilla" d="M78 24 L83 40 L99 45 L83 50 L78 66 L73 50 L57 45 L73 40 Z"></path>
+            <path class="brilla" d="M184 58 L188 70 L200 74 L188 78 L184 90 L180 78 L168 74 L180 70 Z" opacity="0.85" style="animation-delay:1.2s"></path>
+          </g>
+          <g fill="#fce7f3" opacity="0.75">
+            <circle class="flota" cx="138" cy="30" r="4"></circle>
+            <circle class="flota" cx="238" cy="40" r="3" style="animation-delay:1.7s"></circle>
+            <circle cx="36" cy="80" r="3.4"></circle><circle cx="118" cy="96" r="2.6"></circle><circle cx="216" cy="98" r="3"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Rosa Brillante</span>
+        <span class="cla">"rosa" · "pink"</span>
+        <div class="sw"><span style="background:#831843"></span><span style="background:#ec4899"></span><span style="background:#fbcfe8"></span><span style="background:#fce7f3"></span></div>
+      </div>
+    </div>
+
+    <!-- LUXURY -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #18181b 0%, #292524 58%, #57534e 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.85">
+            <path d="M134 14 A 46 46 0 0 1 134 106 A 46 46 0 0 1 134 14 Z"></path>
+            <path d="M134 26 A 34 34 0 0 1 134 94 A 34 34 0 0 1 134 26 Z" opacity="0.6"></path>
+          </g>
+          <g stroke="#d4af37" stroke-width="1.2" opacity="0.55">
+            <path d="M0 59h72M196 59h72"></path>
+            <path d="M42 40l14 19-14 19M226 40l-14 19 14 19" fill="none"></path>
+          </g>
+          <g fill="#d4af37">
+            <path class="brilla" d="M134 44 L137.5 55.5 L149 59 L137.5 62.5 L134 74 L130.5 62.5 L119 59 L130.5 55.5 Z"></path>
+          </g>
+          <g fill="#fde68a" opacity="0.5"><circle cx="76" cy="26" r="2"></circle><circle cx="196" cy="94" r="2"></circle></g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Luxury</span>
+        <span class="cla">"luxury" · "gala"</span>
+        <div class="sw"><span style="background:#18181b"></span><span style="background:#292524"></span><span style="background:#d4af37"></span><span style="background:#fde68a"></span></div>
+      </div>
+    </div>
+
+    <!-- FUTBOL -->
+    <div class="tema">
+      <div class="arte" style="background: linear-gradient(150deg, #14532d 0%, #15803d 52%, #4ade80 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g stroke="#ffffff" stroke-width="1.4" fill="none" opacity="0.32">
+            <path d="M0 59h268"></path>
+            <circle cx="134" cy="59" r="26"></circle>
+            <path d="M0 24h34v70H0M268 24h-34v70h34"></path>
+          </g>
+          <g class="flota">
+            <circle cx="134" cy="59" r="21" fill="#ffffff"></circle>
+            <g fill="#14532d">
+              <path d="M134 45 l8 5.6 -3 9.4 h-10 l-3 -9.4 Z"></path>
+              <path d="M134 38 l-9.4 4 1.4 5 8-5.6 8 5.6 1.4-5 Z" opacity="0.85"></path>
+              <path d="M117 65 l3.4 9.6 4.6-1.4 -2.4-8.6 Z" opacity="0.85"></path>
+              <path d="M151 65 l-3.4 9.6 -4.6-1.4 2.4-8.6 Z" opacity="0.85"></path>
+            </g>
+          </g>
+          <g fill="#ffffff" opacity="0.45"><circle cx="42" cy="30" r="2.6"></circle><circle cx="226" cy="88" r="2.6"></circle></g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Futbol</span>
+        <span class="cla">"futbol" · "fútbol"</span>
+        <div class="sw"><span style="background:#14532d"></span><span style="background:#15803d"></span><span style="background:#4ade80"></span><span style="background:#ffffff"></span></div>
+      </div>
+    </div>
+
+    <!-- MARCA (fallback) -->
+    <div class="tema" style="border-color: #6d3fe0">
+      <div class="arte" style="background: linear-gradient(150deg, #2e1065 0%, #6d3fe0 52%, #d6216f 100%)">
+        <svg viewBox="0 0 268 118" preserveAspectRatio="xMidYMid slice">
+          <g>
+            <ellipse class="flota" cx="74" cy="46" rx="17" ry="21" fill="#fde68a" opacity="0.9"></ellipse>
+            <path d="M74 67 l-3 11 h6 z" fill="#fde68a" opacity="0.75"></path>
+            <ellipse class="flota" cx="134" cy="34" rx="15" ry="19" fill="#ffffff" opacity="0.92" style="animation-delay:.9s"></ellipse>
+            <path d="M134 53 l-2.6 10 h5.2 z" fill="#ffffff" opacity="0.7"></path>
+            <ellipse class="flota" cx="192" cy="50" rx="16" ry="20" fill="#f9a8d4" opacity="0.9" style="animation-delay:1.8s"></ellipse>
+            <path d="M192 70 l-2.8 10 h5.6 z" fill="#f9a8d4" opacity="0.75"></path>
+          </g>
+          <g fill="#ffffff" opacity="0.6">
+            <rect x="34" y="86" width="5" height="5" rx="1" transform="rotate(28 36 88)"></rect>
+            <rect x="232" y="80" width="5" height="5" rx="1" transform="rotate(-20 234 82)"></rect>
+            <rect x="106" y="96" width="4" height="4" rx="1" transform="rotate(42 108 98)"></rect>
+          </g>
+        </svg>
+      </div>
+      <div class="pie">
+        <span class="nom">Marca <span style="color: #6d3fe0; font-weight: 500">· por defecto</span></span>
+        <span class="cla">sin coincidencia</span>
+        <div class="sw"><span style="background:#2e1065"></span><span style="background:#6d3fe0"></span><span style="background:#d6216f"></span><span style="background:#fde68a"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

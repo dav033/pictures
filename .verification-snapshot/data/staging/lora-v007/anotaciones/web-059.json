@@ -1,0 +1,127 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-059",
+  "image_sha256": "36f00f31f171ec59cf863d9b974340691466e6774aad815fd791a25b3a44d921",
+  "idempotency_key": "e66ba67a36902d309b9328f285993a9cac0e5f6691ddbb22ea0b736918028321",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-059.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Showroom_Fluorescente.png?v=1755640538",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-059",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and light floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.neon.green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense three-dimensional balloon wall with black, blue, green, and fuchsia round balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.clear.printed_birthday_lettering",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.solid.printed_birthday_lettering",
+          "balloon.star.foil.green.printed_decorative",
+          "balloon.star.foil.pink.printed_decorative"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Matching balloon bouquets flank the wall with printed round and foil balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dessert table",
+      "potted plants",
+      "a pink pedestal",
+      "black floor covering"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.clear.printed_birthday_lettering",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.neon.yellow",
+      "balloon.round.latex.solid.printed_birthday_lettering",
+      "balloon.star.foil.green.printed_decorative",
+      "balloon.star.foil.pink.printed_decorative"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-059",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion black round latex balloons and fluorescent Neon round latex balloons in blue, fuchsia and green, two matching balloon bouquets, one at each end of the balloon wall, built from matte Fashion black round latex balloons, fluorescent Neon round latex balloons in blue, fuchsia and green, matte Fashion clear round latex balloons with printed birthday lettering, round latex balloons with printed birthday lettering, Metallic green star-shaped foil balloons with printed decorative and Metallic pink star-shaped foil balloons with printed decorative, alongside a dessert table, potted plants, a pink pedestal and black floor covering, set against white wall and light floor.",
+    "palabras": 112,
+    "caracteres": 764,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.clear.printed_birthday_lettering",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.solid.printed_birthday_lettering",
+      "balloon.star.foil.green.printed_decorative",
+      "balloon.star.foil.pink.printed_decorative"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:26:32.959Z"
+  }
+}

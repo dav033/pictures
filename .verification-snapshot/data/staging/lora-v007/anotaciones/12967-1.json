@@ -1,0 +1,73 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12967-1",
+  "image_sha256": "44000b9df64918c21ce190b4dbccf3e3bc4195e70b7319f7d8e9615b9752f1c1",
+  "idempotency_key": "2650862edf99783e3dd24f05a8c54f566c303af2324f25697b204472be7172f9",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12967/foto-1.jpg",
+    "orden": "12967"
+  },
+  "anotacion": {
+    "image_id": "12967-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Table-top balloon arrangement combining curved blue and orange single-balloon lines, a round foil balloon, gold star foils, clustered red and blue round balloons, and an orange modeled figure, all standing on the party table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "a paper banner",
+      "drink bottles",
+      "a blue tablecloth"
+    ],
+    "uncertainties": [
+      "Uncertain whether the curved orange/blue balloon lines and the modeled orange figure should be split into separate structures rather than one combined centro_mesa.",
+      "No product list was provided for this image so no concept ids could be confirmed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "12967-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:06.196Z",
+    "recompilado_en": "2026-09-03T14:45:22.106Z"
+  }
+}

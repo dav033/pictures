@@ -1,0 +1,56 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { MotionConfig } from "motion/react";
+import type { ReactNode } from "react";
+import { SeleccionProvider } from "@/lib/estado/seleccion";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { SCRIPT_TEMA_ANTES_DE_PINTAR } from "@/lib/tema/tema";
+import { CapturaErroresCliente } from "@/components/registro/CapturaErroresCliente";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Asistente de decoración | Demo",
+  description:
+    "Chatbot que recomienda decoración de tu catálogo y genera una visualización del evento.",
+};
+
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <html
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // El script de tema fija data-theme antes de hidratar: manda el DOM.
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Aplica el tema claro/oscuro guardado antes del primer pintado (sin
+            parpadeo). Sin elección, globals.css sigue prefers-color-scheme. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_ANTES_DE_PINTAR }} />
+        {/* La app ya tiene tema claro y oscuro: extensiones como Dark Reader no deben repintarla (quitaban el morado
+            y los fondos de las tarjetas; 2026-10-06). */}
+        <meta name="darkreader-lock" />
+      </head>
+      <body className="flex min-h-dvh flex-col font-sans">
+        {/* Errores del navegador (window.onerror, promesas sin manejar) al registro del servidor. */}
+        <CapturaErroresCliente />
+        {/* "user": Motion respeta prefers-reduced-motion del sistema operativo,
+            igual que ya hace el CSS puro en globals.css. */}
+        <MotionConfig reducedMotion="user">
+          <TooltipProvider>
+            <SeleccionProvider>{children}</SeleccionProvider>
+          </TooltipProvider>
+        </MotionConfig>
+      </body>
+    </html>
+  );
+}

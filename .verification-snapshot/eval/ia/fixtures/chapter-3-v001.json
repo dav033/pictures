@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "ia-bench.v1",
+  "fixtureVersion": "chapter-3-fixture-v001",
+  "procedencia": {
+    "tipo": "fixture",
+    "llamadasProveedorReal": false,
+    "baseDatosRemota": false,
+    "nota": "Datos sintéticos calibrados contra medianas históricas del capítulo 3. No contienen respuestas, imágenes ni mediciones nuevas."
+  },
+  "escenarios": [
+    {
+      "id": "parser-default-historico",
+      "etiqueta": "Parser con razonamiento default — fixture histórico",
+      "configuracion": { "parserThinking": "default", "chatThinking": "low" },
+      "referenciaHistorica": {
+        "metrica": "parseo_p50_ms",
+        "valorMs": 4478,
+        "muestraReal": 12,
+        "nota": "Mediana real histórica documentada en capítulo 3; fixture actual no vuelve a llamar API."
+      },
+      "turnos": [
+        {
+          "id": "pd-01", "parseoMs": 4210, "retrievalMs": 540, "ttftMs": 1740, "totalMs": 10120,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 720, "tokensSalida": 45, "tokensPensamiento": 610, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 32, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6150, "tokensSalida": 340, "tokensPensamiento": 430, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "pd-02", "parseoMs": 4478, "retrievalMs": 610, "ttftMs": 1890, "totalMs": 10840,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 735, "tokensSalida": 48, "tokensPensamiento": 650, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 35, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6320, "tokensSalida": 390, "tokensPensamiento": 470, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "pd-03", "parseoMs": 4820, "retrievalMs": 680, "ttftMs": 2010, "totalMs": 11590,
+          "vueltas": 3, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 760, "tokensSalida": 51, "tokensPensamiento": 720, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 39, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 9680, "tokensSalida": 510, "tokensPensamiento": 610, "tokensCacheados": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parser-minimal-actual",
+      "etiqueta": "Parser MINIMAL — fixture calibrado",
+      "configuracion": { "parserThinking": "minimal", "chatThinking": "low" },
+      "referenciaHistorica": {
+        "metrica": "parseo_p50_ms",
+        "valorMs": 1263,
+        "muestraReal": 12,
+        "nota": "Mediana real histórica documentada en capítulo 3; fixture actual no vuelve a llamar API."
+      },
+      "turnos": [
+        {
+          "id": "pm-01", "parseoMs": 1180, "retrievalMs": 520, "ttftMs": 1310, "totalMs": 6840,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 720, "tokensSalida": 44, "tokensPensamiento": 55, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 32, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6150, "tokensSalida": 340, "tokensPensamiento": 430, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "pm-02", "parseoMs": 1263, "retrievalMs": 590, "ttftMs": 1390, "totalMs": 7166,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 735, "tokensSalida": 46, "tokensPensamiento": 62, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 35, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6320, "tokensSalida": 390, "tokensPensamiento": 470, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "pm-03", "parseoMs": 1390, "retrievalMs": 660, "ttftMs": 1510, "totalMs": 7630,
+          "vueltas": 3, "bytesImagenEntrada": 786432,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 760, "tokensSalida": 49, "tokensPensamiento": 70, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 39, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 9680, "tokensSalida": 510, "tokensPensamiento": 610, "tokensCacheados": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chat-medium-historico",
+      "etiqueta": "Chat medium — fixture histórico",
+      "configuracion": { "parserThinking": "minimal", "chatThinking": "medium" },
+      "referenciaHistorica": {
+        "metrica": "total_p50_ms",
+        "valorMs": 14047,
+        "muestraReal": 7,
+        "nota": "Mediana real histórica del benchmark ad-hoc; total del fixture representa latencia de llamada de chat para calibración."
+      },
+      "turnos": [
+        {
+          "id": "cm-01", "parseoMs": 1200, "retrievalMs": 550, "ttftMs": 3190, "totalMs": 13220,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 720, "tokensSalida": 44, "tokensPensamiento": 55, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 32, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6250, "tokensSalida": 370, "tokensPensamiento": 1680, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "cm-02", "parseoMs": 1263, "retrievalMs": 600, "ttftMs": 3420, "totalMs": 14047,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 735, "tokensSalida": 46, "tokensPensamiento": 62, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 35, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6480, "tokensSalida": 420, "tokensPensamiento": 1840, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "cm-03", "parseoMs": 1330, "retrievalMs": 680, "ttftMs": 3760, "totalMs": 15110,
+          "vueltas": 3, "bytesImagenEntrada": 1048576,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 760, "tokensSalida": 49, "tokensPensamiento": 70, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 39, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 9820, "tokensSalida": 560, "tokensPensamiento": 2210, "tokensCacheados": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chat-low-actual",
+      "etiqueta": "Chat low — fixture calibrado",
+      "configuracion": { "parserThinking": "minimal", "chatThinking": "low" },
+      "referenciaHistorica": {
+        "metrica": "total_p50_ms",
+        "valorMs": 7166,
+        "muestraReal": 7,
+        "nota": "Mediana real histórica documentada en capítulo 3; fixture actual no vuelve a llamar API."
+      },
+      "turnos": [
+        {
+          "id": "cl-01", "parseoMs": 1190, "retrievalMs": 530, "ttftMs": 1300, "totalMs": 6720,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 720, "tokensSalida": 44, "tokensPensamiento": 55, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 32, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6250, "tokensSalida": 370, "tokensPensamiento": 390, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "cl-02", "parseoMs": 1263, "retrievalMs": 600, "ttftMs": 1390, "totalMs": 7166,
+          "vueltas": 2, "bytesImagenEntrada": 0,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 735, "tokensSalida": 46, "tokensPensamiento": 62, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 35, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 6480, "tokensSalida": 420, "tokensPensamiento": 470, "tokensCacheados": 0 }
+          ]
+        },
+        {
+          "id": "cl-03", "parseoMs": 1360, "retrievalMs": 680, "ttftMs": 1510, "totalMs": 7840,
+          "vueltas": 3, "bytesImagenEntrada": 1048576,
+          "llamadas": [
+            { "capacidad": "parser_intencion", "modelo": "gemini-3.6-flash", "tokensEntrada": 760, "tokensSalida": 49, "tokensPensamiento": 70, "tokensCacheados": 0 },
+            { "capacidad": "embedding_consulta", "modelo": "gemini-embedding-2", "tokensEntrada": 39, "tokensSalida": 0, "tokensPensamiento": 0, "tokensCacheados": 0 },
+            { "capacidad": "chat_turno", "modelo": "gemini-3.6-flash", "tokensEntrada": 9820, "tokensSalida": 560, "tokensPensamiento": 610, "tokensCacheados": 0 }
+          ]
+        }
+      ]
+    }
+  ]
+}

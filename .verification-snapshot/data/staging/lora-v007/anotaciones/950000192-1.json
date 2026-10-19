@@ -1,0 +1,217 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000192-1",
+  "image_sha256": "b42670520a520c027e75d591a63a055fbbbed3bbdbe7c1297658d5378dc56fbe",
+  "idempotency_key": "5c2a766e234abc64f0be945ab52ecf0c6f1a503608a49e15f0313395b8dd7ca2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000192/foto-1.png",
+    "orden": "950000192"
+  },
+  "anotacion": {
+    "image_id": "950000192-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense white balloon wall with a central gold tree motif and silver balloon border."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical balloon-covered column with a rounded white balloon cluster at the left."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small group of metallic and white balloons beside the left side of the backdrop."
+      }
+    ],
+    "non_purchased_elements": [
+      "a snowman figure",
+      "white display plinths",
+      "dessert displays",
+      "printed pennant banners"
+    ],
+    "uncertainties": [
+      "The gold tree motif appears integrated into the balloon wall rather than being a separate structure."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000192-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion white round latex balloons and high-shine Reflex round latex balloons in gold and silver, all at a single 5-inch size, a balloon column, standing to one side, built from matte Fashion white round latex balloons and high-shine Reflex round latex balloons in gold and silver, all at a single 5-inch size, with a balloon bouquet, standing to one side, built from matte Fashion white round latex balloons and high-shine Reflex round latex balloons in gold and silver, all at a single 5-inch size, alongside a snowman figure, white display plinths, dessert displays and printed pennant banners, set against off-white walls and a light wood floor.",
+    "palabras": 118,
+    "caracteres": 736,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:31:54.481Z",
+    "recompilado_en": "2026-09-03T14:45:25.285Z"
+  }
+}

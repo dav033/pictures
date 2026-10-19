@@ -1,0 +1,105 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9157-1",
+  "image_sha256": "e24bdd9dcae25eec22b386d2152a966cc72b4ffbac7f08956fc7b4b395b0ae59",
+  "idempotency_key": "1fdf11d56c9c2d1521be81e9607549ef9c155160e79e01fe3ecb07072b155f24",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9157/foto-1.jpg",
+    "orden": "9157"
+  },
+  "anotacion": {
+    "image_id": "9157-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white fur-covered car hood outdoors with trees in the background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_birthday_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two balloons rise on sticks from the gift box: a blue balloon printed with 'Feliz Cumpleaños' lettering and a clear bubble balloon printed with a mustache pattern."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden gift crate",
+      "glass jars of food",
+      "a printed gift tag",
+      "a car hood"
+    ],
+    "uncertainties": [
+      "No se pudo confirmar el tamaño exacto del globo con texto de cumpleaños, ni si el globo burbuja con bigotes corresponde a algún producto de la lista de conceptos permitidos."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.round.latex.fashion.dusty_rose.printed_birthday_lettering",
+      "balloon.round.latex.solid.printed_birthday_lettering"
+    ],
+    "confirmed_size_codes": [
+      "C-12",
+      "R-12"
+    ],
+    "sin_resolver": [
+      "GLOBO LATEX REDONDO INFINITY BIGOTES Y CORBATINES FASHION TRANSPARENTE",
+      "GLOBO LATEX REDONDO 2 CARAS FELIZ CUMPLEAÑOS CORONAS REFLEX SURTIDO",
+      "GLOBO LATEX REDONDO 2 CARAS FELIZ CUMPLEAÑOS FIESTA DESTELLOS REFLEX SURTIDO",
+      "GLOBO LATEX REDONDO 2 CARAS FELIZ CUMPLEAÑOS FIESTA DESTELLOS FASHION SURTIDO"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "9157-1",
+    "caption": "eventdecor_style_v3, two matching balloon bouquets, placed on the main table, built from round latex balloons with printed birthday lettering, all 12-inch, alongside a wooden gift crate, glass jars of food, a printed gift tag and a car hood, set against a white fur-covered car hood outdoors with trees in the background.",
+    "palabras": 51,
+    "caracteres": 321,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.solid.printed_birthday_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:48:19.981Z",
+    "recompilado_en": "2026-09-03T14:45:23.186Z"
+  }
+}

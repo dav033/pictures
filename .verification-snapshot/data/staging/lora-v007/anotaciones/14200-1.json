@@ -1,0 +1,123 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14200-1",
+  "image_sha256": "b0c16a93151c2623c18f68808d03320cd0a578080ac6ef3c013bbff3b78ff1e3",
+  "idempotency_key": "73121e3766ac9d7a3c846b2ff31968872b740ea4b8cf17a575df374dacbe02c2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14200/foto-1.jpg",
+    "orden": "14200"
+  },
+  "anotacion": {
+    "image_id": "14200-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "exposed brick walls and a dark tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.pastel_blue",
+          "balloon.round.latex.silk.arctic_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.crystal.pastel_blue",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon cluster tops the doorway and cascades heavily down the left side of the frame, thinning on the right, mixing pale blue, white, and gold balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "exposed brick wall",
+      "wooden slatted ceiling",
+      "red checkered tablecloth",
+      "small flower centerpiece"
+    ],
+    "uncertainties": [
+      "White and gold balloons visible in the garland are not in the allowed concept list, so they are not annotated.",
+      "Could not confidently distinguish R-9 from R-12 on the arctic blue balloons."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.pastel_blue",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14200-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, framing the entrance, built from 5-inch translucent Crystal pastel blue round latex balloons, 12-inch and 9-inch satin Silk arctic blue round latex balloons, mixed organically rather than graded, alongside exposed brick wall, wooden slatted ceiling, red checkered tablecloth and small flower centerpiece, set against exposed brick walls and a dark tiled floor.",
+    "palabras": 57,
+    "caracteres": 416,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.pastel_blue",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.crystal.pastel_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:13.788Z",
+    "recompilado_en": "2026-09-03T14:45:22.347Z"
+  }
+}

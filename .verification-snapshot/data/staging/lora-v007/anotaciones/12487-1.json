@@ -1,0 +1,200 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12487-1",
+  "image_sha256": "33b63d4058f0a188974d496096c8af71fbb8004010d3a851ecfabe5f2e5c5495",
+  "idempotency_key": "1b17157710a686a47961c900554430f14c346e9b6248fee8e7885b544ab0650e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12487/foto-1.jpg",
+    "orden": "12487"
+  },
+  "anotacion": {
+    "image_id": "12487-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "light lavender walls and a beige tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat arch-shaped tan panel board standing behind the hoop wreath, plain and undecorated."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.reflex.gold",
+          "balloon.number.foil.matte_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.number.foil.matte_gold",
+            "size_code": "16 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Metal hoop wreath mounted on the backdrop, decorated with cream, dusty rose and chrome gold round balloons, white daisies and a gold foil '80' number balloon in the center."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.dusty_rose"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic cascading garland beside the backdrop, with cream balloons at top, chrome gold through the middle, and dusty rose clusters toward the bottom."
+      }
+    ],
+    "non_purchased_elements": [
+      "a two-tier cake",
+      "a gold-frame side table",
+      "white daisies",
+      "a printed warning sign"
+    ],
+    "uncertainties": [
+      "Precise size codes (R-5/R-9/R-12) within the dense hoop cluster are approximate.",
+      "Whether the color gradient in the side garland is a true size grade or only a color gradient was unclear, so it was annotated as mixed_organic rather than graded."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12487-1",
+    "caption": "eventdecor_style_v3, a decorative accessory, anchored to the decorated backdrop, built from 16-inch Metallic matte gold number foil balloons, 9-inch matte Fashion round latex balloons in dusty rose and sand and high-shine Reflex gold round latex balloons, mixed organically rather than graded, an organic balloon garland, standing to one side, built from matte Fashion round latex balloons in dusty rose and sand and high-shine Reflex gold round latex balloons, all 12-inch, a decorated backdrop, installed against the rear wall, alongside a two-tier cake, a gold-frame side table, white daisies and a printed warning sign, set against light lavender walls and a beige tiled floor.",
+    "palabras": 103,
+    "caracteres": 681,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.number.foil.matte_gold",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:49.418Z",
+    "recompilado_en": "2026-09-03T14:45:22.062Z"
+  }
+}

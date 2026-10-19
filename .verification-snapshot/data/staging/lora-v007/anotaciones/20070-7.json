@@ -1,0 +1,181 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "20070-7",
+  "image_sha256": "ac5421b73ed186fd8da44a7ebab5637eafa17a7d9136ab7d7e5411812dd7a407",
+  "idempotency_key": "eb2527fced2973601c061243c738a3e6cbb6d98217b1ea89eb99c1046d56bb3e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "20070/foto-7.jpg",
+    "orden": "20070"
+  },
+  "anotacion": {
+    "image_id": "20070-7",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls and a light tiled floor",
+      "symmetry": "unknown"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.clear"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.clear",
+            "size_code": "R-18"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Recorte cercano de la cascada de globos redondos en tonos crema, dorado y transparente, con esferas de tamaños visiblemente variados."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "La foto es un recorte parcial de la estructura, por lo que no se puede confirmar su forma o simetría completa."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "20070-7",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 18-inch matte Fashion clear round latex balloons, 18-inch, 12-inch, 9-inch and 5-inch matte Fashion round latex balloons in latte and sand, mixed organically rather than graded, set against white walls and a light tiled floor.",
+    "palabras": 46,
+    "caracteres": 308,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:16.539Z",
+    "recompilado_en": "2026-09-03T14:45:23.007Z"
+  }
+}

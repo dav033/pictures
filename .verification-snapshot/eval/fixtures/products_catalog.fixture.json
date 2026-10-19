@@ -1,0 +1,56 @@
+[
+  {
+    "id": "gid://shopify/Product/fixture-product-001",
+    "title": "FIXTURE GLOBO ROJO",
+    "handle": "fixture-globo-rojo",
+    "status": "ACTIVE",
+    "productType": "LÁTEX",
+    "vendor": "FIXTURE",
+    "tags": ["ROJO", "R-12"],
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-02T00:00:00Z",
+    "variants": [
+      {
+        "id": "gid://shopify/ProductVariant/fixture-variant-001",
+        "sku": "FIXTURE-SKU-001",
+        "price": "1234.00",
+        "compareAtPrice": "1500.00",
+        "title": "PAQUETE X 12",
+        "availableForSale": true,
+        "inventoryQuantity": 12,
+        "barcode": "FIXTURE-BARCODE-001"
+      }
+    ],
+    "images": [
+      {
+        "id": "gid://shopify/ProductImage/fixture-image-001",
+        "url": "https://example.invalid/fixture-product-001.jpg",
+        "altText": "fixture"
+      }
+    ]
+  },
+  {
+    "id": "gid://shopify/Product/fixture-product-002",
+    "title": "FIXTURE PRODUCTO DRAFT",
+    "handle": "fixture-producto-draft",
+    "status": "DRAFT",
+    "productType": "DECORACION",
+    "vendor": "FIXTURE",
+    "tags": [],
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-02T00:00:00Z",
+    "variants": [
+      {
+        "id": "gid://shopify/ProductVariant/fixture-variant-002",
+        "sku": "FIXTURE-SKU-002",
+        "price": "0.00",
+        "compareAtPrice": null,
+        "title": "PAQUETE X 1",
+        "availableForSale": false,
+        "inventoryQuantity": 0,
+        "barcode": null
+      }
+    ],
+    "images": []
+  }
+]

@@ -1,0 +1,196 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000024-1",
+  "image_sha256": "2337c09d4cda409e92522ec580ae940eb91217e696904e590209383d607e2713",
+  "idempotency_key": "40aaa3c62a1e207e9f1cd845d5c150fde08c15d32cf7174b1cbe126ef00111c6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000024/foto-1.png",
+    "orden": "950000024"
+  },
+  "anotacion": {
+    "image_id": "950000024-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a dark teal floor, no separate wall visible behind the backdrop",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.silk.arctic_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.aurora_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A large rounded balloon panel centered behind the tables, with a chrome teal diamond pattern at the center, silvery blue above, and dark navy round balloons below, mixing sizes."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Matching tied balloon bouquets flank the central wall on each side, both mixing navy, light blue and printed lettering balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "white pedestal tables",
+      "a birthday cake",
+      "printed gift bags",
+      "bunting flags on the floor"
+    ],
+    "uncertainties": [
+      "Central panel classified as pared rather than arco since its dense volumetric coverage does not read as a walkthrough arch.",
+      "Some smaller balloons in the bouquets could not be confidently matched to a specific listed color and were omitted."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.navy_blue",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.silk.mint_green",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_terrazzo",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Reflex Feliz Dia Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000024-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch matte Fashion navy blue round latex balloons, 5-inch high-shine Reflex aurora green round latex balloons and satin Silk arctic blue round latex balloons, mixed organically rather than graded, two matching balloon bouquets, one at each end of the balloon wall, built from 12-inch round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering and round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, 9-inch matte Fashion navy blue round latex balloons, 5-inch satin Silk arctic blue round latex balloons, mixed organically rather than graded, alongside white pedestal tables, a birthday cake, printed gift bags and bunting flags on the floor, set against a dark teal floor, no separate wall visible behind the backdrop.",
+    "palabras": 136,
+    "caracteres": 889,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:54:10.916Z",
+    "recompilado_en": "2026-09-03T14:45:23.437Z"
+  }
+}

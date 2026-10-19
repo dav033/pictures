@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-008",
+  "image_sha256": "09d1b5ef440febe05a2ec9d5b01ad78338887ea40e2ce53714d7b5fe84b793e3",
+  "idempotency_key": "f8e8a356cde3c5636d9ce757e1bc6ecf75cceccea5ed81f4b5c2192f7aaf2682",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-008.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Base_Te_amo_d77f7ead-2c78-49f3-985f-23e6022de1cb.jpg?v=1755272687",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-008",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical freestanding balloon column with a red printed heart topper, twisted pink and red modeling balloons, and clustered round balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "printed red balloons"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-008",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion modeling latex balloons in pink and red, matte Fashion round latex balloons in pink and white and matte Fashion red heart-shaped latex balloons with printed greeting lettering, alongside printed red balloons, set against white wall and white floor.",
+    "palabras": 50,
+    "caracteres": 339,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:13:29.188Z"
+  }
+}

@@ -1,0 +1,162 @@
+import { fijoEnFormato, type ColorOrganico } from "./organico";
+import type { Pieza } from "./piezas";
+import { FLORES_ARTIFICIALES, colorDeFollaje, separarFollaje, type ColorFlor, type FlorArtificial, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
+import { fallar } from "./herramientas-escena-colores";
+import { escalarGenerador, piezaDeGenerador, type GeneradorOrganico } from "./generadores-organicos";
+import { comprobarCambioDeCuerpo, comprobarCuerpo, comprobarLargo, cuerpoDeOrganico, largoDeRecorrido, type MedidaPorGrosor } from "./presupuesto-cuerpo";
+import { GROSOR_CUERPO_CM, INFLADOS_TRAZO, MEZCLA_TRAZO, SILUETAS_TRAZO, cajaTrazo, esColumnaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico, type PuntoTrazo, type SiluetaTrazo } from "./trazo-organico";
+
+/**
+ * La IA de escena con el **trazo orgánico** (`trazo-organico.ts`): crearlo por silueta con nombre o por puntos (de una
+ * foto: x a la derecha y y hacia arriba desde el piso, con el grosor en cada punto) y cambiarlo por sus parámetros
+ * (medidas, grosor, colores, tamaños). Los colores ya llegan resueltos a la paleta orgánica.
+ */
+
+export const IDS_SILUETA = SILUETAS_TRAZO.map((s) => s.id) as [SiluetaTrazo, ...SiluetaTrazo[]];
+export const RANGOS_TRAZO = { ancho_cm: [80, 900], alto_cm: [40, 400], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max] } as const;
+
+export type PuntoPedido = { x_cm: number; y_cm: number; grosor_cm: number };
+export type PedidoTrazo = { silueta?: string; puntos?: readonly PuntoPedido[]; ancho_cm?: number; alto_cm?: number; grosor_cm?: number; tamanos?: readonly string[]; racimos?: number; flores?: boolean; follaje?: readonly string[] };
+
+const r0 = (n: number) => Math.round(n);
+const semillaDe = (...n: number[]) => (n.reduce((s, x) => (s * 31 + r0(x)) % 9973, 7) || 7);
+
+function enRango(valor: number, [min, max]: readonly [number, number], que: string): number {
+  if (!Number.isFinite(valor) || valor < min || valor > max) fallar(`${que} = ${valor} cm está fuera de rango: va de ${min} a ${max} cm.`);
+  return r0(valor);
+}
+
+/** La mezcla de tamaños: la de las fotos, o solo los tamaños pedidos (con sus pesos de esa mezcla). */
+function mezclaDe(tamanos: readonly string[] | undefined): Record<string, number> {
+  if (!tamanos?.length) return { ...MEZCLA_TRAZO };
+  const pedidos = tamanos.map((t) => t.trim().toUpperCase());
+  for (const t of pedidos) if (INFLADOS_TRAZO[t] === undefined) fallar(`El tamaño «${t}» no va en una guirnalda orgánica: usa ${Object.keys(INFLADOS_TRAZO).join(", ")}.`);
+  return Object.fromEntries(pedidos.map((t) => [t, MEZCLA_TRAZO[t] ?? 0.1]));
+}
+
+export function crearTrazo(p: PedidoTrazo, colores: ColorOrganico[]): { pieza: Pieza; nombre: string } {
+  /** Los puntos con un grosor (el de lo más grueso): el pedido, y otros para buscar el que cabe en el presupuesto de armado. */
+  let puntosCon: (grosorCm: number) => PuntoTrazo[];
+  let grosorPedido: number;
+  let silueta: SiluetaTrazo | undefined;
+  let nombre = "Guirnalda orgánica libre";
+  if (p.puntos?.length) {
+    if (p.silueta) fallar("Pasa «silueta» o «puntos», no los dos.");
+    const pedidos = p.puntos.map((q) => ({ x: q.x_cm, y: q.y_cm, grosor: q.grosor_cm }));
+    const mayor = Math.max(...pedidos.map((q) => q.grosor));
+    grosorPedido = mayor;
+    puntosCon = (g) => (g === mayor ? pedidos : pedidos.map((q) => ({ ...q, grosor: (q.grosor * g) / mayor })));
+  } else {
+    const elegida = SILUETAS_TRAZO.find((s) => s.id === (p.silueta ?? "feston")) ?? fallar(`Silueta «${p.silueta}» desconocida: ${IDS_SILUETA.join(", ")}.`);
+    silueta = elegida.id;
+    const columna = esColumnaTrazo(elegida.id);
+    const grosor = enRango(p.grosor_cm ?? (columna ? 65 : 60), RANGOS_TRAZO.grosor_cm, "grosor_cm");
+    // La columna recta mide de ancho su grosor; las de forma libre, lo que se corren de lado.
+    const ancho = elegida.id === "columna_recta" ? grosor : enRango(p.ancho_cm ?? (columna ? Math.round(grosor * 2.6) : 260), [columna ? grosor : RANGOS_TRAZO.ancho_cm[0], RANGOS_TRAZO.ancho_cm[1]], "ancho_cm");
+    const alto = enRango(p.alto_cm ?? (elegida.id === "feston" ? 90 : columna ? 200 : 190), RANGOS_TRAZO.alto_cm, "alto_cm");
+    grosorPedido = grosor;
+    puntosCon = (g) => puntosDeSilueta(elegida.id, { anchoCm: elegida.id === "columna_recta" ? g : ancho, altoCm: Math.max(alto, g + 10), grosorCm: g });
+    nombre = columna ? (elegida.id === "columna_recta" ? "Columna orgánica irregular" : `Columna orgánica · ${elegida.nombre.toLowerCase()}`) : `Guirnalda orgánica · ${elegida.nombre.toLowerCase()}`;
+  }
+  const racimos = p.racimos === undefined ? undefined : Math.min(1, Math.max(0, p.racimos));
+  const mezcla = mezclaDe(p.tamanos);
+  /** El trazo con ese grosor, tal como se arma (su semilla sale de sus puntos). */
+  const trazoCon = (g: number): ParametrosTrazoOrganico => {
+    const puntos = puntosCon(g);
+    return { ...(silueta ? { silueta } : {}), puntos, mezcla, colores, ...(racimos !== undefined ? { racimos } : {}), semilla: semillaDe(...puntos.flatMap((q) => [q.x, q.y])) };
+  };
+  const trazo = trazoCon(grosorPedido);
+  const error = validarTrazo(trazo);
+  if (error) fallar(error);
+  comprobarLargo(largoDeRecorrido(trazo.puntos));
+  const flores = p.follaje?.length ? floresPedidas(p.follaje) : p.flores ? structuredClone(FLORES_TRAZO) : null;
+  comprobarCuerpo((g) => cuerpoDeOrganico(piezaDeGenerador({ tipo: "trazo", trazo: trazoCon(g) }).opciones), grosorPedido);
+  return { pieza: piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecosPara(trazo, flores)), nombre };
+}
+
+const grosorMayorDe = (t: ParametrosTrazoOrganico) => Math.max(...t.puntos.map((q) => q.grosor));
+
+/** Para sugerir el grosor que cabe: el cuerpo de un trazo que ya existe con otro grosor (el de su punto más grueso), como lo cambia `escalarGenerador`. */
+const medirTrazo = (g: Extract<GeneradorOrganico, { tipo: "trazo" }>): MedidaPorGrosor => (grosorCm) =>
+  cuerpoDeOrganico(piezaDeGenerador(escalarGenerador(g, { grosor: grosorCm / grosorMayorDe(g.trazo) })).opciones);
+
+/** Flores de tela por defecto en los huecos (rosas blancas y gypsophila, como en las fotos de boda). */
+const FLORES_TRAZO: OpcionesFlores = { semilla: 5, proporcion: [{ tipo: "rosa", colorId: "blanca", peso: 3 }, { tipo: "gypsophila", colorId: "blanca", peso: 1 }], tallosPorRacimo: 3 };
+
+/** Cambia un trazo que ya existe por sus parámetros: medidas por fuera, grosor, colores, tamaños, racimos. */
+export function ajustarTrazo(pieza: Extract<Pieza, { tipo: "organico" }>, g: Extract<GeneradorOrganico, { tipo: "trazo" }>, p: PedidoTrazo & { colores?: ColorOrganico[] }): Extract<Pieza, { tipo: "organico" }> {
+  let gen: GeneradorOrganico = g;
+  const caja = cajaTrazo(g.trazo);
+  const ancho = p.ancho_cm === undefined ? undefined : enRango(p.ancho_cm, RANGOS_TRAZO.ancho_cm, "ancho_cm");
+  const alto = p.alto_cm === undefined ? undefined : enRango(p.alto_cm, RANGOS_TRAZO.alto_cm, "alto_cm");
+  const grosorMayor = Math.max(...g.trazo.puntos.map((q) => q.grosor));
+  const factor = p.grosor_cm === undefined ? undefined : enRango(p.grosor_cm, RANGOS_TRAZO.grosor_cm, "grosor_cm") / grosorMayor;
+  if (ancho !== undefined || alto !== undefined || factor !== undefined) gen = escalarGenerador(gen, { ...(ancho !== undefined && ancho !== caja.anchoCm ? { anchoCm: ancho } : {}), ...(alto !== undefined ? { altoCm: alto } : {}), ...(factor !== undefined ? { grosor: factor } : {}) });
+  // «Solo estos tamaños» reemplaza toda la mezcla: también los cambios por zona y el relleno a medida de ajustar_tamanos.
+  const t: ParametrosTrazoOrganico = { ...gen.trazo };
+  if (p.tamanos?.length) {
+    const mezcla = mezclaDe(p.tamanos);
+    delete t.zonas;
+    delete t.relleno;
+    // La mezcla propia de cada tramo y los globos fijos son de la mezcla de antes: con «solo estos tamaños» mandan los pedidos.
+    t.puntos = t.puntos.map((q) => { const sin = { ...q }; delete sin.pesos; return sin; });
+    if (t.fijos) {
+      const quedan = t.fijos.filter((f) => Object.keys(mezcla).some((formato) => (mezcla[formato] ?? 0) > 0 && fijoEnFormato(f, formato)));
+      if (quedan.length) t.fijos = quedan; else delete t.fijos;
+    }
+  }
+  gen = { tipo: "trazo", trazo: { ...t, ...(p.colores ? { colores: p.colores } : {}), ...(p.tamanos?.length ? { mezcla: mezclaDe(p.tamanos) } : {}), ...(p.racimos !== undefined ? { racimos: Math.min(1, Math.max(0, p.racimos)) } : {}) } };
+  const error = validarTrazo(gen.trazo);
+  if (error) fallar(error);
+  const flores = p.follaje?.length ? floresPedidas(p.follaje) : p.flores === undefined ? pieza.flores : p.flores ? (pieza.flores ?? structuredClone(FLORES_TRAZO)) : null;
+  const nueva = piezaDeGenerador(gen, flores, huecosPara(gen.trazo, flores));
+  comprobarCambioDeCuerpo(cuerpoDeOrganico(pieza.opciones), cuerpoDeOrganico(nueva.opciones), medirTrazo(gen), grosorMayorDe(gen.trazo));
+  return nueva;
+}
+
+export const TIPOS_FOLLAJE = Object.keys(FLORES_ARTIFICIALES) as [TipoFlorArtificial, ...TipoFlorArtificial[]];
+
+/**
+ * «monstera», «palma dorada», «rosa marfil», «hoja_seca beige», «pampa crema»… → las flores y hojas de los huecos, en partes iguales
+ * (el primero pesa el doble: es el que más se ve). El color es uno de los de esa flor; si falta, el primero.
+ */
+export function floresPedidas(lista: readonly string[]): OpcionesFlores {
+  const elegidos = lista.map((pedido) => {
+    const { tipo, resto: nombre } = separarFollaje(pedido);
+    const flor = FLORES_ARTIFICIALES[tipo as TipoFlorArtificial] ?? fallar(`Follaje «${pedido}» desconocido: ${TIPOS_FOLLAJE.join(", ")} (con color opcional: «palma dorada»; la pampa también como «pampas» o «pasto de la pampa»).`);
+    const color = nombre ? colorDeFollaje(flor, nombre) ?? fallar(`«${flor.nombre}» viene en ${flor.colores.map((c) => c.nombre).join(", ")}.`) : flor.colores[0]!;
+    return { flor, color };
+  });
+  return opcionesDeFollaje(elegidos);
+}
+
+/** Las opciones de flores a partir de flor y color ya resueltos: sin pasar por texto, para que el id del color no se pierda en el camino. */
+function opcionesDeFollaje(elegidos: readonly { flor: FlorArtificial; color: ColorFlor }[]): OpcionesFlores {
+  const proporcion = elegidos.map(({ flor, color }, i) => ({ tipo: flor.tipo, colorId: color.id, peso: i === 0 ? 2 : 1 }));
+  return { semilla: 9, proporcion, tallosPorRacimo: proporcion.length > 1 ? 2 : 1 };
+}
+
+/**
+ * `floresPedidas` para lo que lee una foto: nunca falla. Un color que esa flor no trae se cambia por el primero (con su nota) y un
+ * follaje que no existe se salta (con su nota): la guirnalda que lo lleva no se pierde por un adorno mal nombrado.
+ */
+export function floresLeidas(lista: readonly string[]): { flores: OpcionesFlores | null; notas: string[] } {
+  const notas: string[] = [], elegidos: { flor: FlorArtificial; color: ColorFlor }[] = [];
+  for (const pedido of lista) {
+    const { tipo, resto } = separarFollaje(pedido);
+    const flor = FLORES_ARTIFICIALES[tipo as TipoFlorArtificial];
+    if (!flor) { notas.push(`Follaje «${pedido}» desconocido: se omite (hay ${TIPOS_FOLLAJE.join(", ")}).`); continue; }
+    const color = resto ? colorDeFollaje(flor, resto) : undefined;
+    if (resto && !color) notas.push(`«${pedido}»: ${flor.nombre} no viene en «${resto}» (viene en ${flor.colores.map((c) => c.nombre).join(", ")}): se usa ${flor.colores[0]!.nombre}.`);
+    elegidos.push({ flor, color: color ?? flor.colores[0]! });
+  }
+  return { flores: elegidos.length ? opcionesDeFollaje(elegidos) : null, notas };
+}
+
+/** Huecos para el follaje: uno cada ~45 cm de trazo (las hojas se ven sueltas, no en montón). */
+function huecosPara(t: ParametrosTrazoOrganico, flores: OpcionesFlores | null): number {
+  if (!flores) return 0;
+  let largo = 0;
+  for (let i = 1; i < t.puntos.length; i++) largo += Math.hypot(t.puntos[i]!.x - t.puntos[i - 1]!.x, t.puntos[i]!.y - t.puntos[i - 1]!.y);
+  return Math.max(4, Math.min(30, Math.round(largo / 45)));
+}

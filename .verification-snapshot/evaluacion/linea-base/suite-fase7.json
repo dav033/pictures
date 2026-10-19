@@ -1,0 +1,14 @@
+{
+ "items": [
+  {
+   "caso_n": 9,
+   "image_sha256": "24edf8988319c6215c02c9817eebced0e3242e75b59b8771b5801e9c173d00e5",
+   "ruta_privada": "../validacion-fase7/entradas/case-003-ref.png"
+  },
+  {
+   "caso_n": 10,
+   "image_sha256": "b45153ef5f30327e7c160f14525a6b8f594ea7d92139f3f9647136fdc36d2e48",
+   "ruta_privada": "../validacion-fase7/entradas/case-005-ref.png"
+  }
+ ]
+}

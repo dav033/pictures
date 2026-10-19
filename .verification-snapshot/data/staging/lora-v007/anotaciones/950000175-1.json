@@ -1,0 +1,105 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000175-1",
+  "image_sha256": "f60b4802a95fa2ab65c47864c2b4e401db165afc057b3394600a8e8b3a6fc126",
+  "idempotency_key": "18fd6ce6fd2c111aa51c1b4d2a5a95787c87e0e25fd1e004bbd30d99f05d30cf",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000175/foto-1.jpg",
+    "orden": "950000175"
+  },
+  "anotacion": {
+    "image_id": "950000175-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red",
+            "size_code": "C-6"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A vertical balloon column with a red heart topper and red round balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "patterned balloons"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.red"
+    ],
+    "confirmed_size_codes": [
+      "C-6",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000175-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 6-inch matte Fashion red heart-shaped latex balloons, 5-inch matte Fashion red round latex balloons, mixed organically rather than graded, alongside patterned balloons, set against a white wall and white floor.",
+    "palabras": 40,
+    "caracteres": 287,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.red"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:22:53.700Z",
+    "recompilado_en": "2026-09-03T14:45:25.089Z"
+  }
+}

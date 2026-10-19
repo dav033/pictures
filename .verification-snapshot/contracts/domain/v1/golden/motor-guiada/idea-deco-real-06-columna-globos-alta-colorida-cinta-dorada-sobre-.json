@@ -1,0 +1,100 @@
+{
+ "caso": "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "c9e781da886e8e311774da8793fc13244845caa3e81888af2e0b3058d94a7694",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "015",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "020",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "030",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "038",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "041",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "061",
+     "cantidad": 8
+    }
+   ],
+   "unidades": 44,
+   "caja": [
+    -61,
+    0,
+    -183,
+    -15,
+    228,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "015",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "020",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "030",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "038",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "041",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "061",
+    "cantidad": 8
+   }
+  ],
+  "unidades": 44
+ },
+ "caja": [
+  -61,
+  0,
+  -183,
+  -15,
+  228,
+  -137
+ ],
+ "referenciaPython": {
+  "globos": 44
+ }
+}

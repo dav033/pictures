@@ -1,0 +1,154 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000048-1",
+  "image_sha256": "061be1bae3b02295ec73210fe03032c172d466035a67472d1a41be9e2a11d840",
+  "idempotency_key": "0fbea44c38cecd2c809cb9ab2af46fb52b7d32d6870d32b26ed92bab89258da0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000048/foto-1.jpg",
+    "orden": "950000048"
+  },
+  "anotacion": {
+    "image_id": "950000048-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.pearl_white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense mound of magenta/fuchsia round balloons with small scattered clusters of pearl white balloons throughout."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A pink heart-shaped foil balloon printed 'Dia de la Madre' rising on a pearl and lilac balloon stem above the mound."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A large sculpted balloon flower with silver-lilac petals positioned to the upper left of the mound."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The heart-shaped 'Dia de la Madre' foil balloon has no matching concept in this order's allowed list, so it was left without visible_concept_ids.",
+      "The color of the fuchsia mass is fairly uniform, so spring_pink R-9 balloons could not be confidently distinguished from fuchsia R-5 and were omitted.",
+      "The sculpted flower petals may not be simple round balloons, so the amethyst match is uncertain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000048-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from matte Fashion fuchsia round latex balloons and satin Silk pearl white round latex balloons, all 5-inch, a balloon bouquet, anchored to the balloon bouquet, built from satin Silk amethyst round latex balloons, all at a single 9-inch size, with a decorative accessory, anchored to the balloon bouquet, set against plain white studio backdrop, no floor visible.",
+    "palabras": 67,
+    "caracteres": 435,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:03:37.806Z",
+    "recompilado_en": "2026-09-03T14:45:23.699Z"
+  }
+}

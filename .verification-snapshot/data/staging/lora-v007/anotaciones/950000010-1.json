@@ -1,0 +1,190 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000010-1",
+  "image_sha256": "bf13eee196e65a5c45f2c15691b1b3708be8e0794f7cbd857f6460d0f72b954d",
+  "idempotency_key": "9b670cd6d3ce916150a1f64fbd218c3832e9ca745d24b4271ac9f51093d2a4d0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000010/foto-1.png",
+    "orden": "950000010"
+  },
+  "anotacion": {
+    "image_id": "950000010-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "red fabric floor covering, dark backdrop wall",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "black arched panel printed with a chandelier and a sunglasses-wearing bust, topped with teal tinsel fringe"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.neon.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "organic neon garland of black, blue, fuchsia and yellow balloons with gold leaf accents draping down the left side"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "vertical twisted pink balloon column on the right side"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "pink flower-shaped balloon cluster with green leaf accents at top right, near the backdrop"
+      }
+    ],
+    "non_purchased_elements": [
+      "a teal tinsel fringe topper",
+      "a pink pedestal stand with cups and a sign",
+      "a statue bust graphic panel",
+      "gold leaf garland accents"
+    ],
+    "uncertainties": [
+      "the pink column and flower cluster colors don't clearly match any allowed concept (no plain pink/pearl balloon listed)",
+      "the lime green round balloons in the left garland don't match an allowed concept (only modeling green T260 is listed, not a round balloon)",
+      "image is a tight vertical crop, so full scene context and floor extent are limited"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.neon.blue",
+      "balloon.modeling.latex.neon.fuchsia",
+      "balloon.modeling.latex.neon.green",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000010-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion black round latex balloons and fluorescent Neon round latex balloons in blue, fuchsia and yellow, all 5-inch, a balloon column, standing to one side, with a balloon bouquet, anchored to the decorated backdrop, alongside a teal tinsel fringe topper, a pink pedestal stand with cups and a sign, a statue bust graphic panel and gold leaf garland accents, set against red fabric floor covering, dark backdrop wall.",
+    "palabras": 89,
+    "caracteres": 575,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:33.461Z",
+    "recompilado_en": "2026-09-03T14:45:23.291Z"
+  }
+}

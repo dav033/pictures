@@ -1,0 +1,158 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000086-1",
+  "image_sha256": "056d80738d48ed89d30c6ac005046dd224b2c6cc1e6628524a9faf146e50fcc0",
+  "idempotency_key": "6a32b8a653b38ec0f485d053241e3e352478257bb8b5335cb95eccca1c6f0e79",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000086/foto-1.jpg",
+    "orden": "950000086"
+  },
+  "anotacion": {
+    "image_id": "950000086-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "wood-paneled wall and a tan floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "square three-dimensional balloon frame built from large orange balloons linked with small yellow accent balloons at each seam"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.laurel_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "dense sage-green balloon wall filling the interior of the frame behind the dessert table and spiderweb decor"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "cluster of printed Halloween balloons (ghost print, pumpkin face print, silver chrome, black) tied together at upper left, none matching the allowed plain-color list"
+      }
+    ],
+    "non_purchased_elements": [
+      "balloon pumpkin sculptures",
+      "printed Halloween balloons",
+      "spiderweb decoration",
+      "party tableware"
+    ],
+    "uncertainties": [
+      "the large orange balloons may be plain orange rather than copper orange",
+      "the exact match of the green wall to the laurel green dusk finish is uncertain",
+      "the printed bouquet balloons are not in the allowed product list so no concept ids were assigned"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000086-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 9-inch matte Fashion copper orange round latex balloons, 5-inch matte Fashion yellow round latex balloons, mixed organically rather than graded, a balloon wall, behind the organic balloon arch, built from muted Pastel Dusk laurel green round latex balloons, all at a single 9-inch size, with a balloon bouquet, standing to one side, alongside balloon pumpkin sculptures, printed Halloween balloons, spiderweb decoration and party tableware, set against wood-paneled wall and a tan floor.",
+    "palabras": 85,
+    "caracteres": 578,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:23.718Z",
+    "recompilado_en": "2026-09-03T14:45:24.141Z"
+  }
+}

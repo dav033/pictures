@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-019",
+  "image_sha256": "c1e814f96f7b7a87df5163b82f87727aa6189f61abf151789ed6e507365d0e1c",
+  "idempotency_key": "ea7333280aec235e4160c0431bb31844bbf82d155424c932c172d19c7644f01f",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-019.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Figura_Amor_y_amistad.jpg?v=1755272098",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-019",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red",
+          "balloon.modeling.latex.metallic.gold",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.raspberry"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Horizontal organic balloon garland with clustered pink, fuchsia, and raspberry round balloons, metallic gold modeling balloons, and red heart balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.modeling.latex.metallic.gold",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-019",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from matte Fashion red heart-shaped latex balloons, Metallic gold modeling latex balloons and matte Fashion round latex balloons in fuchsia, pink and raspberry, set against white wall and white floor.",
+    "palabras": 41,
+    "caracteres": 288,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.modeling.latex.metallic.gold",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:26:32.587Z"
+  }
+}

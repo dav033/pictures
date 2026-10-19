@@ -1,0 +1,74 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10926-1",
+  "image_sha256": "6f153a8c7af24e32311889d9d5065f569dfdd4d5c23bfbaa1d3479ead6eb398b",
+  "idempotency_key": "844c2bf222886ceaba7792ec7428b009d6bd5b4918ea6752b090cd68ec41c004",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10926/foto-1.jpg",
+    "orden": "10926"
+  },
+  "anotacion": {
+    "image_id": "10926-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a textured white ceiling corner and a tiled floor",
+      "symmetry": "unknown"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A tight cluster of pastel round balloons in lilac, blue, pink, mint green and yellow, in clearly varied diameters, bunched together in a corner"
+      }
+    ],
+    "non_purchased_elements": [
+      "a rainbow fringe curtain",
+      "a tiled floor corner"
+    ],
+    "uncertainties": [
+      "Tight crop obscures the overall structure shape and its full placement context"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "KIT DIY GUIRNALDA SWEET PASTEL"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "10926-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:43.698Z",
+    "recompilado_en": "2026-09-03T14:45:21.886Z"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": "1.0.3",
+  "huella": "b11ca9365097149c5cf5462c6a43a904a4575d7291177adec06b4ebeeb9d40c9",
+  "historial": [
+    {
+      "version": "1.0.0",
+      "nota": "REQ-013 fase 1: vista sobre la biblioteca de fábrica, formatos, colores, utilería de la tienda, biblioteca guiada y módulos."
+    },
+    {
+      "version": "1.0.1",
+      "nota": "Las 26 ideas del carrusel de la vista guiada que el motor 3D arma, como escenas del Taller 3D (asistente:<idea>, «Añadir → Ideas → Ideas del asistente»), D-038/D-039."
+    },
+    {
+      "version": "1.0.2",
+      "nota": "Ideas del asistente: su descripción ya no promete el precio de la tarjeta (con el corte del 3D encendido la tarjeta cotiza el plan de Python), D-038."
+    },
+    {
+      "version": "1.0.3",
+      "nota": "Se sincroniza la huella del catálogo Sempertex al validar el gate final de T14."
+    }
+  ]
+}

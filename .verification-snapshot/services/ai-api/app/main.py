@@ -1,0 +1,2163 @@
+"""Authenticated, provider-free FastAPI boundary for the local AI API."""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import hmac
+import importlib
+import inspect
+import json
+import logging
+import os
+import re
+import threading
+import time
+import uuid
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from types import ModuleType
+from typing import (
+    AsyncGenerator,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Literal,
+    Protocol,
+    TypeVar,
+    cast,
+)
+from uuid import UUID
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from pydantic import Field, ValidationError, field_validator, model_validator
+
+from app.generated_models import InternalRequestSignature, OperationalContext
+from app.amaterasu.turno import (
+    REFERENCE_TURN_SCOPE,
+    ReferenceTurnError,
+    ReferenceTurnRequest,
+    ejecutar_turno_gemini,
+)
+from app.amaterasu.bouquet_referencia import (
+    BOUQUET_REFERENCIA_SCOPE,
+    BouquetReferenciaError,
+    BouquetReferenciaRequest,
+    leer_armados_referencia,
+)
+from app.amaterasu.conteo_referencia import (
+    CONTEO_REFERENCIA_SCOPE,
+    ConteoReferenciaError,
+    ConteoReferenciaRequest,
+    leer_conteos_referencia,
+)
+from app.amaterasu.guirnalda_referencia import (
+    GUIRNALDA_REFERENCIA_SCOPE,
+    GuirnaldaReferenciaError,
+    GuirnaldaReferenciaRequest,
+    leer_guirnaldas_referencia,
+)
+from app.amaterasu.patron_referencia import (
+    PATRON_REFERENCIA_SCOPE,
+    PatronReferenciaError,
+    PatronReferenciaRequest,
+    detectar_patrones_referencia,
+)
+from app.catalog import (
+    CATALOG_COLORS_SCOPE,
+    CATALOG_SCOPE,
+    CatalogColorsRequest,
+    CatalogSearchRequest,
+    CatalogStore,
+)
+from app.happie.generacion import (
+    HAPPIE_GENERATE_SCOPE,
+    HappieGenerateError,
+    HappieGenerateRequest,
+    generar_happie_gemini,
+)
+from app.inari.parse import (
+    INTENT_PARSE_SCOPE,
+    IntentParseError,
+    IntentParseRequest,
+    interpretar_consulta_gemini,
+)
+from app.lecturas_foto import (
+    LECTURA_UNICA_SCOPE,
+    LecturaUnicaError,
+    LecturaUnicaRequest,
+    validar_lectura_unica,
+)
+from app.armado_estructura import (
+    OMOIKANE_ARMADO_SCOPE,
+    ArmadoEstructuraRequest,
+    resolver_armado_estructura,
+)
+from app.omoikane.turno_stream import (
+    CHAT_TURN_STREAM_SCOPE,
+    ChatTurnError,
+    ChatTurnStreamRequest,
+    abrir_turno_stream,
+)
+from app.kagutsuchi.flux import (
+    FLUX_GENERATE_SCOPE,
+    FluxGenerateError,
+    FluxGenerateRequest,
+    generar_flux_fal,
+)
+from app.watatsumi.catalog_embeddings import (
+    DEFAULT_EMBEDDING_DIMENSIONS,
+    DEFAULT_EMBEDDING_MODEL,
+    EmbeddingSettings,
+    GeminiEmbeddingProvider,
+    embed_with_retry,
+    validate_embedding_batch,
+)
+from app.recommendations import (
+    CATALOG_RECOMMENDATIONS_SCOPE,
+    CatalogRecommendationError,
+    CatalogRecommendationsRequest,
+)
+from app.selection import CatalogSelectionError, CatalogSelectionRequest
+from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
+from app.exclusion_motores import ACCIONES_DE_MOTOR, correr_motor
+from app.plan_worker import run_plan_cpu
+from app.patron_color import DIRECCIONES as _PATTERN_DIRECTIONS, MODOS as _PATTERN_MODES
+from app.operational_models import ContractModel, OperationalRequest
+from app.plan import _plan_cost_optimizer_enabled
+from app.plan import (
+    CatalogPlanStore,
+    CatalogMaterialQuoteStore,
+    LISTA_MATERIALES_SCOPE,
+    ListaMaterialesOperationalRequest,
+    ListaMaterialesPayload,
+    PLAN_RESOLUTION_SCOPE,
+    PlanResolutionError,
+    PlanResolutionRequest,
+    cotizar_lista_materiales,
+    resolve_plan,
+)
+from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
+from app.cotizacion_profesional import (
+    CABECERA_MODOS_MATERIALES,
+    COTIZACION_PROFESIONAL_SCOPE,
+    CotizacionProfesionalRequest,
+    cotizar_profesional,
+)
+from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
+from app.estimar_conteo import (
+    ESTIMAR_CONTEO_SCOPE,
+    EXCLUSION as ESTIMACION_EXCLUSIVA,
+    EstimarConteoRequest,
+)
+from app.plan_armado_arco import (
+    PLAN_ARMADO_ARCO_SCOPE,
+    PlanArmadoArcoRequest,
+    vista_previa_armado_arco,
+)
+from app.plan_armado_arco_organico import (
+    PLAN_ARMADO_ARCO_ORGANICO_SCOPE,
+    PlanArmadoArcoOrganicoRequest,
+    vista_previa_armado_arco_organico,
+)
+from app.plan_armado_columna import (
+    PLAN_ARMADO_COLUMNA_SCOPE,
+    PlanArmadoColumnaRequest,
+    vista_previa_armado_columna,
+)
+from app.plan_armado_columna_organica import (
+    PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE,
+    PlanArmadoColumnaOrganicaRequest,
+    vista_previa_armado_columna_organica,
+)
+from app.plan_armado_guirnalda_organica import (
+    PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
+    PlanArmadoGuirnaldaOrganicaRequest,
+    vista_previa_armado_guirnalda_organica,
+)
+from app.guia_escena import (
+    PLAN_GUIA_ESCENA_SCOPE,
+    PlanGuiaEscenaRequest,
+    guia_escena,
+)
+from app.plan_dibujo_estructura import (
+    PLAN_DIBUJO_ESTRUCTURA_SCOPE,
+    PlanDibujoEstructuraRequest,
+    vista_previa_dibujo_estructura,
+)
+from app.plan_edicion import (
+    PLAN_ARMADO_GUIRNALDA_SCOPE,
+    PLAN_ARMADO_SCOPE,
+    PLAN_EDIT_SCOPE,
+    PLAN_PATRON_SCOPE,
+    PlanArmadoGuirnaldaRequest,
+    PlanArmadoRequest,
+    PlanEditRequest,
+    PlanPatronRequest,
+    ejecutar_edicion,
+    vista_previa_armado,
+    vista_previa_armado_guirnalda,
+    vista_previa_patron,
+)
+from app.postgres_store import PostgresOperationalStore
+from app.registro import auditar_llamada, configurar_registro, instalar_registro
+
+
+SCHEMA_VERSION = "operational.v1"
+DEFAULT_SCOPE = "ai.echo"
+DEFAULT_RERANK_SCOPE = "ai.rerank"
+DEFAULT_EMBEDDING_SCOPE = "ai.embedding"
+MAX_BODY_BYTES = 64 * 1024
+# Reference-image analysis (Amaterasu) can carry up to 3 images under the
+# same 10MB cap Next already enforces client-side
+# (LIMITE_CUERPO_ANALISIS_BYTES in analisis-http.ts); this is the same ceiling
+# on the Next -> Python hop, not a target size -- every other operation's
+# payload stays a few KB regardless of the cap being this high.
+MAX_BODY_BYTES_IMAGENES = 11 * 1024 * 1024
+# The customer chat turn: the same 25MB ceiling /api/chat already accepts from
+# the browser (venue photo + style references on the first turn), so a chat
+# that works on the direct path does not fail on the Next -> Python hop.
+MAX_BODY_BYTES_CHAT = 25 * 1024 * 1024
+# Happie's package recommendation sends the active Happia catalog as JSON text
+# in one call. The cap is a ceiling for that catalog, not a target size.
+MAX_BODY_BYTES_HAPPIE = 4 * 1024 * 1024
+_SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+_SCOPE_RE = re.compile(r"^[a-zA-Z0-9._:/-]+$")
+_LOCAL_ENVIRONMENTS = {"development", "test", "local"}
+MIN_SECRET_BYTES = 32
+RERANK_WARMUP_TIMEOUT_SECONDS = 60.0
+logger = logging.getLogger("decoracion.ai_api")
+T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class Settings:
+    """Runtime settings. Tests inject values through ``create_app``."""
+
+    environment: str = "development"
+    hmac_secret: str | None = None
+    required_scope: str = DEFAULT_SCOPE
+    rerank_required_scope: str = DEFAULT_RERANK_SCOPE
+    embedding_required_scope: str = DEFAULT_EMBEDDING_SCOPE
+    max_clock_skew_seconds: int = 300
+    nonce_namespace: str = "ai-api"
+    max_body_bytes: int = MAX_BODY_BYTES
+    max_body_bytes_imagenes: int = MAX_BODY_BYTES_IMAGENES
+    max_body_bytes_chat: int = MAX_BODY_BYTES_CHAT
+    max_body_bytes_happie: int = MAX_BODY_BYTES_HAPPIE
+    database_url: str | None = None
+    catalog_database_url: str | None = None
+
+    @classmethod
+    def from_env(cls) -> "Settings":
+        environment = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "development"))
+        secret = os.getenv("INTERNAL_HMAC_SECRET")
+        return cls(
+            environment=environment.strip().lower(),
+            hmac_secret=secret.strip() if secret and secret.strip() else None,
+            required_scope=os.getenv("INTERNAL_REQUIRED_SCOPE", DEFAULT_SCOPE),
+            rerank_required_scope=os.getenv("INTERNAL_RERANK_REQUIRED_SCOPE", DEFAULT_RERANK_SCOPE),
+            embedding_required_scope=os.getenv(
+                "INTERNAL_EMBEDDING_REQUIRED_SCOPE", DEFAULT_EMBEDDING_SCOPE
+            ),
+            database_url=os.getenv("DATABASE_URL"),
+            catalog_database_url=os.getenv("CATALOG_DATABASE_URL"),
+        )
+
+
+class EchoRequest(OperationalRequest):
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
+class RerankCandidate(ContractModel):
+    id: str = Field(min_length=1, max_length=200)
+    text: str = Field(min_length=1, max_length=4_000)
+
+    @field_validator("id", "text")
+    @classmethod
+    def reject_blank_values(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("candidate values must not be blank")
+        return stripped
+
+
+class RerankRequest(OperationalRequest):
+    query: str = Field(min_length=1, max_length=1_000)
+    candidates: list[RerankCandidate] = Field(default_factory=list, max_length=100)
+
+    @field_validator("query")
+    @classmethod
+    def reject_blank_query(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("query must not be blank")
+        return stripped
+
+    @model_validator(mode="after")
+    def reject_duplicate_candidate_ids(self) -> "RerankRequest":
+        ids = [candidate.id for candidate in self.candidates]
+        if len(ids) != len(set(ids)):
+            raise ValueError("candidate ids must be unique")
+        return self
+
+
+class EmbeddingRequest(OperationalRequest):
+    text: str = Field(min_length=1, max_length=4_000)
+    task_type: Literal["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY"
+
+    @field_validator("text")
+    @classmethod
+    def reject_blank_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("embedding text must not be blank")
+        return stripped
+
+
+class InMemoryMetrics:
+    """Small process-local counters; no payloads, secrets, or bodies stored."""
+
+    def __init__(self) -> None:
+        self._counters: dict[str, int] = {}
+        self._lock = threading.Lock()
+
+    def increment(self, name: str) -> None:
+        with self._lock:
+            self._counters[name] = self._counters.get(name, 0) + 1
+
+    def snapshot(self) -> dict[str, int]:
+        with self._lock:
+            return dict(self._counters)
+
+
+EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
+RerankHandler = Callable[[RerankRequest], Awaitable[dict[str, object]]]
+EmbeddingHandler = Callable[[EmbeddingRequest], Awaitable[dict[str, object]]]
+IntentParseHandler = Callable[[IntentParseRequest], Awaitable[dict[str, object]]]
+HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, object]]]
+ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
+PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
+BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
+ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
+GuirnaldaReferenciaHandler = Callable[[GuirnaldaReferenciaRequest], Awaitable[dict[str, object]]]
+LecturaUnicaHandler = Callable[[LecturaUnicaRequest], Awaitable[dict[str, object]]]
+FluxGenerateHandler = Callable[[FluxGenerateRequest], Awaitable[dict[str, object]]]
+# Not awaited: it validates what can fail before the stream opens (raising an
+# HTTPException) and returns the event generator the boundary drains.
+ChatTurnStreamHandler = Callable[[ChatTurnStreamRequest], AsyncGenerator[dict[str, object], None]]
+OperationalStreamOpener = Callable[[OperationalRequest], AsyncGenerator[dict[str, object], None]]
+OperationalHandler = Callable[[OperationalRequest], Awaitable[dict[str, object]]]
+
+
+class CatalogStoreBoundary(Protocol):
+    async def check_ready(self) -> bool: ...
+
+    async def search(self, operation: CatalogSearchRequest) -> dict[str, object]: ...
+
+    async def colors(self, operation: CatalogColorsRequest) -> dict[str, object]: ...
+
+    async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]: ...
+
+    async def recommend(self, operation: CatalogRecommendationsRequest) -> dict[str, object]: ...
+
+
+async def _await_result(value: T | Awaitable[T]) -> T:
+    if inspect.isawaitable(value):
+        return cast(T, await value)
+    return value
+
+
+async def _default_echo_handler(payload: EchoRequest) -> dict[str, object]:
+    return {"payload": payload.payload}
+
+
+_RERANK_WORKER_LIMIT = threading.Semaphore(1)
+
+
+def _rerank_in_worker(payload: RerankRequest) -> dict[str, object]:
+    # Imported lazily: loading sentence-transformers/torch (and, on first use,
+    # downloading the ~80MB model) must never happen at module import time --
+    # /healthz, /readyz and the echo path stay fast and offline.
+    from app.reranker import model_score_fn
+    from app.reranker import rerank as rerank_candidates
+
+    pairs = [(candidate.id, candidate.text) for candidate in payload.candidates]
+    ordered = rerank_candidates(payload.query, pairs, score_fn=model_score_fn())
+    # Nested under "payload", like echo's result -- every /internal/v1/*
+    # operation shares the same {schema_version, request_id, correlation_id,
+    # payload} envelope, so the Next-side adapter's response schema stays
+    # generic across operations instead of needing one shape per route.
+    return {
+        "payload": {
+            "order": [candidate_id for candidate_id, _score in ordered],
+            "scores": {candidate_id: score for candidate_id, score in ordered},
+        }
+    }
+
+
+async def _default_rerank_handler(payload: RerankRequest) -> dict[str, object]:
+    # Cross-encoder inference is CPU-bound and may download model weights on
+    # first use. Run it outside the event loop and serialize model work so one
+    # small CPU instance cannot be saturated by concurrent requests.
+    # Auditado (app/registro.py): consulta, candidatos, orden y puntuaciones.
+    resultado: dict[str, object] = await auditar_llamada(
+        proposito="rerank_catalogo",
+        proveedor="cross-encoder",
+        peticion={
+            "consulta": payload.query,
+            "candidatos": [{"id": c.id, "texto": c.text[:300]} for c in payload.candidates],
+        },
+        ejecutar=lambda: asyncio.to_thread(_run_bounded_rerank, payload),
+        resumir=lambda resultado: dict(cast(dict[str, object], resultado.get("payload") or {})),
+    )
+    return resultado
+
+
+async def _default_embedding_handler(payload: EmbeddingRequest) -> dict[str, object]:
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise _error("embedding_provider_unavailable", 503)
+    settings = EmbeddingSettings(
+        model=DEFAULT_EMBEDDING_MODEL,
+        dimensions=DEFAULT_EMBEDDING_DIMENSIONS,
+        task_type=payload.task_type,
+    )
+    attempt_count: list[int] = []
+    attempts: list[dict[str, object]] = []
+
+    async def record_attempt(attempt: int, result: str, elapsed_ms: int) -> None:
+        logger.info(
+            "embedding provider attempt",
+            extra={
+                "request_id": str(payload.context.request_id),
+                "correlation_id": str(payload.context.correlation_id),
+                "attempt": attempt,
+                "result": result,
+                "elapsed_ms": elapsed_ms,
+            },
+        )
+        attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
+
+    try:
+        provider = GeminiEmbeddingProvider(api_key)
+        values = await embed_with_retry(
+            provider,
+            [payload.text],
+            settings,
+            attempts=attempt_count,
+            on_attempt=record_attempt,
+        )
+        vector = validate_embedding_batch(values, expected_count=1, dimensions=settings.dimensions)[
+            0
+        ]
+    except HTTPException:
+        raise
+    except Exception:
+        # Keep retry metadata in the bounded error body so Next can persist
+        # every provider attempt, including terminal failures.
+        if attempts and attempts[-1]["result"] == "ok":
+            attempts[-1]["result"] = "error"
+        raise _error(
+            "embedding_provider_unavailable",
+            503,
+            {"attempts": attempts},
+        ) from None
+    return {
+        "payload": {
+            "values": list(vector),
+            "model": settings.model,
+            "dimensions": settings.dimensions,
+            "task_type": settings.task_type,
+            "attempts": attempts
+            or [
+                {
+                    "attempt": attempt_count[0] if attempt_count else 1,
+                    "result": "ok",
+                    "elapsed_ms": 0,
+                }
+            ],
+        }
+    }
+
+
+async def _default_intent_parse_handler(payload: IntentParseRequest) -> dict[str, object]:
+    try:
+        result = await interpretar_consulta_gemini(payload)
+    except IntentParseError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_happie_generate_handler(payload: HappieGenerateRequest) -> dict[str, object]:
+    try:
+        result = await generar_happie_gemini(payload)
+    except HappieGenerateError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_reference_turn_handler(payload: ReferenceTurnRequest) -> dict[str, object]:
+    try:
+        result = await ejecutar_turno_gemini(payload)
+    except ReferenceTurnError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_bouquet_referencia_handler(
+    payload: BouquetReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_armados_referencia(payload)
+    except BouquetReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_conteo_referencia_handler(
+    payload: ConteoReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_conteos_referencia(payload)
+    except ConteoReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_guirnalda_referencia_handler(
+    payload: GuirnaldaReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_guirnaldas_referencia(payload)
+    except GuirnaldaReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_lectura_unica_handler(payload: LecturaUnicaRequest) -> dict[str, object]:
+    # No llama a ningún proveedor: valida las cuatro lecturas que el análisis
+    # (variante `v17-lectura-unica`) escribió en la misma llamada de visión.
+    try:
+        result = validar_lectura_unica(payload)
+    except LecturaUnicaError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_patron_referencia_handler(payload: PatronReferenciaRequest) -> dict[str, object]:
+    try:
+        result = await detectar_patrones_referencia(payload)
+    except PatronReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_flux_generate_handler(payload: FluxGenerateRequest) -> dict[str, object]:
+    try:
+        # Auditado (app/registro.py): prompt final, referencias y resultado como hash, ms o el error.
+        result = await auditar_llamada(
+            proposito="imagen_flux",
+            proveedor="fal",
+            peticion={
+                "modo": payload.mode,
+                "prompt": payload.prompt,
+                "loras": [lora.model_dump() for lora in payload.loras],
+                "guidance_scale": payload.guidance_scale,
+                "pasos": payload.num_inference_steps,
+                "tamano": [payload.image_width, payload.image_height],
+                "semilla": payload.seed,
+                "referencias": payload.image_data_urls,
+            },
+            ejecutar=lambda: generar_flux_fal(payload),
+            resumir=lambda resultado: {
+                "imagen": resultado.get("image_base64"),
+                "mime": resultado.get("mime"),
+                "proveedor_request_id": resultado.get("provider_request_id"),
+            },
+        )
+    except FluxGenerateError as error:
+        details: dict[str, object] = {}
+        if error.provider_status is not None:
+            details["provider_status"] = error.provider_status
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+def _default_chat_turn_stream_handler(
+    payload: ChatTurnStreamRequest,
+) -> AsyncGenerator[dict[str, object], None]:
+    try:
+        # mypy sees imported callables as Any here (follow_imports = "skip").
+        return cast(AsyncGenerator[dict[str, object], None], abrir_turno_stream(payload))
+    except ChatTurnError as error:
+        raise _error(error.code, error.status_code) from None
+
+
+def _run_bounded_rerank(payload: RerankRequest) -> dict[str, object]:
+    with _RERANK_WORKER_LIMIT:
+        return _rerank_in_worker(payload)
+
+
+async def _warm_rerank_model() -> None:
+    # Warm the process-local model before readiness when the image opts in.
+    # This keeps the first real request inside its normal deadline instead of
+    # making it pay the one-time torch/model initialization cost.
+    payload = RerankRequest.model_construct(
+        query="warmup",
+        candidates=[RerankCandidate.model_construct(id="warmup", text="warmup")],
+    )
+    await asyncio.to_thread(_run_bounded_rerank, payload)
+
+
+def _error(
+    code: str,
+    status_code: int,
+    details: dict[str, object] | None = None,
+) -> HTTPException:
+    detail: dict[str, object] = {"code": code}
+    if details:
+        detail.update(details)
+    return HTTPException(status_code=status_code, detail=detail)
+
+
+def _secret_is_valid(secret: object) -> bool:
+    return isinstance(secret, str) and len(secret.encode("utf-8")) >= MIN_SECRET_BYTES
+
+
+def _invalid_request() -> HTTPException:
+    return _error("invalid_request", 422)
+
+
+def _safe_uuid(value: str | None, fallback: str) -> str:
+    if value is None:
+        return fallback
+    try:
+        return str(UUID(value))
+    except (AttributeError, TypeError, ValueError):
+        return fallback
+
+
+def _request_ids(request: Request) -> tuple[str, str]:
+    request_id = _safe_uuid(request.headers.get("x-request-id"), str(uuid.uuid4()))
+    correlation_id = _safe_uuid(request.headers.get("x-correlation-id"), request_id)
+    return request_id, correlation_id
+
+
+def _response_headers(request: Request, *, replay: bool = False) -> dict[str, str]:
+    headers = {
+        "x-request-id": request.state.request_id,
+        "x-correlation-id": request.state.correlation_id,
+    }
+    if replay:
+        headers["x-idempotency-result"] = "replay"
+    return headers
+
+
+def _error_body(
+    request: Request,
+    code: str,
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
+    detail: dict[str, object] = {
+        "code": code,
+        "request_id": request.state.request_id,
+        "correlation_id": request.state.correlation_id,
+    }
+    if details:
+        detail.update(details)
+    return {
+        "detail": detail,
+    }
+
+
+def _error_response(
+    request: Request,
+    status_code: int,
+    code: str,
+    details: dict[str, object] | None = None,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content=_error_body(request, code, details),
+        headers=_response_headers(request),
+    )
+
+
+def _operation_body_sha256(raw_body: bytes, payload: OperationalRequest) -> str:
+    try:
+        envelope = json.loads(raw_body)
+    except (TypeError, json.JSONDecodeError):
+        raise _invalid_request() from None
+    if not isinstance(envelope, dict):
+        raise _invalid_request()
+    if isinstance(payload, EchoRequest):
+        operation_body = envelope.get("payload")
+    else:
+        operation_body = {key: value for key, value in envelope.items() if key != "context"}
+    encoded = json.dumps(operation_body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_context(context: OperationalContext) -> None:
+    if not _SHA256_RE.fullmatch(str(context.body_sha256)):
+        raise _invalid_request()
+    if len(context.scopes) > 32 or any(
+        not isinstance(scope, str) or not 1 <= len(scope) <= 120 or not _SCOPE_RE.fullmatch(scope)
+        for scope in context.scopes
+    ):
+        raise _invalid_request()
+    if context.idempotency_key is not None and not 1 <= len(context.idempotency_key) <= 200:
+        raise _invalid_request()
+
+
+def _validate_signature(signature: InternalRequestSignature) -> None:
+    if len(signature.scopes) > 32 or any(
+        not isinstance(scope, str) or not 1 <= len(scope) <= 120 or not _SCOPE_RE.fullmatch(scope)
+        for scope in signature.scopes
+    ):
+        raise _error("invalid_signature", 401)
+    if not _SHA256_RE.fullmatch(str(signature.signature)):
+        raise _error("invalid_signature", 401)
+
+
+def _parse_model(model: type[ContractModel], raw_body: bytes) -> ContractModel:
+    try:
+        if hasattr(model, "model_validate_json"):
+            return cast(ContractModel, model.model_validate_json(raw_body))
+        return cast(ContractModel, model.parse_raw(raw_body))
+    except ValidationError as error:
+        # The caller only ever gets `invalid_request`: the body may carry customer
+        # data and a validation message quotes the value that failed. But throwing
+        # the error away entirely left the operator with nothing — a rejected plan
+        # was a full hour of guessing on 2026-09-30, because nobody could say WHICH
+        # field the contract refused. Log the field paths and the rule that failed,
+        # never the values, so the next one is one log line instead of a morning.
+        logger.warning(
+            "contract validation rejected %s: %s",
+            model.__name__,
+            "; ".join(
+                f"{'.'.join(str(part) for part in item.get('loc', ())) or '<root>'}: {item.get('type', 'unknown')}"
+                for item in error.errors()[:8]
+            ),
+        )
+        del error
+        raise _invalid_request() from None
+
+
+def _parse_signature_headers(request: Request) -> InternalRequestSignature:
+    scopes_header = request.headers.get("x-internal-scopes", "")
+    scopes = [scope.strip() for scope in scopes_header.split(",")] if scopes_header else []
+    try:
+        signature = InternalRequestSignature(
+            schema_version=request.headers.get("x-internal-schema-version", ""),
+            timestamp=int(request.headers.get("x-internal-timestamp", "")),
+            nonce=request.headers.get("x-internal-nonce", ""),
+            signature=request.headers.get("x-internal-signature", ""),
+            scopes=scopes,
+        )
+    except (TypeError, ValueError, ValidationError) as error:
+        del error
+        raise _error("invalid_signature", 401) from None
+    _validate_signature(signature)
+    return signature
+
+
+def signature_material(
+    *, method: str, path: str, timestamp: int, nonce: UUID | str, scopes: list[str], body: bytes
+) -> bytes:
+    """Build operational.v1 canonical bytes signed by HMAC."""
+
+    body_hash = hashlib.sha256(body).hexdigest()
+    normalized_scopes = ",".join(sorted(scopes))
+    return ".".join(
+        [str(timestamp), str(nonce), method.upper(), path, body_hash, normalized_scopes]
+    ).encode("utf-8")
+
+
+def build_signature(
+    *,
+    secret: str,
+    method: str,
+    path: str,
+    timestamp: int,
+    nonce: UUID | str,
+    scopes: list[str],
+    body: bytes,
+) -> str:
+    return hmac.new(
+        secret.encode("utf-8"),
+        signature_material(
+            method=method,
+            path=path,
+            timestamp=timestamp,
+            nonce=nonce,
+            scopes=scopes,
+            body=body,
+        ),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _load_auth_module() -> ModuleType | None:
+    try:
+        return importlib.import_module("app.auth")
+    except ModuleNotFoundError as error:
+        if error.name not in {"app", "app.auth"}:
+            raise
+        return None
+
+
+async def _consume_nonce(request: Request, nonce: str, settings: Settings) -> None:
+    store = getattr(request.app.state, "nonce_store", None)
+    if store is None:
+        raise _error("nonce_store_unavailable", 503)
+    now = float(int(time.time()))
+    try:
+        consume_nonce = getattr(store, "consume_nonce", None)
+        if callable(consume_nonce):
+            result = await _await_result(consume_nonce(settings.nonce_namespace, nonce, now=now))
+            accepted = result.kind == "accepted"
+        else:
+            result = await _await_result(store.consume(nonce, now=now))
+            accepted = bool(result.accepted)
+    except Exception:
+        raise _error("nonce_store_error", 503) from None
+    if not accepted:
+        request.app.state.metrics.increment("auth.nonce_replay")
+        raise _error("nonce_replay", 401)
+
+
+async def _authorize(
+    request: Request, raw_body: bytes, settings: Settings, *, required_scope: str
+) -> InternalRequestSignature:
+    secret = settings.hmac_secret
+    if not _secret_is_valid(secret):
+        raise _error("auth_unavailable", 503)
+    assert isinstance(secret, str)
+    signature = _parse_signature_headers(request)
+    required_scope = required_scope.strip()
+    if required_scope not in signature.scopes:
+        raise _error("insufficient_scope", 403)
+    if abs(int(time.time()) - int(signature.timestamp)) > settings.max_clock_skew_seconds:
+        raise _error("stale_signature", 401)
+
+    auth_module = _load_auth_module()
+    if auth_module is not None:
+        verifier = getattr(auth_module, "verify_request", None)
+        body_hasher = getattr(auth_module, "sha256_body", None)
+        if not callable(verifier) or not callable(body_hasher):
+            raise _error("auth_backend_invalid", 503)
+        signature_mapping = (
+            signature.model_dump(mode="json")
+            if hasattr(signature, "model_dump")
+            else signature.dict()
+        )
+        signature_mapping["nonce"] = str(signature_mapping["nonce"])
+        try:
+            authorized = verifier(
+                secret=secret,
+                signature=signature_mapping,
+                method=request.method,
+                path=request.url.path,
+                body_sha256=body_hasher(raw_body),
+                now_seconds=int(time.time()),
+                max_skew_seconds=settings.max_clock_skew_seconds,
+                required_scopes=[required_scope],
+                nonce_store=None,
+            )
+        except Exception as error:
+            del error
+            raise _error("auth_backend_error", 503) from None
+        if not authorized:
+            request.app.state.metrics.increment("auth.invalid_signature")
+            raise _error("invalid_signature", 401)
+    else:
+        expected = build_signature(
+            secret=secret,
+            method=request.method,
+            path=request.url.path,
+            timestamp=int(signature.timestamp),
+            nonce=str(signature.nonce),
+            scopes=list(signature.scopes),
+            body=raw_body,
+        )
+        if not hmac.compare_digest(expected, str(signature.signature)):
+            request.app.state.metrics.increment("auth.invalid_signature")
+            raise _error("invalid_signature", 401)
+
+    await _consume_nonce(request, str(signature.nonce), settings)
+    return signature
+
+
+def _deadline_seconds(context: OperationalContext) -> float:
+    try:
+        deadline = datetime.fromisoformat(str(context.deadline_at).replace("Z", "+00:00"))
+        if deadline.tzinfo is None:
+            raise ValueError
+    except ValueError:
+        raise _invalid_request() from None
+    remaining = (deadline.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds()
+    if remaining <= 0:
+        raise _error("deadline_exceeded", 408)
+    return min(remaining, float(context.deadline_ms) / 1000)
+
+
+def _stored_response(body: dict[str, object], status: int = 200) -> StoredHttpResponse:
+    return StoredHttpResponse(body=body, status=status)
+
+
+def _detail_code(exception: HTTPException) -> str:
+    if isinstance(exception.detail, dict):
+        code = exception.detail.get("code")
+        if isinstance(code, str):
+            return code
+    return "internal_error"
+
+
+def _detail_metadata(exception: HTTPException) -> dict[str, object]:
+    if not isinstance(exception.detail, dict):
+        return {}
+    metadata: dict[str, object] = {}
+    attempts = exception.detail.get("attempts")
+    if isinstance(attempts, list):
+        safe_attempts: list[dict[str, object]] = []
+        for item in attempts:
+            if not isinstance(item, dict):
+                continue
+            attempt = item.get("attempt")
+            result = item.get("result")
+            elapsed_ms = item.get("elapsed_ms")
+            if (
+                isinstance(attempt, int)
+                and attempt > 0
+                and result in {"ok", "error"}
+                and isinstance(elapsed_ms, int)
+                and elapsed_ms >= 0
+            ):
+                safe_attempts.append(
+                    {"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms}
+                )
+        if safe_attempts:
+            metadata["attempts"] = safe_attempts
+    # Kagutsuchi's account-rejected fal.ai responses (see FluxGenerateError):
+    # the real provider status/detail, distinct from this exception's own
+    # boundary status_code, so the TypeScript wrapper can rebuild
+    # ProveedorImagenNoDisponibleError with fal's actual 401/402/403.
+    provider_status = exception.detail.get("provider_status")
+    if isinstance(provider_status, int) and not isinstance(provider_status, bool):
+        metadata["provider_status"] = provider_status
+    provider_detail = exception.detail.get("provider_detail")
+    if isinstance(provider_detail, str) and provider_detail:
+        metadata["provider_detail"] = provider_detail[:300]
+    # patron_invalido (ADR-0028 §4): which structure, the stable rule and the
+    # decorator-facing message. The domain writes them, never the request.
+    for key, limit in (("estructura_id", 160), ("motivo", 64), ("mensaje", 400)):
+        value = exception.detail.get(key)
+        if isinstance(value, str) and value:
+            metadata[key] = value[:limit]
+    # The pattern preview's rejection also says which styles the piece admits
+    # (ADR-0028 §10), so the editor still offers them without a suggestion.
+    styles = _safe_pattern_styles(exception.detail.get("modos_admitidos"))
+    if styles is not None:
+        metadata["modos_admitidos"] = styles
+    # armado_invalido of the bouquet preview (ADR-0030): the styles and the
+    # number placements the purchase admits, from known values only.
+    for key, known in (
+        ("variantes_admitidas", VARIANTES_BOUQUET),
+        ("disposiciones_admitidas", DISPOSICIONES_BOUQUET),
+    ):
+        options = exception.detail.get(key)
+        if isinstance(options, list) and all(isinstance(o, str) and o in known for o in options):
+            metadata[key] = [o for o in known if o in options]
+    return metadata
+
+
+def _safe_pattern_styles(value: object) -> list[dict[str, object]] | None:
+    """``modos_admitidos`` rebuilt from known values only, or ``None``.
+
+    All or nothing: a list of at most one entry per mode, each exactly
+    ``{modo, direcciones, espejo}`` with a known mode, one to three distinct
+    known directions and a boolean mirror. Anything else drops the field.
+    Known values are the patron-color.v1 contract's, never the error's.
+    """
+    if not isinstance(value, list) or len(value) > len(_PATTERN_MODES):
+        return None
+    styles: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"modo", "direcciones", "espejo"}:
+            return None
+        mode, directions, mirror = item["modo"], item["direcciones"], item["espejo"]
+        if not isinstance(mode, str) or mode not in _PATTERN_MODES or mode in seen:
+            return None
+        if (
+            not isinstance(directions, list)
+            or not 1 <= len(directions) <= len(_PATTERN_DIRECTIONS)
+            or not all(isinstance(direction, str) for direction in directions)
+            or not set(directions) <= set(_PATTERN_DIRECTIONS)
+            or len(set(directions)) != len(directions)
+        ):
+            return None
+        if not isinstance(mirror, bool):
+            return None
+        seen.add(mode)
+        styles.append({"modo": mode, "direcciones": list(directions), "espejo": mirror})
+    return styles
+
+
+async def _store_failure(
+    request: Request,
+    *,
+    scope: str,
+    idempotency_key: str,
+    body_sha256: str,
+    code: str,
+    status: int,
+    details: dict[str, object] | None = None,
+) -> None:
+    store = request.app.state.operational_store
+    if store is None:
+        return
+    try:
+        await _await_result(
+            store.fail(
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                response=_stored_response(_error_body(request, code, details), status),
+            )
+        )
+    except Exception:
+        request.app.state.metrics.increment("idempotency.finalize_error")
+        logger.warning(
+            "idempotency finalization failed",
+            extra={"request_id": request.state.request_id},
+        )
+
+
+async def _admit_operational_request(
+    request: Request,
+    *,
+    model: type[OperationalRequest],
+    scope: str,
+    max_body_bytes: int | None,
+) -> tuple[OperationalRequest, float]:
+    """Body cap, HMAC, schema, signed body hash, scope and deadline -- the
+    checks every /internal/v1/* route runs before touching its handler,
+    shared by the single-response and the streaming boundary."""
+
+    runtime_settings: Settings = request.app.state.settings
+    effective_max_body_bytes = (
+        max_body_bytes if max_body_bytes is not None else runtime_settings.max_body_bytes
+    )
+    content_length = request.headers.get("content-length")
+    if (
+        content_length
+        and content_length.isdigit()
+        and int(content_length) > effective_max_body_bytes
+    ):
+        raise _error("body_too_large", 413)
+    raw_body = await request.body()
+    if len(raw_body) > effective_max_body_bytes:
+        raise _error("body_too_large", 413)
+
+    await _authorize(request, raw_body, runtime_settings, required_scope=scope)
+    payload = cast(OperationalRequest, _parse_model(model, raw_body))
+    context = payload.context
+    _validate_context(context)
+    if str(context.body_sha256) != _operation_body_sha256(raw_body, payload):
+        raise _invalid_request()
+    if scope not in context.scopes:
+        raise _error("insufficient_scope", 403)
+    return payload, _deadline_seconds(context)
+
+
+_STREAM_TERMINAL_EVENTS = frozenset({"end", "error"})
+
+
+def _ndjson_line(event: dict[str, object]) -> bytes:
+    return (json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+
+
+async def _handle_operational_stream(
+    request: Request,
+    *,
+    operation: str,
+    model: type[OperationalRequest],
+    scope: str,
+    open_stream: OperationalStreamOpener,
+    max_body_bytes: int | None = None,
+) -> Response:
+    """Streaming counterpart of `_handle_operational_request`: identical
+    admission (HMAC, schema, signed body hash, scope, deadline), then an
+    NDJSON body with one event per line that always ends with exactly one
+    `end` or `error` event. Failures detected before the stream opens are
+    ordinary HTTP errors. Once the 200 is sent, failures are `error` events.
+
+    There is deliberately no idempotency here: a replay would re-run or
+    re-send a turn whose text the client already showed and the provider
+    already charged, so a request carrying an idempotency key is rejected
+    instead of being silently executed twice.
+    """
+
+    payload, timeout_seconds = await _admit_operational_request(
+        request, model=model, scope=scope, max_body_bytes=max_body_bytes
+    )
+    if payload.context.idempotency_key is not None:
+        raise _error("idempotency_not_supported", 422)
+    events = open_stream(payload)
+    metrics = request.app.state.metrics
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+
+    async def body() -> AsyncIterator[bytes]:
+        terminal = False
+        try:
+            while not terminal:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError
+                try:
+                    event = await asyncio.wait_for(events.__anext__(), timeout=remaining)
+                except StopAsyncIteration:
+                    break
+                terminal = event.get("type") in _STREAM_TERMINAL_EVENTS
+                yield _ndjson_line(event)
+        except asyncio.TimeoutError:
+            metrics.increment(f"{operation}.timeout")
+            terminal = True
+            yield _ndjson_line({"type": "error", "code": "deadline_exceeded", "phase": "stream"})
+        except asyncio.CancelledError:
+            # Next disconnected (the browser left, or its own deadline fired).
+            # Re-raised so Starlette finishes the cancellation; `finally`
+            # closes the provider stream on the way out.
+            metrics.increment(f"{operation}.cancelled")
+            raise
+        except Exception:
+            logger.error("stream failed", extra={"request_id": request.state.request_id})
+            terminal = True
+            yield _ndjson_line({"type": "error", "code": "internal_error", "phase": "stream"})
+        finally:
+            await events.aclose()
+        if not terminal:
+            logger.error(
+                "stream ended without a terminal event",
+                extra={"request_id": request.state.request_id},
+            )
+            yield _ndjson_line({"type": "error", "code": "internal_error", "phase": "stream"})
+            return
+        metrics.increment(f"{operation}.completed")
+
+    return StreamingResponse(
+        body(),
+        media_type="application/x-ndjson",
+        headers={**_response_headers(request), "cache-control": "no-store"},
+    )
+
+
+async def _handle_operational_request(
+    request: Request,
+    *,
+    operation: str,
+    model: type[OperationalRequest],
+    scope: str,
+    handler: OperationalHandler,
+    max_body_bytes: int | None = None,
+) -> Response:
+    """Shared auth/idempotency/deadline/error-mapping boundary for every
+    /internal/v1/* operation. `scope` is the required scope for THIS
+    operation -- it is never read from a single app-wide setting, so two
+    routes (e.g. echo and rerank) can require different scopes.
+    `max_body_bytes` overrides the default cap for one route (Amaterasu's
+    reference images); every other route keeps the small default."""
+
+    payload, timeout_seconds = await _admit_operational_request(
+        request, model=model, scope=scope, max_body_bytes=max_body_bytes
+    )
+    context = payload.context
+    # Idempotency covers the operation payload, not volatile transport
+    # fields such as request_id, correlation_id, or deadline_at. The
+    # adapter supplies that stable operation hash in the signed context.
+    body_sha256 = str(context.body_sha256)
+    idempotency_key = context.idempotency_key
+    if idempotency_key is not None:
+        store = request.app.state.operational_store
+        if store is None or not callable(getattr(store, "claim", None)):
+            raise _error("idempotency_store_unavailable", 503)
+        try:
+            claim = await _await_result(
+                store.claim(
+                    scope=scope,
+                    idempotency_key=idempotency_key,
+                    body_sha256=body_sha256,
+                    request_id=str(context.request_id),
+                    correlation_id=str(context.correlation_id),
+                )
+            )
+        except Exception:
+            request.app.state.metrics.increment("idempotency.claim_error")
+            raise _error("idempotency_store_error", 503) from None
+        if claim.kind == "conflict":
+            request.app.state.metrics.increment("idempotency.conflict")
+            raise _error("idempotency_conflict", 409)
+        if claim.kind == "in_flight":
+            request.app.state.metrics.increment("idempotency.in_flight")
+            raise _error("idempotency_in_flight", 409)
+        if claim.kind == "replay":
+            request.app.state.metrics.increment("idempotency.replay")
+            if claim.response is None:
+                raise _error("idempotency_store_error", 503)
+            return JSONResponse(
+                status_code=claim.response.status,
+                content=claim.response.body,
+                headers=_response_headers(request, replay=True),
+            )
+
+    try:
+        result = await asyncio.wait_for(handler(payload), timeout=timeout_seconds)
+        response_body = {
+            "schema_version": SCHEMA_VERSION,
+            "request_id": str(context.request_id),
+            "correlation_id": str(context.correlation_id),
+            **result,
+        }
+    except asyncio.TimeoutError:
+        request.app.state.metrics.increment(f"{operation}.timeout")
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="deadline_exceeded",
+                status=408,
+            )
+        raise _error("deadline_exceeded", 408) from None
+    except asyncio.CancelledError:
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="client_cancelled",
+                status=499,
+            )
+        request.app.state.metrics.increment(f"{operation}.cancelled")
+        return _error_response(request, 499, "client_cancelled")
+    except HTTPException as exception:
+        details = _detail_metadata(exception)
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code=_detail_code(exception),
+                status=exception.status_code,
+                details=details,
+            )
+        raise
+    except Exception:
+        logger.exception(
+            "operational endpoint failed",
+            extra={
+                "request_id": request.state.request_id,
+                "correlation_id": request.state.correlation_id,
+                "operation": operation,
+            },
+        )
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="internal_error",
+                status=500,
+            )
+        raise _error("internal_error", 500) from None
+
+    if idempotency_key is not None:
+        store = request.app.state.operational_store
+        try:
+            await _await_result(
+                store.complete(
+                    scope=scope,
+                    idempotency_key=idempotency_key,
+                    body_sha256=body_sha256,
+                    response=_stored_response(response_body),
+                )
+            )
+        except Exception:
+            request.app.state.metrics.increment("idempotency.finalize_error")
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="idempotency_store_error",
+                status=503,
+            )
+            raise _error("idempotency_store_error", 503) from None
+    request.app.state.metrics.increment(f"{operation}.completed")
+    return JSONResponse(
+        status_code=200,
+        content=response_body,
+        headers=_response_headers(request),
+    )
+
+
+def create_app(
+    settings: Settings | None = None,
+    nonce_store: object | None = None,
+    *,
+    operational_store: object | None = None,
+    catalog_store: CatalogStore | None = None,
+    echo_handler: EchoHandler | None = None,
+    rerank_handler: RerankHandler | None = None,
+    embedding_handler: EmbeddingHandler | None = None,
+    intent_parse_handler: IntentParseHandler | None = None,
+    happie_generate_handler: HappieGenerateHandler | None = None,
+    reference_turn_handler: ReferenceTurnHandler | None = None,
+    flux_generate_handler: FluxGenerateHandler | None = None,
+    chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
+    patron_referencia_handler: PatronReferenciaHandler | None = None,
+    bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
+    conteo_referencia_handler: ConteoReferenciaHandler | None = None,
+    guirnalda_referencia_handler: GuirnaldaReferenciaHandler | None = None,
+    lectura_unica_handler: LecturaUnicaHandler | None = None,
+) -> FastAPI:
+    current_settings = settings or Settings.from_env()
+    # Registro en JSON (app/registro.py): antes de cualquier línea de arranque.
+    configurar_registro()
+    default_store: object | None = None
+    if current_settings.database_url:
+        try:
+            default_store = PostgresOperationalStore(current_settings.database_url)
+        except ValueError as error:
+            logger.warning("invalid DATABASE_URL configuration: %s", str(error))
+    elif current_settings.environment in _LOCAL_ENVIRONMENTS:
+        default_store = InMemoryOperationalStore()
+    if catalog_store is None and current_settings.catalog_database_url:
+        try:
+            catalog_store = CatalogStore(current_settings.catalog_database_url)
+        except ValueError as error:
+            logger.warning("invalid CATALOG_DATABASE_URL configuration: %s", str(error))
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        # Una línea con el valor efectivo de lo que cambia el armado y el conteo, y si hay configuración, nunca su
+        # valor: el `.env.production` del repositorio no es el entorno real (auditoría 2026-10-04, S9).
+        logger.info(
+            "banderas_efectivas %s",
+            json.dumps(
+                {
+                    "servicio": "ai-api",
+                    "environment": current_settings.environment,
+                    "PLAN_COST_OPTIMIZER_V2": _plan_cost_optimizer_enabled(),
+                    "hmac_configurado": bool(current_settings.hmac_secret),
+                    "database_configurada": bool(current_settings.database_url),
+                    "catalogo_configurado": bool(current_settings.catalog_database_url),
+                }
+            ),
+        )
+        store = application.state.operational_store
+        catalog = application.state.catalog_store
+        start = getattr(store, "start", None)
+        if callable(start):
+            try:
+                await _await_result(start())
+            except Exception as error:
+                application.state.store_startup_error = type(error).__name__
+                logger.error("operational store startup failed: %s", type(error).__name__)
+        catalog_start = getattr(catalog, "start", None)
+        if callable(catalog_start):
+            try:
+                await _await_result(catalog_start())
+            except Exception as error:
+                application.state.catalog_startup_error = type(error).__name__
+                logger.error("catalog store startup failed: %s", type(error).__name__)
+        if os.getenv("RERANK_MODEL_WARMUP", "").strip().lower() in {"1", "true", "on"}:
+            try:
+                await asyncio.wait_for(_warm_rerank_model(), timeout=RERANK_WARMUP_TIMEOUT_SECONDS)
+            except Exception as error:
+                application.state.rerank_warmup_error = type(error).__name__
+                logger.error("rerank model warmup failed: %s", type(error).__name__)
+        try:
+            yield
+        finally:
+            catalog_close = getattr(catalog, "close", None)
+            if callable(catalog_close):
+                try:
+                    await _await_result(catalog_close())
+                except Exception as error:
+                    logger.error("catalog store shutdown failed: %s", type(error).__name__)
+            close = getattr(store, "close", None)
+            if callable(close):
+                try:
+                    await _await_result(close())
+                except Exception as error:
+                    logger.error("operational store shutdown failed: %s", type(error).__name__)
+
+    application = FastAPI(title="AI API", version="0.1.0", lifespan=lifespan)
+    application.state.settings = current_settings
+    if operational_store is None:
+        operational_store = default_store
+    if nonce_store is None and operational_store is not None:
+        nonce_store = operational_store
+    application.state.operational_store = operational_store
+    application.state.catalog_store = catalog_store
+    application.state.nonce_store = nonce_store
+    application.state.metrics = InMemoryMetrics()
+    handler = echo_handler or _default_echo_handler
+    rerank_handler_fn = rerank_handler or _default_rerank_handler
+    embedding_handler_fn = embedding_handler or _default_embedding_handler
+    intent_parse_handler_fn = intent_parse_handler or _default_intent_parse_handler
+    happie_generate_handler_fn = happie_generate_handler or _default_happie_generate_handler
+    reference_turn_handler_fn = reference_turn_handler or _default_reference_turn_handler
+    patron_referencia_handler_fn = patron_referencia_handler or _default_patron_referencia_handler
+    bouquet_referencia_handler_fn = (
+        bouquet_referencia_handler or _default_bouquet_referencia_handler
+    )
+    conteo_referencia_handler_fn = conteo_referencia_handler or _default_conteo_referencia_handler
+    guirnalda_referencia_handler_fn = (
+        guirnalda_referencia_handler or _default_guirnalda_referencia_handler
+    )
+    lectura_unica_handler_fn = lectura_unica_handler or _default_lectura_unica_handler
+    flux_generate_handler_fn = flux_generate_handler or _default_flux_generate_handler
+    chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
+
+    @application.middleware("http")
+    async def request_context(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        request_id, correlation_id = _request_ids(request)
+        request.state.request_id = request_id
+        request.state.correlation_id = correlation_id
+        try:
+            response = await call_next(request)
+        except asyncio.CancelledError:
+            raise
+        response.headers.update(_response_headers(request))
+        return response
+
+    # Más externo que `request_context`: contexto (x-request-id, x-conversacion-id), `peticion.fin` y errores.
+    instalar_registro(application)
+
+    @application.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exception: HTTPException) -> JSONResponse:
+        code = _detail_code(exception)
+        request.app.state.metrics.increment(f"errors.{code}")
+        return _error_response(request, exception.status_code, code, _detail_metadata(exception))
+
+    @application.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exception: RequestValidationError
+    ) -> JSONResponse:
+        del exception
+        return _error_response(request, 422, "invalid_request")
+
+    @application.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exception: Exception) -> JSONResponse:
+        request.app.state.metrics.increment("errors.internal_error")
+        logger.exception(
+            "unhandled request error",
+            extra={
+                "request_id": request.state.request_id,
+                "correlation_id": request.state.correlation_id,
+            },
+        )
+        return _error_response(request, 500, "internal_error")
+
+    @application.get("/healthz")
+    def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @application.get("/readyz")
+    async def readyz(request: Request) -> dict[str, str]:
+        runtime_settings: Settings = request.app.state.settings
+        store = request.app.state.operational_store
+        if not _secret_is_valid(runtime_settings.hmac_secret) or store is None:
+            raise _error("not_ready", 503)
+        catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+        if catalog is None:
+            raise _error("not_ready", 503)
+        if runtime_settings.environment not in _LOCAL_ENVIRONMENTS and not getattr(
+            store, "durable", False
+        ):
+            raise _error("not_ready", 503)
+        check_ready = getattr(store, "check_ready", None)
+        if callable(check_ready):
+            try:
+                ready = await _await_result(check_ready())
+            except Exception:
+                ready = False
+            if not ready:
+                raise _error("not_ready", 503)
+        if not await catalog.check_ready():
+            raise _error("not_ready", 503)
+        if getattr(request.app.state, "rerank_warmup_error", None) is not None:
+            raise _error("not_ready", 503)
+        return {"status": "ready"}
+
+    @application.post("/internal/v1/echo")
+    async def echo(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="echo",
+            model=EchoRequest,
+            scope=current_settings.required_scope,
+            handler=cast(OperationalHandler, handler),
+        )
+
+    @application.post("/internal/v1/rerank")
+    async def rerank(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="rerank",
+            model=RerankRequest,
+            scope=current_settings.rerank_required_scope,
+            handler=cast(OperationalHandler, rerank_handler_fn),
+        )
+
+    @application.post("/internal/v1/embed")
+    async def embed(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="embed",
+            model=EmbeddingRequest,
+            scope=current_settings.embedding_required_scope,
+            handler=cast(OperationalHandler, embedding_handler_fn),
+        )
+
+    @application.post("/internal/v1/catalog/search")
+    async def catalog_search(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogSearchRequest):
+                raise _error("invalid_request", 422)
+            result = await catalog.search(payload)
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.search",
+            model=CatalogSearchRequest,
+            scope=CATALOG_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/catalog/colors")
+    async def catalog_colors(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogColorsRequest):
+                raise _error("invalid_request", 422)
+            result = await catalog.colors(payload)
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.colors",
+            model=CatalogColorsRequest,
+            scope=CATALOG_COLORS_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/catalog/selection")
+    async def catalog_selection(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogSelectionRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await catalog.select(payload)
+            except CatalogSelectionError as error:
+                raise _error(error.code, error.status_code) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.selection",
+            model=CatalogSelectionRequest,
+            scope="catalog.selection",
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/catalog/recommendations")
+    async def catalog_recommendations(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogRecommendationsRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await catalog.recommend(payload)
+            except CatalogRecommendationError as error:
+                raise _error(error.code, error.status_code) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.recommendations",
+            model=CatalogRecommendationsRequest,
+            scope=CATALOG_RECOMMENDATIONS_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/resolve")
+    async def plan_resolve(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = request.app.state.catalog_store
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, PlanResolutionRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await resolve_plan(payload, cast(CatalogPlanStore, catalog))
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.resolve",
+            model=PlanResolutionRequest,
+            scope=PLAN_RESOLUTION_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/edit")
+    async def plan_edit(request: Request) -> Response:
+        # ADR-0028 §9: the pure edit of the declarative plan. No catalog: Next
+        # admits the variant and resolves the edited plan afterwards.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanEditRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (pattern expansion and contract checks): off the loop. An edit that places the
+                # engine's balloons (arch, column, organic column, organic garland) takes the global engine slot:
+                # one at a time, `motor_ocupado` (429) otherwise. The rest of the edits are cheap and do not.
+                if payload.edicion.accion in ACCIONES_DE_MOTOR:
+                    result = await correr_motor(ejecutar_edicion, payload)
+                else:
+                    result = await run_plan_cpu(ejecutar_edicion, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.edit",
+            model=PlanEditRequest,
+            scope=PLAN_EDIT_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/patron")
+    async def plan_patron(request: Request) -> Response:
+        # ADR-0028 §10: expands (or suggests) one structure's color pattern for
+        # the editor, with the same grid and counts the next resolution quotes.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanPatronRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (pattern expansion and contract checks): off the loop.
+                result = await run_plan_cpu(vista_previa_patron, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.patron",
+            model=PlanPatronRequest,
+            scope=PLAN_PATRON_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-bouquet")
+    async def plan_armado_bouquet(request: Request) -> Response:
+        # ADR-0030 (second delivery): resolves (or suggests) one bouquet's
+        # assembly for the editor, without the catalog: the browser sends what
+        # each balloon is; the counts are the plan's.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(vista_previa_armado, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_bouquet",
+            model=PlanArmadoRequest,
+            scope=PLAN_ARMADO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-guirnalda")
+    async def plan_armado_guirnalda(request: Request) -> Response:
+        # ADR-0032: resolves (or suggests) one garland's assembly for the
+        # editor, without the catalog: the plan counts the balloons and the
+        # browser's resolved lines only name them.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoGuirnaldaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(vista_previa_armado_guirnalda, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_guirnalda",
+            model=PlanArmadoGuirnaldaRequest,
+            scope=PLAN_ARMADO_GUIRNALDA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/omoikane/armado-estructura")
+    async def omoikane_armado_estructura(request: Request) -> Response:
+        # ADR-0034 §5: las herramientas del motor del diseñador para el agente
+        # de chat. Consulta el catálogo de patrones, arma un arco o una columna
+        # con la puerta del motor, o completa con la receta lo que el modelo no
+        # armó al confirmar el plan. Sin catálogo y sin efecto: globos
+        # colocados y aritmética del motor.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, ArmadoEstructuraRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(resolver_armado_estructura, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="omoikane.armado_estructura",
+            model=ArmadoEstructuraRequest,
+            scope=OMOIKANE_ARMADO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-arco")
+    async def plan_armado_arco(request: Request) -> Response:
+        # ADR-0034: resolves (or suggests) one arch's assembly for the editor
+        # with the designer's migrated engine, and answers with its SVG. No
+        # catalog: the plan says what the piece is and the browser hands over
+        # the resolved tones. The drawing is derived -- it never enters the
+        # plan, the snapshot or `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoArcoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (it places every balloon and emits the SVG): off the loop.
+                result = await correr_motor(vista_previa_armado_arco, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_arco",
+            model=PlanArmadoArcoRequest,
+            scope=PLAN_ARMADO_ARCO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-columna")
+    async def plan_armado_columna(request: Request) -> Response:
+        # ADR-0034 / ADR-0035 paso 3: resolves (or suggests) one column's
+        # assembly for the editor with the designer's migrated engine, and
+        # answers with its SVG. Same shape as /plan/armado-arco: no catalog (the
+        # plan says what the piece is, the browser hands over the resolved
+        # tones) and the drawing is derived -- it never enters the plan, the
+        # snapshot or `plan_hash`. What the piece costs is counted by plan.py.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoColumnaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (it places every balloon and emits the SVG): off the loop.
+                result = await correr_motor(vista_previa_armado_columna, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_columna",
+            model=PlanArmadoColumnaRequest,
+            scope=PLAN_ARMADO_COLUMNA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-arco-organico")
+    async def plan_armado_arco_organico(request: Request) -> Response:
+        # ADR-0034: resuelve (o sugiere) el armado de un arco orgánico con el motor migrado del diseñador y
+        # responde con su SVG. No reemplaza a /plan/armado-arco (la rejilla de patrones): conviven, y un medio
+        # arco se arma por aquí con `forma.corte` menor que 1. Sin catálogo; el dibujo es derivado y nunca
+        # entra en `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoArcoOrganicoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Relaja colisiones hasta que ningún globo pisa a otro y luego emite el SVG: CPU pesada que no
+                # puede correr en el bucle de eventos.
+                result = await correr_motor(vista_previa_armado_arco_organico, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_arco_organico",
+            model=PlanArmadoArcoOrganicoRequest,
+            scope=PLAN_ARMADO_ARCO_ORGANICO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-columna-organica")
+    async def plan_armado_columna_organica(request: Request) -> Response:
+        # ADR-0034: resuelve (o sugiere) el armado de una columna orgánica con el motor migrado del diseñador y
+        # responde con su SVG. No reemplaza a /plan/armado-columna (la torre de anillos): conviven. Sin catálogo;
+        # el dibujo es derivado y nunca entra en `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoColumnaOrganicaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Relaja colisiones hasta que ningún globo pisa a otro y luego emite el SVG: CPU pesada que no
+                # puede correr en el bucle de eventos.
+                result = await correr_motor(vista_previa_armado_columna_organica, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_columna_organica",
+            model=PlanArmadoColumnaOrganicaRequest,
+            scope=PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-guirnalda-organica")
+    async def plan_armado_guirnalda_organica(request: Request) -> Response:
+        # ADR-0034: resolves (or suggests) one garland's assembly with the
+        # designer's migrated engine, and answers with its SVG. It does NOT
+        # replace /plan/armado-guirnalda (ADR-0032: clusters and toppers) --
+        # both describe the same piece from different angles and coexist. No
+        # catalog; the drawing is derived and never enters `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoGuirnaldaOrganicaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # The most expensive CPU work of the three engines (it relaxes
+                # collisions until no balloon overlaps another, then emits the
+                # SVG): it cannot run on the event loop.
+                result = await correr_motor(vista_previa_armado_guirnalda_organica, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_guirnalda_organica",
+            model=PlanArmadoGuirnaldaOrganicaRequest,
+            scope=PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/dibujo-estructura")
+    async def plan_dibujo_estructura(request: Request) -> Response:
+        # El dibujo esquemático de una pieza que ningún motor arma (la pared, el aro circular, el techo de
+        # globos, el centro de mesa). No es una vista previa de armado: aquí no hay motor, no se coloca ningún
+        # globo y no se cuenta nada -- la cuenta de la pieza es la de `plan.py` y llega hecha en `mezcla_real`.
+        # El dibujo es derivado y nunca entra en el plan, el snapshot ni `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanDibujoEstructuraRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU pura (coloca los globos del esquema y escribe el SVG): fuera del bucle de eventos. Va por
+                # `run_plan_cpu` y **no** por `correr_motor`: el cupo global de motores existe porque una vista
+                # previa de motor tarda cientos de milisegundos o segundos en el único hilo del plan, y estos
+                # dibujos no relajan colisiones -- medidos en este repo, 12,6 ms la pared (el más caro), 9,0 ms
+                # el aro, 2,4 ms el techo y 0,5 ms el centro de mesa. Con el cupo, un dibujo de 12 ms recibiría
+                # 429 solo porque otra pestaña está armando un arco.
+                result = await run_plan_cpu(vista_previa_dibujo_estructura, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.dibujo_estructura",
+            model=PlanDibujoEstructuraRequest,
+            scope=PLAN_DIBUJO_ESTRUCTURA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/guia-escena")
+    async def plan_guia_escena(request: Request) -> Response:
+        # Los globos de cada pieza del plan como discos en metros, para la guía de escena que la imagen recibe
+        # por /edit en lugar de la foto de referencia. No coloca ni cuenta nada: lee los globos que ya colocaron
+        # los motores (la misma puerta que la resolución) y los dibujos esquemáticos. Derivado: nunca entra en el
+        # plan, el snapshot ni `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanGuiaEscenaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Con la caché de la resolución caliente es casi gratis, pero una pieza de motor que no esté en
+                # ella se vuelve a armar (cientos de ms a segundos): comparte el cupo global de los motores.
+                result = await correr_motor(guia_escena, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.guia_escena",
+            model=PlanGuiaEscenaRequest,
+            scope=PLAN_GUIA_ESCENA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/estimar-conteo")
+    async def plan_estimar_conteo(request: Request) -> Response:
+        # Solo lectura: cuántos globos cobraría el plan para unos candidatos y
+        # qué variación de mandos los acerca a un conteo objetivo (el de la
+        # foto). Sin catálogo ni base de datos y sin escribir nada: no toca el
+        # plan resuelto, el token ni `plan_hash`. Cada cifra es de `plan.py`, del
+        # motor y de `conteo_foto`; aquí solo se valida y se traduce el error.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, EstimarConteoRequest):
+                raise _error("invalid_request", 422)
+            # A lo sumo una estimación a la vez y sin cola: el plan corre su CPU en un solo hilo y una
+            # estimación con motor puede tardar segundos; la segunda responde ocupado y se reintenta, en vez
+            # de esperar delante de `resolve_plan`.
+            reserva = ESTIMACION_EXCLUSIVA.reservar()
+            if reserva is None:
+                raise _error("estimacion_ocupada", 429)
+            try:
+                # CPU-bound (el motor coloca cada globo de la pieza): off the loop. El hilo suelta la reserva.
+                result = await run_plan_cpu(ESTIMACION_EXCLUSIVA.estimar, reserva, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            except BaseException:
+                # Cancelada o vencida en la cola sin haber corrido: nadie más soltaría la reserva.
+                ESTIMACION_EXCLUSIVA.soltar_si_no_inicio(reserva)
+                raise
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.estimar_conteo",
+            model=EstimarConteoRequest,
+            scope=ESTIMAR_CONTEO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/cotizacion-profesional")
+    async def plan_cotizacion_profesional(request: Request) -> Response:
+        # The professional decorator's costs on top of the plan's materials:
+        # pure arithmetic on what the decorator typed, no catalog, no side
+        # effect, outside plan_hash. A client that sends x-cotizacion-modos
+        # learns that this Python also quotes loose balloons (granel) before
+        # it ever sends a field an older Python would reject.
+        anunciar_modos = CABECERA_MODOS_MATERIALES in request.headers
+
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, CotizacionProfesionalRequest):
+                raise _error("invalid_request", 422)
+            return {"payload": cotizar_profesional(payload, anunciar_modos=anunciar_modos)}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.cotizacion_profesional",
+            model=CotizacionProfesionalRequest,
+            scope=COTIZACION_PROFESIONAL_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/lista-materiales")
+    async def plan_lista_materiales(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = request.app.state.catalog_store
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, ListaMaterialesOperationalRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await cotizar_lista_materiales(
+                    ListaMaterialesPayload.model_validate(
+                        {
+                            "schema_version": payload.schema_version,
+                            "materiales": [linea.model_dump() for linea in payload.materiales],
+                        }
+                    ),
+                    cast(CatalogMaterialQuoteStore, catalog),
+                )
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.lista_materiales",
+            model=ListaMaterialesOperationalRequest,
+            scope=LISTA_MATERIALES_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/ia/intent-parse")
+    async def ia_intent_parse(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.intent_parse",
+            model=IntentParseRequest,
+            scope=INTENT_PARSE_SCOPE,
+            handler=cast(OperationalHandler, intent_parse_handler_fn),
+        )
+
+    @application.post("/internal/v1/ia/happie-generate")
+    async def ia_happie_generate(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.happie_generate",
+            model=HappieGenerateRequest,
+            scope=HAPPIE_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, happie_generate_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_happie,
+        )
+
+    @application.post("/internal/v1/ia/reference-turn")
+    async def ia_reference_turn(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.reference_turn",
+            model=ReferenceTurnRequest,
+            scope=REFERENCE_TURN_SCOPE,
+            handler=cast(OperationalHandler, reference_turn_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/patron-referencia")
+    async def ia_patron_referencia(request: Request) -> Response:
+        # One reference photo per call: same body cap as the reference turn.
+        return await _handle_operational_request(
+            request,
+            operation="ia.patron_referencia",
+            model=PatronReferenciaRequest,
+            scope=PATRON_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, patron_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/bouquet-referencia")
+    async def ia_bouquet_referencia(request: Request) -> Response:
+        # One reference photo per call, like the pattern reading (ADR-0030).
+        return await _handle_operational_request(
+            request,
+            operation="ia.bouquet_referencia",
+            model=BouquetReferenciaRequest,
+            scope=BOUQUET_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, bouquet_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/conteo-referencia")
+    async def ia_conteo_referencia(request: Request) -> Response:
+        # One reference photo per call, like the pattern and bouquet readings (ADR-0031).
+        return await _handle_operational_request(
+            request,
+            operation="ia.conteo_referencia",
+            model=ConteoReferenciaRequest,
+            scope=CONTEO_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, conteo_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/guirnalda-referencia")
+    async def ia_guirnalda_referencia(request: Request) -> Response:
+        # One reference photo per call, like the other photo readings (ADR-0032, E4).
+        return await _handle_operational_request(
+            request,
+            operation="ia.guirnalda_referencia",
+            model=GuirnaldaReferenciaRequest,
+            scope=GUIRNALDA_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, guirnalda_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/lectura-unica")
+    async def ia_lectura_unica(request: Request) -> Response:
+        # One reference photo per call, like the four readings it replaces. No
+        # provider call: it only validates what the analysis already returned,
+        # and the photo travels so `tamano_imagen` can read its header.
+        return await _handle_operational_request(
+            request,
+            operation="ia.lectura_unica",
+            model=LecturaUnicaRequest,
+            scope=LECTURA_UNICA_SCOPE,
+            handler=cast(OperationalHandler, lectura_unica_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/lora-generate")
+    async def ia_flux_generate(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.lora_generate",
+            model=FluxGenerateRequest,
+            scope=FLUX_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, flux_generate_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/chat-turn-stream")
+    async def ia_chat_turn_stream(request: Request) -> Response:
+        return await _handle_operational_stream(
+            request,
+            operation="ia.chat_turn_stream",
+            model=ChatTurnStreamRequest,
+            scope=CHAT_TURN_STREAM_SCOPE,
+            open_stream=cast(OperationalStreamOpener, chat_turn_stream_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_chat,
+        )
+
+    return application
+
+
+app = create_app()
+
+
+__all__ = ["Settings", "app", "build_signature", "create_app", "signature_material"]

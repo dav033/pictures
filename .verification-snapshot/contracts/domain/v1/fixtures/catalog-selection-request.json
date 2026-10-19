@@ -1,0 +1,19 @@
+{
+  "schema_version": "catalog-selection.v1",
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "catalog_snapshot_id": "shopify-2026-09-07",
+  "items": [
+    {
+      "product_id": "prod-rojo",
+      "variant_id": "var-rojo-12",
+      "quantity": 24,
+      "reason": "Color principal del arco"
+    }
+  ],
+  "allowlist": [
+    {
+      "product_id": "prod-rojo",
+      "variant_ids": ["var-rojo-12"]
+    }
+  ]
+}

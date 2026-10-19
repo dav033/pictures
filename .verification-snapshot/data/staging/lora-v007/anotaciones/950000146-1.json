@@ -1,0 +1,130 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000146-1",
+  "image_sha256": "8cb0366409d67c21fbac28f2e565eac6b90e47af226b4bb52b1ce6396d1ad00b",
+  "idempotency_key": "6004633fbc0ce85906010635043d11ebbb21671d028c11963417a408b816acc8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000146/foto-1.jpg",
+    "orden": "950000146"
+  },
+  "anotacion": {
+    "image_id": "950000146-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.n_surtido.printed_tropical_leaves",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.n_surtido.printed_tropical_leaves",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon arch with purple, lime-green, orange, and tropical-leaf printed balloons surrounding a central opening."
+      }
+    ],
+    "non_purchased_elements": [
+      "pink floor covering",
+      "yellow floor covering"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.n_surtido.printed_tropical_leaves",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000146-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, framing the entrance, built from 12-inch matte Fashion purple orchid round latex balloons and round latex balloons in assorted colors with a matte Fashion finish and printed tropical-leaf pattern, 5-inch matte Fashion round latex balloons in lime green and orange, mixed organically rather than graded, alongside pink floor covering and yellow floor covering, set against white walls and a white floor.",
+    "palabras": 66,
+    "caracteres": 448,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_tropical_leaves",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_tropical_leaves",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:12:33.917Z",
+    "recompilado_en": "2026-09-03T14:45:24.654Z"
+  }
+}

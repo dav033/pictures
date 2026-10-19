@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-112",
+  "image_sha256": "6eec80333d073a65942b250a7621065182444fe5366d76e6c662064879ae6099",
+  "idempotency_key": "33091bcecfeee9eccbf9683c620776bc0208587ade0c92dec34543905d67d3e3",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-112.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Centro_de_Mesa_Navidad_Tradicional.png?v=1670007488",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-112",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.gold",
+          "balloon.modeling.latex.reflex.lime_green",
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Single floor-standing vertical balloon sculpture with a clear confetti balloon, metallic gold balloons, green modeling balloon, red balloons, and twisted gold accents."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes are not discernible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-112",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from high-shine Reflex modeling latex balloons in gold and lime green, matte Fashion clear round latex balloons, high-shine Reflex gold round latex balloons and translucent Crystal red round latex balloons with a printed pattern, set against white wall and white floor.",
+    "palabras": 50,
+    "caracteres": 341,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:14:40.475Z"
+  }
+}

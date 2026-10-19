@@ -1,0 +1,132 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000103-1",
+  "image_sha256": "613b635a55b4f6753c76bd21d88c34e1dbb84dfea858252ec265e67b5e496d0e",
+  "idempotency_key": "3374699f57e861cdb841bcbb4877148f05cf7849708e3143dfdf99e3852089b0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000103/foto-1.png",
+    "orden": "950000103"
+  },
+  "anotacion": {
+    "image_id": "950000103-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick walls and a dark patterned floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.caribbean_blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense organic balloon wall covering the background with pink, amethyst, green, and Caribbean blue round balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "wooden chairs",
+      "dessert trays",
+      "Halloween props",
+      "printed tablecloth"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.silk.amethyst"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000103-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 5-inch matte Fashion caribbean blue round latex balloons and fluorescent Neon round latex balloons in fuchsia and green, 9-inch satin Silk amethyst round latex balloons, mixed organically rather than graded, alongside wooden chairs, dessert trays, Halloween props and printed tablecloth, set against off-white brick walls and a dark patterned floor.",
+    "palabras": 61,
+    "caracteres": 430,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.silk.amethyst"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:07:20.099Z",
+    "recompilado_en": "2026-09-03T14:45:24.292Z"
+  }
+}

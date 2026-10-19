@@ -1,0 +1,132 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000054-1",
+  "image_sha256": "ecddf121a9f2a036a1e2468f6adc07ea467b8865bb970d05831d89f5684ab3ea",
+  "idempotency_key": "337608a2dd0234f09be7b3fee0be6092616553477db6c3f8fbb910ed266b50cf",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000054/foto-1.png",
+    "orden": "950000054"
+  },
+  "anotacion": {
+    "image_id": "950000054-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.gold",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "spherical topiary ball of red, white and gold round balloons on a stick over a base with red round balloons and gold twisted bow accents"
+      }
+    ],
+    "non_purchased_elements": [
+      "a support stick",
+      "printed balloons"
+    ],
+    "uncertainties": [
+      "exact placement in venue unknown, appears to be a studio product shot of a topiary centerpiece kit",
+      "printed heart balloons at the base are not in the allowed concept list so were excluded from visible_concept_ids"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000054-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, placed on the main table, built from 2-inch high-shine Reflex gold modeling latex balloons, 5-inch matte Fashion round latex balloons in red and white and high-shine Reflex gold round latex balloons, alongside a support stick and printed balloons, set against plain white studio background, no floor or wall visible.",
+    "palabras": 54,
+    "caracteres": 367,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:25.343Z",
+    "recompilado_en": "2026-09-03T14:45:23.786Z"
+  }
+}

@@ -1,0 +1,67 @@
+{
+ "caso": "oficial-columna",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "56965c63c707aa55d7ab0f4afd87364177a6b804eddd1313df0aee7c9b600104",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 12
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 8
+    }
+   ],
+   "unidades": 36,
+   "caja": [
+    -23,
+    0,
+    -183,
+    23,
+    188,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 8
+   }
+  ],
+  "unidades": 36
+ },
+ "caja": [
+  -23,
+  0,
+  -183,
+  23,
+  188,
+  -137
+ ]
+}

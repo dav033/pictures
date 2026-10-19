@@ -1,0 +1,225 @@
+{
+ "caso": "deco-real-31-python",
+ "origen": "python",
+ "idea": "deco-real-31-arco-futbol-balones-gigantes",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "031",
+   "cantidad": 12,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594213052711",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594213085479",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594213118247",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "080",
+   "cantidad": 11,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594234974503",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594235007271",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594235040039",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 12,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594221080871",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594221113639",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594221146407",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "031",
+   "cantidad": 32,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594213249319",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594213282087",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594213314855",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "080",
+   "cantidad": 29,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594235171111",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594235203879",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594235269415",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 28,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594221277479",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594221310247",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594221343015",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 39217,
+  "reserva": {
+   "objetivo": 12,
+   "cubierta": 12,
+   "sinCubrir": 0,
+   "excedenteNatural": 28
+  },
+  "compras": [
+   {
+    "variantId": "46594213085479",
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 1,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594213249319",
+    "paquetes": 3,
+    "cantidad": 32,
+    "reserva": 3,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594221113639",
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 1,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594221277479",
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221310247",
+    "paquetes": 1,
+    "cantidad": 16,
+    "reserva": 3,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594234974503",
+    "paquetes": 1,
+    "cantidad": 11,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235171111",
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235203879",
+    "paquetes": 1,
+    "cantidad": 17,
+    "reserva": 3,
+    "paraReserva": false
+   }
+  ]
+ }
+}

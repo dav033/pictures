@@ -1,0 +1,272 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15093-1",
+  "image_sha256": "d93f5fe0c778d2870d167952b0cf3f87eee6269e3c1f41731e26e492df666bb2",
+  "idempotency_key": "a812165daba0023a1b50a47b4dd9c85e80929bf9a841fc35d5a3da9d114d936b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15093/foto-1.jpg",
+    "orden": "15093"
+  },
+  "anotacion": {
+    "image_id": "15093-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "navy blue wall and a wood parquet floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s3"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "organic garland of navy, cream and gold balloons climbing up the left side of the metal hoop"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "bare white circular metal hoop mounted on the navy wall with a name script decal"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s3"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "small cluster of gold balloons at the base of the hoop's right side"
+      }
+    ],
+    "non_purchased_elements": [
+      "a pedestal",
+      "display stands",
+      "a letter marquee",
+      "a name sign"
+    ],
+    "uncertainties": [
+      "exact balloon sizes not distinguishable within the clustered garland",
+      "whether the small gold cluster on the right is a separate garland or part of the same one wrapping the hoop"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-24",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "15093-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorative accessory, built from 18-inch, 12-inch and 5-inch matte Fashion navy blue round latex balloons, 24-inch, 18-inch, 12-inch, 9-inch and 5-inch matte Fashion sand round latex balloons, 12-inch, 9-inch and 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, a decorative accessory, installed against the rear wall, with an organic balloon garland, anchored to the decorative accessory, built from high-shine Reflex gold round latex balloons, all in 12-inch, 9-inch and 5-inch, mixed organically rather than graded, alongside a pedestal, display stands, a letter marquee and a name sign, set against navy blue wall and a wood parquet floor.",
+    "palabras": 109,
+    "caracteres": 749,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:36.200Z",
+    "recompilado_en": "2026-09-03T14:45:22.552Z"
+  }
+}

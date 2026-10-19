@@ -1,0 +1,42 @@
+{
+  "schema_version": "quote.v1",
+  "currency": "COP",
+  "lines": [
+    {
+      "id": "var-rojo-12",
+      "product_id": "prod-rojo",
+      "variant_id": "var-rojo-12",
+      "size": "R-12",
+      "size_code": "R-12",
+      "diameter_inches": 12,
+      "structures": ["EST_01_ARCO"],
+      "origins": [{ "kind": "estructura", "id": "EST_01_ARCO" }],
+      "color": "rojo",
+      "required_quantity": 26,
+      "design_quantity": 24,
+      "waste_reserve": 2,
+      "purchase_quantity": 50,
+      "used": 24,
+      "leftover_inventory": 24,
+      "consumption_cost_cop": 6240,
+      "purchase_cost_cop": 12000,
+      "available": true,
+      "title": "Globo látex rojo — R-12",
+      "package_price_cop": 12000,
+      "units_per_package": 50,
+      "packages": 1,
+      "subtotal_cop": 12000,
+      "surplus": 26
+    }
+  ],
+  "total_cop": 12000,
+  "waste_percentage": 8,
+  "includes_vat": true,
+  "supported_complements": false,
+  "purchase_cost_cop": 12000,
+  "consumption_cost_cop": 6240,
+  "target_waste_reserve": 2,
+  "covered_waste_reserve": 2,
+  "leftover_inventory": 24,
+  "plan_hash": "sha256:fixture"
+}

@@ -1,0 +1,247 @@
+[
+ {
+  "id": "005",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 55,
+   "nota_min": 55,
+   "nota_max": 55,
+   "composicion": 7,
+   "geometria": 6,
+   "colores": 4,
+   "orden_color": 5.5,
+   "escala": 7,
+   "densidad": 8,
+   "orientacion": 8,
+   "topologia": 6,
+   "atrezo_inventado": [
+    "aro metálico circular de soporte",
+    "patas metálicas de la base",
+    "Estructura o aro metálico de soporte"
+   ],
+   "defectos": [
+    "Inclusión de globos en tono melocotón/crema no presentes en la referencia.",
+    "Ausencia del color azul claro/cian característico de la decoración original.",
+    "Estructura de soporte de aro metálico visible e inventada.",
+    "El extremo superior del semiarco cuelga hacia abajo en el centro."
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-6/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 25,
+   "nota_min": 25,
+   "nota_max": 25,
+   "composicion": 3.5,
+   "geometria": 3,
+   "colores": 2.5,
+   "orden_color": 2.5,
+   "escala": 5,
+   "densidad": 7,
+   "orientacion": 6.5,
+   "topologia": 4,
+   "atrezo_inventado": [
+    "Soporte metálico central para globos en el suelo",
+    "Soporte metálico vertical para globos"
+   ],
+   "defectos": [
+    "La estructura tiene forma de arco curvo en lugar del marco rectangular de la referencia.",
+    "La paleta de colores cambia totalmente de granate, gris y blanco a bronce metalizado y plata cromada.",
+    "Faltan los globos en forma de estrella integrados a lo largo del arco.",
+    "Se han añadido globos blancos con helio en los laterales que no existen en la foto original."
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-7/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 10,
+   "nota_min": 10,
+   "nota_max": 10,
+   "composicion": 1.5,
+   "geometria": 1.5,
+   "colores": 2,
+   "orden_color": 2,
+   "escala": 3,
+   "densidad": 3,
+   "orientacion": 2.5,
+   "topologia": 1.5,
+   "atrezo_inventado": [
+    "mesa buffet blanca con bandejas de dulces",
+    "mesa blanca de postres",
+    "pedestales y soportes de dulces"
+   ],
+   "defectos": [
+    "La composición de globos no tiene ninguna relación con la foto de referencia.",
+    "Sobran múltiples piezas de globos principales totalmente inventadas.",
+    "Faltan la guirnalda orgánica de la izquierda y el aro decorativo de la derecha.",
+    "Los colores cambian de tonos pastel a azul marino y gris oscuro.",
+    "No se incluyen los detalles y caras de monstruos sobre los globos."
+   ]
+  }
+ },
+ {
+  "id": "005",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 35,
+   "nota_min": 35,
+   "nota_max": 35,
+   "composicion": 6.5,
+   "geometria": 3,
+   "colores": 4.5,
+   "orden_color": 6,
+   "escala": 6,
+   "densidad": 8,
+   "orientacion": 5.5,
+   "topologia": 8,
+   "atrezo_inventado": [
+    "paneles de fondo rosa liso"
+   ],
+   "defectos": [
+    "La pieza izquierda se dobla hacia abajo en forma de gancho en lugar de formar un semiarco.",
+    "Los tonos difieren: azul marino y rosa pastel en vez de azul cielo y rosa intenso.",
+    "La columna derecha es cónica e irregular comparada con la columna vertical de la foto."
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-vino5/caso-6/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 32.5,
+   "nota_min": 30,
+   "nota_max": 35,
+   "composicion": 4.5,
+   "geometria": 3,
+   "colores": 5.5,
+   "orden_color": 5.5,
+   "escala": 4.5,
+   "densidad": 7.5,
+   "orientacion": 6,
+   "topologia": 5.5,
+   "atrezo_inventado": [
+    "Mesa blanca en primer plano",
+    "Mesa blanca con mantel en primer plano"
+   ],
+   "defectos": [
+    "La estructura pasa de ser un marco rectangular periférico a un arco curvo semicircular.",
+    "Faltan los globos con forma de estrella plateada integrados en la guirnalda.",
+    "Faltan los globos blancos en la paleta de la guirnalda principal.",
+    "Se incorporan globos metalizados de tono cobrizo/oro rosa no presentes en la referencia.",
+    "El globo transparente con confeti se ha reemplazado por un globo blanco opaco sobre la mesa."
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-aro/caso-7/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 22.5,
+   "nota_min": 20,
+   "nota_max": 25,
+   "composicion": 3,
+   "geometria": 2,
+   "colores": 3.5,
+   "orden_color": 4,
+   "escala": 4.5,
+   "densidad": 3.5,
+   "orientacion": 3.5,
+   "topologia": 3,
+   "atrezo_inventado": [
+    "mesa metálica con tartas y dulces",
+    "Mesa metálica con repostería"
+   ],
+   "defectos": [
+    "Se inventó un ramo de globos de helio dorados a la izquierda.",
+    "La guirnalda principal cambió a una estructura en L que recorre el techo y la derecha.",
+    "El aro con globos ralo de la derecha se convirtió en una corona densa central.",
+    "Los colores pastel de la foto se sustituyeron por tonos intensos y saturados.",
+    "Faltan las caritas de monstruos integradas en los globos."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "ganchos",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/estable-3x/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 38,
+   "nota_min": 38,
+   "nota_max": 38,
+   "composicion": 6,
+   "geometria": 5,
+   "colores": 5,
+   "orden_color": 2,
+   "escala": 5.5,
+   "densidad": 5,
+   "orientacion": 6,
+   "topologia": 7.5,
+   "atrezo_inventado": [
+    "panel de madera",
+    "pedestal blanco con tarta",
+    "panel de madera con forma de arco",
+    "pedestal blanco con tarta de varios pisos"
+   ],
+   "defectos": [
+    "Orden de color invertido: globos rosas en la base y metalizados en la parte superior.",
+    "Ausencia total de globos transparentes tipo burbuja presentes en la foto.",
+    "Estructuras con forma de gancho demasiado pronunciada y separadas del fondo.",
+    "Falta de densidad y variedad de tamaños de globos respecto al original."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "columnas",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v4/caso-2/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 2,
+   "nota": 82.5,
+   "nota_min": 80,
+   "nota_max": 85,
+   "composicion": 9,
+   "geometria": 8,
+   "colores": 7.5,
+   "orden_color": 8.5,
+   "escala": 8,
+   "densidad": 8.5,
+   "orientacion": 8.5,
+   "topologia": 9.5,
+   "atrezo_inventado": [
+    "pedestal blanco rectangular",
+    "panel de fondo de arco morado liso",
+    "panel de fondo violeta con forma de arco",
+    "pedestal rectangular blanco con tarta"
+   ],
+   "defectos": [
+    "El tono de rosa es más metálico y cálido (tipo oro rosa) en lugar del rosa pastel mate/perlado de la referencia.",
+    "La cima del semiarco izquierdo no se extiende tanto en horizontal hacia el centro como en la foto de referencia."
+   ]
+  }
+ }
+]

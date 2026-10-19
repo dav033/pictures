@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11216-1",
+  "image_sha256": "7286e1c3e3317f00e61043e22b7b510c8db55723b6300a5184915f8a4eed7c3a",
+  "idempotency_key": "da2419e9dbc43532151acadd811ce93b9ea613502edfc255a35008790df84254",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11216/foto-1.jpg",
+    "orden": "11216"
+  },
+  "anotacion": {
+    "image_id": "11216-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "an indoor stage area with a wood-paneled backdrop and a red tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "an organic balloon garland built on a freestanding arch frame over the stage, mixing dusty rose, sand, coffee brown, and silver chrome round balloons with small paper flower accents"
+      }
+    ],
+    "non_purchased_elements": [
+      "a large teddy bear",
+      "a birthday cake on a pedestal stand",
+      "pedestal display tables",
+      "gift bags and paper flowers"
+    ],
+    "uncertainties": [
+      "smaller accent-size balloons are present in the garland but their exact size codes (e.g. R-5) could not be reliably distinguished from perspective"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11216-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in coffee brown, dusty rose and sand and high-shine Reflex silver round latex balloons, all 12-inch, alongside a large teddy bear, a birthday cake on a pedestal stand, pedestal display tables and gift bags and paper flowers, set against an indoor stage area with a wood-paneled backdrop and a red tiled floor.",
+    "palabras": 70,
+    "caracteres": 435,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:30.787Z",
+    "recompilado_en": "2026-09-03T14:45:21.924Z"
+  }
+}

@@ -1,0 +1,337 @@
+"""Regression lock for the Python plan resolver over 31 frozen cases.
+
+``contracts/domain/v1/golden/plan-resolution`` holds 31 vectors. Each one is a
+whole resolution: a plan, its allowlist, the catalog rows it may buy from, and
+the ``plan-resolution-result.v1`` payload this service returns for it, stored
+under ``expected_python``. Since ADR-0023 step 5 retired the TypeScript
+resolver, this module is the only thing watching that the resolver's numbers --
+balloon counts, packages, prices, waste -- do not move by accident. Any change
+in them surfaces here as a field-by-field diff.
+
+What it does not lock: ``patrones_color[].posiciones``, the silhouette sketch of
+each piece, and ``sin_silueta``, the reason a piece has none (``_sin_croquis``).
+Both are derived drawing data outside the snapshot; the numbers they are drawn
+from are locked here as always.
+
+This is no longer a parity test. The vectors still carry a frozen ``expected``
+block, the output of the TypeScript resolver that no longer exists: nothing
+regenerates it, nothing reads it here, and it is kept in the JSON only as the
+record that a second, independent implementation once agreed on these numbers.
+A vector is valid with ``expected_python`` alone.
+
+Regenerating the oracle: after an intentional resolver change, run
+``REGRESION_ACTUALIZAR=1 pytest tests/test_plan_regresion.py``. That run
+rewrites ``expected_python`` in every vector and reports each case as skipped
+instead of asserting.
+
+Read this before regenerating: the expected values are then written by the very
+implementation under test, which turns this suite into a mirror -- it would
+agree with any behaviour, including a broken one. Regenerate only when the
+change in numbers is itself the intended outcome and somebody has reviewed the
+resulting diff case by case, and state in the commit message why the numbers
+moved. Regenerating to turn a red suite green freezes the regression into the
+oracle and nothing will catch it afterwards.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+
+import pytest
+
+from app.plan import PlanResolutionRequest, resolve_plan
+
+
+ROOT = Path(__file__).resolve().parents[3]
+VECTORS_DIRECTORY = ROOT / "contracts" / "domain" / "v1" / "golden" / "plan-resolution"
+REQUEST_ID = "00000000-0000-4000-8000-000000000101"
+CORRELATION_ID = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+
+
+def _mapping(value: object, location: str) -> dict[str, object]:
+    if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
+        raise ValueError(f"{location} must be a JSON object")
+    return {key: item for key, item in value.items() if isinstance(key, str)}
+
+
+def _list(value: object, location: str) -> list[object]:
+    if not isinstance(value, list):
+        raise ValueError(f"{location} must be a JSON array")
+    return value
+
+
+def _text(value: object, location: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{location} must be a non-empty string")
+    return value
+
+
+def _validate_catalog_rows(value: object, location: str) -> list[dict[str, object]]:
+    rows = [
+        _mapping(item, f"{location}[{index}]") for index, item in enumerate(_list(value, location))
+    ]
+    required_text = (
+        "product_id",
+        "variant_id",
+        "source_snapshot_id",
+        "producto_titulo",
+        "currency",
+    )
+    nullable_text = (
+        "sku",
+        "sku_original",
+        "source_variant_id",
+        "variante_titulo",
+        "codigo_tamano",
+        "forma",
+        "descripcion",
+        "imagen",
+    )
+    array_text = ("colores_producto", "colores_variante", "acabados_producto")
+    for index, row in enumerate(rows):
+        prefix = f"{location}[{index}]"
+        for field in required_text:
+            _text(row.get(field), f"{prefix}.{field}")
+        if row["currency"] != "COP":
+            raise ValueError(f"{prefix}.currency must be COP")
+        for field in nullable_text:
+            value = row.get(field)
+            if value is not None and not isinstance(value, str):
+                raise ValueError(f"{prefix}.{field} must be a string or null")
+        for field in array_text:
+            if any(
+                not isinstance(item, str) for item in _list(row.get(field), f"{prefix}.{field}")
+            ):
+                raise ValueError(f"{prefix}.{field} must contain only strings")
+        for field in ("disponible", "producto_disponible"):
+            if row.get(field) is not True:
+                raise ValueError(f"{prefix}.{field} must be true")
+        price = row.get("precio")
+        if isinstance(price, bool) or not isinstance(price, (int, float)) or price <= 0:
+            raise ValueError(f"{prefix}.precio must be a positive number")
+        units = row.get("unidades_paq")
+        if isinstance(units, bool) or not isinstance(units, int) or units <= 0:
+            raise ValueError(f"{prefix}.unidades_paq must be a positive integer")
+        inventory = row.get("inventory_quantity")
+        if inventory is not None and (
+            isinstance(inventory, bool) or not isinstance(inventory, int)
+        ):
+            raise ValueError(f"{prefix}.inventory_quantity must be an integer or null")
+        inferred = row.get("unidades_inferidas")
+        if inferred is not None and not isinstance(inferred, bool):
+            raise ValueError(f"{prefix}.unidades_inferidas must be a boolean or null")
+        diameter = row.get("diam_pulg")
+        if diameter is not None and (
+            isinstance(diameter, bool) or not isinstance(diameter, (int, float))
+        ):
+            raise ValueError(f"{prefix}.diam_pulg must be a number or null")
+    return rows
+
+
+def _load_vectors() -> list[dict[str, object]]:
+    vectors: list[dict[str, object]] = []
+    for path in sorted(VECTORS_DIRECTORY.glob("*.json")):
+        raw: object = json.loads(path.read_text(encoding="utf-8"))
+        vector = _mapping(raw, str(path))
+        _text(vector.get("name"), f"{path}.name")
+        _text(vector.get("catalog_snapshot_id"), f"{path}.catalog_snapshot_id")
+        _validate_catalog_rows(vector.get("catalog_rows"), f"{path}.catalog_rows")
+        _list(vector.get("allowlist"), f"{path}.allowlist")
+        _mapping(vector.get("plan"), f"{path}.plan")
+        vector["__path__"] = str(path)
+        vectors.append(vector)
+    if not vectors:
+        raise ValueError(f"No golden vectors found in {VECTORS_DIRECTORY}")
+    return vectors
+
+
+VECTORS = _load_vectors()
+
+
+class FakePlanStore:
+    def __init__(self, rows: Sequence[dict[str, object]], snapshot: str) -> None:
+        self.rows = list(rows)
+        self.snapshot = snapshot
+
+    async def published_snapshot(self, snapshot_id: str) -> str | None:
+        return self.snapshot if snapshot_id == self.snapshot else None
+
+    async def fetch_plan_rows(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        if snapshot_id != self.snapshot:
+            raise AssertionError(f"unexpected snapshot {snapshot_id!r}")
+        return self.rows
+
+    async def fetch_catalog_identity(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        if snapshot_id != self.snapshot:
+            raise AssertionError(f"unexpected snapshot {snapshot_id!r}")
+        identity: list[dict[str, object]] = [
+            {"product_id": row["product_id"], "variant_id": row["variant_id"]} for row in self.rows
+        ]
+        identity.extend(
+            {"product_id": product_id, "variant_id": None}
+            for product_id in dict.fromkeys(str(row["product_id"]) for row in self.rows)
+        )
+        return identity
+
+
+def _request(vector: Mapping[str, object]) -> PlanResolutionRequest:
+    snapshot = _text(vector["catalog_snapshot_id"], "catalog_snapshot_id")
+    plan = _mapping(vector["plan"], "plan")
+    allowlist = _list(vector["allowlist"], "allowlist")
+    return PlanResolutionRequest.model_validate(
+        {
+            "context": {
+                "schema_version": "operational.v1",
+                "request_id": REQUEST_ID,
+                "correlation_id": CORRELATION_ID,
+                "deadline_at": "2030-01-01T00:00:00Z",
+                "deadline_ms": 1000,
+                "body_sha256": "a" * 64,
+                "scopes": ["plan.resolve"],
+            },
+            "schema_version": "plan-resolution.v1",
+            "plan": plan,
+            "allowlist": allowlist,
+            "catalog_snapshot_id": snapshot,
+        }
+    )
+
+
+def _json_object(value: object) -> dict[str, object] | None:
+    if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
+        return None
+    return {key: item for key, item in value.items() if isinstance(key, str)}
+
+
+_MISSING = object()
+
+
+def _format_value(value: object) -> str:
+    if value is _MISSING:
+        return "<missing>"
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def _differences(expected: object, actual: object, path: str) -> list[tuple[str, object, object]]:
+    if type(expected) is not type(actual):
+        return [(path, expected, actual)]
+    expected_object = _json_object(expected)
+    actual_object = _json_object(actual)
+    if expected_object is not None and actual_object is not None:
+        differences: list[tuple[str, object, object]] = []
+        for key in sorted(set(expected_object) | set(actual_object)):
+            if key not in expected_object:
+                differences.append((f"{path}.{key}", _MISSING, actual_object[key]))
+            elif key not in actual_object:
+                differences.append((f"{path}.{key}", expected_object[key], _MISSING))
+            else:
+                differences.extend(
+                    _differences(expected_object[key], actual_object[key], f"{path}.{key}")
+                )
+        return differences
+    if isinstance(expected, list) and isinstance(actual, list):
+        differences = []
+        if len(expected) != len(actual):
+            differences.append((f"{path}.length", len(expected), len(actual)))
+        for index, (expected_item, actual_item) in enumerate(zip(expected, actual, strict=False)):
+            differences.extend(_differences(expected_item, actual_item, f"{path}[{index}]"))
+        return differences
+    return [] if expected == actual else [(path, expected, actual)]
+
+
+#: Lo que el croquis de una pieza añade al patrón resuelto: sus posiciones, o el
+#: motivo por el que no las tiene. Los dos son dibujo derivado.
+_CLAVES_CROQUIS = frozenset({"posiciones", "sin_silueta"})
+
+
+def _sin_croquis(result: Mapping[str, object]) -> dict[str, object]:
+    """``result`` sin el croquis de silueta de cada patrón de color.
+
+    ``patrones_color[].posiciones`` es el croquis de la pieza: cientos de flotantes
+    por estructura, derivados, fuera del snapshot y sin efecto en ``plan_hash``
+    ni en ninguna cantidad, y ``sin_silueta`` es el motivo por el que una pieza no
+    lo tiene. Este oráculo vigila los NÚMEROS del resolutor (globos, paquetes,
+    precios, merma) y por eso no los congela: meterlos aquí añadiría miles de
+    coordenadas a los vectores y obligaría a reescribir el oráculo cada vez que se
+    afine el dibujo, que es justo la costumbre contra la que advierte la cabecera
+    de este módulo. Lo que sí se verifica —que cada color reciba exactamente los
+    globos de ``conteo``, que ``plan_hash`` no se mueva y que el motivo aparezca
+    cuando el croquis falta— vive en ``tests/test_silueta_patron.py``.
+
+    Se limpian los dos lados: un vector regenerado con el croquis dentro tampoco
+    debe hacer fallar la comparación por el dibujo.
+    """
+    plan_resuelto = _json_object(result.get("plan_resuelto"))
+    patrones = plan_resuelto.get("patrones_color") if plan_resuelto else None
+    if plan_resuelto is None or not isinstance(patrones, list):
+        return dict(result)
+    return {
+        **result,
+        "plan_resuelto": {
+            **plan_resuelto,
+            "patrones_color": [
+                {clave: valor for clave, valor in patron.items() if clave not in _CLAVES_CROQUIS}
+                if isinstance(patron, dict)
+                else patron
+                for patron in patrones
+            ],
+        },
+    }
+
+
+def _write_expected_python(vector: Mapping[str, object], result: Mapping[str, object]) -> None:
+    # Sin el croquis: no se compara (``_sin_croquis``) y guardarlo metía cientos
+    # de coordenadas por pieza en cada vector. Una regeneración rutinaria salía
+    # entonces con 2.379 líneas de dibujo añadidas y ningún número movido, que es
+    # el diff que nadie repasa caso por caso (2026-09-29, al añadir el vector 32).
+    stored_result = _sin_croquis(result)
+    path = Path(_text(vector["__path__"], "__path__"))
+    stored: dict[str, object] = json.loads(path.read_text(encoding="utf-8"))
+    stored["expected_python"] = stored_result
+    path.write_text(
+        json.dumps(stored, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("vector", VECTORS, ids=lambda vector: str(vector["name"]))
+async def test_resolver_matches_the_frozen_vector(vector: dict[str, object]) -> None:
+    rows = _validate_catalog_rows(vector["catalog_rows"], f"{vector['name']}.catalog_rows")
+    snapshot = _text(vector["catalog_snapshot_id"], f"{vector['name']}.catalog_snapshot_id")
+    result = await resolve_plan(_request(vector), FakePlanStore(rows, snapshot))
+
+    if os.environ.get("REGRESION_ACTUALIZAR") == "1":
+        _write_expected_python(vector, result)
+        pytest.skip(f"{vector['name']}: expected_python regenerado")
+
+    expected = vector.get("expected_python")
+    if expected is None:
+        pytest.fail(
+            f"{vector['name']}: falta expected_python; regeneralo con "
+            "REGRESION_ACTUALIZAR=1 pytest tests/test_plan_regresion.py"
+        )
+    differences = _differences(
+        _sin_croquis(_mapping(expected, f"{vector['name']}.expected_python")),
+        _sin_croquis(result),
+        "expected_python",
+    )
+    if differences:
+        details = "\n".join(
+            f"- {path}: expected {_format_value(expected_value)}, actual {_format_value(actual_value)}"
+            for path, expected_value, actual_value in differences[:40]
+        )
+        pytest.fail(f"{vector['name']}: {len(differences)} field difference(s)\n{details}")

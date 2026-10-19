@@ -1,0 +1,398 @@
+{
+  "id": "nueva-sempertex-01",
+  "fuente": "sempertex-01.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-21-bouquet-flores-modelables.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "25d595af-22c6-4086-9152-2fdd663ffc62",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.2982
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Balloon Flower Bouquet Arrangement",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Multi-color twisted balloon flower bouquet sitting inside a cylindrical base container.",
+          "reference_bbox": {
+            "x": 0.239,
+            "y": 0.101,
+            "width": 0.501,
+            "height": 0.73
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte orange",
+              "matte light pink",
+              "matte hot pink",
+              "matte sage green",
+              "matte peach"
+            ],
+            "measured_colors": [
+              {
+                "color": "naranja",
+                "share": 0.1599
+              },
+              {
+                "color": "rosado",
+                "share": 0.1161
+              },
+              {
+                "color": "coral",
+                "share": 0.0856
+              },
+              {
+                "color": "fucsia",
+                "share": 0.0787
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex balloon, twisting balloons",
+            "shape": "medium dense asymmetrical bouquet, on the center, raised off the floor",
+            "composition": "30% pink twist balloons formed into floral petals and berries, 25% orange twisted balloons forming flower petals, 25% light peach round/twisted balloons, 20% sage green long balloons forming stems and foliage.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "rosado",
+                "naranja",
+                "verde",
+                "beige",
+                "fucsia"
+              ],
+              "pesos": [
+                35,
+                30,
+                15,
+                10,
+                10
+              ],
+              "confianza": 0.9
+            },
+            "armado_bouquet": {
+              "variante": "base_aire",
+              "niveles": [
+                {
+                  "unidad": "suelto",
+                  "colores": [
+                    "naranja",
+                    "rosado",
+                    "verde"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "grande"
+                }
+              ],
+              "confianza": 0.85,
+              "total_globos": 3,
+              "avisos": [
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 38,
+              "exacto": false,
+              "estimado_total": 45,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "061",
+                "familia": "fashion",
+                "nombre": "Naranja",
+                "nombre_completo": "Fashion Naranja",
+                "parte": 0.1609,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "012",
+                "familia": "fashion",
+                "nombre": "Fucsia",
+                "nombre_completo": "Fashion Fucsia",
+                "parte": 0.1559,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "piso_frontal",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central focal decorative element of the image.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "White Cylindrical Vase Container",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "White cylindrical container holding the bottom of the balloon stems.",
+          "reference_bbox": {
+            "x": 0.434,
+            "y": 0.752,
+            "width": 0.13799999999999996,
+            "height": 0.16500000000000004
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.8244
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "ceramic / plastic",
+            "shape": "shape not determinable",
+            "composition": "100% solid white cylindrical vase supporting the balloon bouquet base."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Base holder supporting the balloon arrangement.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Large central orange balloon flower arrangement standing in a white cylindrical vase.",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "light pink",
+          "orange",
+          "sage green",
+          "hot pink",
+          "peach",
+          "white"
+        ],
+        "priority": [
+          "light pink",
+          "orange",
+          "sage green",
+          "hot pink",
+          "peach",
+          "white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "1dfd389fa68c7eb835ff3e512e9fe15ab4c0a022ed5e6944d5924b41a12cc822",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 740,
+            "height": 570
+          },
+          "processed": {
+            "width": 740,
+            "height": 570
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 47422,
+            "deLaCaja": 74273
+          },
+          "colores": [
+            {
+              "hex": "#e8a274",
+              "parte": 0.2518,
+              "pixeles": 11940,
+              "cruce": {
+                "hex": "#e8a274",
+                "candidatas": [
+                  {
+                    "codigo": "060",
+                    "nombre": "Durazno",
+                    "nombreCompleto": "Fashion Durazno",
+                    "nombreEn": "peach",
+                    "pms": "1565",
+                    "acabado": "matte",
+                    "hexGlobo": "#f6c09e",
+                    "deltaE": 14.7,
+                    "distancia": 9.2,
+                    "tono": 0.2,
+                    "razonCroma": 1.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "fashion",
+                  "pastelMate",
+                  "neon"
+                ]
+              }
+            },
+            {
+              "hex": "#fb7b08",
+              "parte": 0.1609,
+              "pixeles": 7629,
+              "cruce": {
+                "hex": "#fb7b08",
+                "candidatas": [
+                  {
+                    "codigo": "061",
+                    "nombre": "Naranja",
+                    "nombreCompleto": "Fashion Naranja",
+                    "nombreEn": "matte orange",
+                    "pms": "021",
+                    "acabado": "matte",
+                    "hexGlobo": "#e75d1d",
+                    "deltaE": 16.6,
+                    "distancia": 13.4,
+                    "tono": 9.1,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "fashion",
+                  "pastelMate",
+                  "neon"
+                ]
+              }
+            },
+            {
+              "hex": "#f85173",
+              "parte": 0.1559,
+              "pixeles": 7391,
+              "cruce": {
+                "hex": "#f85173",
+                "candidatas": [
+                  {
+                    "codigo": "012",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Fashion Fucsia",
+                    "nombreEn": "matte hot pink",
+                    "pms": "205",
+                    "acabado": "matte",
+                    "hexGlobo": "#e44a80",
+                    "deltaE": 14.6,
+                    "distancia": 13.7,
+                    "tono": 11.6,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "fashion",
+                  "pastelMate",
+                  "neon"
+                ]
+              }
+            }
+          ],
+          "avisos": [
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

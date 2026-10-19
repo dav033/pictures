@@ -1,0 +1,59 @@
+[
+ {
+  "id": "F7-5",
+  "grupo": "escuadra-r1",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/escuadra-v4/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 35,
+   "nota_min": 35,
+   "nota_max": 35,
+   "composicion": 5,
+   "geometria": 5,
+   "colores": 4,
+   "orden_color": 5,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 6,
+   "topologia": 6,
+   "atrezo_inventado": [
+    "Fondo de cortina dorada brillante."
+   ],
+   "defectos": [
+    "La guirnalda en L de la referencia se convierte en un arco que cruza la parte superior y baja por la derecha.",
+    "El azul marino de la referencia aparece azul metálico claro.",
+    "Falta el panel central de lentejuelas doradas que acompaña y enmarca la guirnalda original."
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "escuadra-r2",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/escuadra-v4/caso-5/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 32,
+   "nota_min": 32,
+   "nota_max": 32,
+   "composicion": 3,
+   "geometria": 3,
+   "colores": 5,
+   "orden_color": 6,
+   "escala": 6,
+   "densidad": 6,
+   "orientacion": 4,
+   "topologia": 4,
+   "atrezo_inventado": [
+    "Cortina dorada de lentejuelas"
+   ],
+   "defectos": [
+    "La guirnalda cambia de recorrido: sube desde la izquierda y cruza la parte superior, en vez de rodear la derecha.",
+    "El azul marino de la referencia se sustituye por azul metálico claro.",
+    "Se añaden globos champán con cintas en el lado derecho.",
+    "La guirnalda ocupa otra distribución y deja libre el centro de la composición."
+   ]
+  }
+ }
+]

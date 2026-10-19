@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-105",
+  "image_sha256": "debf526fba9f6b2267b3ff957680da6eb71410eaba9edf0065629b9a55ba89a4",
+  "idempotency_key": "5b116bb0b87371e1160a32fb9a31411e7e87823d27406a3ef56ee0633a6615e3",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-105.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arbol_de_Navidad_Graffiti_Invierno.png?v=1670008061",
+    "product_breakdown_status": "partial_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-105",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and a red floor covering",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl",
+          "balloon.round.latex.satin.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A single centered vertical balloon Christmas tree with mixed round balloons, evergreen branches, and a large balloon bow topper."
+      }
+    ],
+    "non_purchased_elements": [
+      "artificial evergreen branches",
+      "a red floor covering"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-105",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from high-shine Reflex gold round latex balloons, Satin round latex balloons in pearl and silver and matte Fashion clear round latex balloons with a printed pattern, alongside artificial evergreen branches and a red floor covering, set against a white wall and a red floor covering.",
+    "palabras": 54,
+    "caracteres": 354,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:09:43.918Z"
+  }
+}

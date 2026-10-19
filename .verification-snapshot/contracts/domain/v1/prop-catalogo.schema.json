@@ -1,0 +1,169 @@
+{
+  "$id": "prop-catalogo.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "prop_id": {
+      "type": "string",
+      "pattern": "^PROP_[A-Za-z0-9_]+$"
+    },
+    "product_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "variant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "unidades_declaradas": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 999
+    },
+    "rol_escena": {
+      "type": "string",
+      "enum": [
+        "focal",
+        "soporte",
+        "relleno",
+        "acento",
+        "servicio"
+      ]
+    },
+    "ubicacion": {
+      "type": "string",
+      "enum": [
+        "fondo_pared",
+        "sobre_mesa_principal",
+        "lateral_izquierdo",
+        "lateral_derecho",
+        "piso_frontal",
+        "mesas_invitados",
+        "entrada",
+        "techo",
+        "zona_central",
+        "fachada",
+        "pared_lateral",
+        "alrededor_mobiliario",
+        "vegetacion",
+        "techo_multipunto",
+        "recorrido_suelo",
+        "esquina"
+      ]
+    },
+    "relaciones_fisicas": {
+      "default": [],
+      "maxItems": 2,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relacion": {
+            "type": "string",
+            "enum": [
+              "enmarcar",
+              "trepar_por",
+              "envolver",
+              "colgar_de",
+              "derramarse_sobre",
+              "montar_sobre",
+              "apoyarse_en",
+              "conectar_con",
+              "quedar_detras_de",
+              "quedar_debajo_de"
+            ]
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "ancla_espacio"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "elemento_plan"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "prioridad": {
+            "type": "string",
+            "enum": [
+              "primaria",
+              "secundaria"
+            ]
+          },
+          "distribucion": {
+            "type": "string",
+            "enum": [
+              "continua",
+              "asimetrica",
+              "en_racimos",
+              "multipunto",
+              "alturas_escalonadas",
+              "recorrido"
+            ]
+          }
+        },
+        "required": [
+          "relacion",
+          "target",
+          "prioridad"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "porque": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "referencia_element_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    }
+  },
+  "required": [
+    "prop_id",
+    "product_id",
+    "variant_id",
+    "unidades_declaradas",
+    "rol_escena",
+    "ubicacion",
+    "relaciones_fisicas",
+    "porque"
+  ],
+  "additionalProperties": false
+}

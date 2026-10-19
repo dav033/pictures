@@ -1,0 +1,121 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8248-1",
+  "image_sha256": "1e0399caaba6c9d2068b66915b62c04b947ba903eab113b1e768b84002986524",
+  "idempotency_key": "cb1d8ad43bcbaea7c4d94cf722c0e09bb95867e5bdef380ceb1b134f8ea62aeb",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8248/foto-1.jpg",
+    "orden": "8248"
+  },
+  "anotacion": {
+    "image_id": "8248-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a light marble-tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.jungle_green",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.coffee_brown"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.jungle_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic 3D balloon cluster arching from the corner over the dessert tables to the floor, dark green, lime green and brown round balloons in tight organic clusters, matching the order's single confirmed diameter per color"
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "a foil dinosaur balloon",
+      "dinosaur toy figurines",
+      "a gold number balloon"
+    ],
+    "uncertainties": [
+      "Yellow round balloons are prominent in the arch but no yellow concept is in the allowed list, so they were omitted",
+      "Small white accent balloons scattered in the arch are not in the allowed list and were omitted"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8248-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, installed against the rear wall, built from matte Fashion round latex balloons in coffee brown, jungle green and lime green, all at a single 12-inch size, alongside a birthday cake, a foil dinosaur balloon, dinosaur toy figurines and a gold number balloon, set against white walls and a light marble-tiled floor.",
+    "palabras": 56,
+    "caracteres": 358,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.jungle_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:46:17.341Z",
+    "recompilado_en": "2026-09-03T14:45:23.088Z"
+  }
+}

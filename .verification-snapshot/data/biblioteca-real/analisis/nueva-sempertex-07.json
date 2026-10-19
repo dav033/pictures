@@ -1,0 +1,367 @@
+{
+  "id": "nueva-sempertex-07",
+  "fuente": "sempertex-07.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-27-aro-navideno-verde-salvia.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "5bbfb179-2d0c-4da8-8c25-7245f336710a",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.5009
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "balloon_hoop_wreath",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A circular gold frame partially covered in sage/menta green latex balloons with decorative ornament shapes made of chrome gold twisters, silver/blue round balloons, and white balloon snowflakes inside the hoop ring.",
+          "reference_bbox": {
+            "x": 0.11,
+            "y": 0.056,
+            "width": 0.7020000000000001,
+            "height": 0.9139999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte menta green",
+              "chrome gold",
+              "pearl silver",
+              "dusty blue with snowflake print",
+              "pearl white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.4868
+              },
+              {
+                "color": "plateado",
+                "share": 0.3129
+              },
+              {
+                "color": "menta",
+                "share": 0.1275
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex, foil, metal hoop",
+            "shape": "tall asymmetrical circular hoop, on the center, raised off the floor",
+            "composition": "70% menta green round balloons forming the crescent base on a gold hoop, with accent ornament balloons in silver, dusty blue, chrome gold, and white floating balloon snowflakes.",
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 180,
+              "exacto": false,
+              "estimado_total": 250,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "sobre_estructura",
+              "forma": "curva",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.541,
+              "desnivel_relativo": 0.5,
+              "racimos_visibles": 45,
+              "colores_por_racimo": [
+                "menta",
+                "menta",
+                "menta"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "plateado",
+                  "posicion": "centro"
+                },
+                {
+                  "clase": "latex",
+                  "color": "azul",
+                  "posicion": "centro"
+                },
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "cada_n"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "806",
+                "familia": "silk",
+                "nombre": "Blanco Nácar",
+                "nombre_completo": "Silk Blanco Nácar",
+                "parte": 0.6261,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.0929,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary balloon structure in scene",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Circular balloon wreath/hoop structure decorated with winter-themed ornaments and snowflake accents",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "menta green",
+          "chrome gold",
+          "pearl silver",
+          "dusty blue",
+          "white"
+        ],
+        "priority": [
+          "menta green",
+          "chrome gold",
+          "pearl silver",
+          "dusty blue",
+          "white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "0042e0c33b1701b29a10d01917d99dd87d4018a90cd16202bece33f59c4177fd",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 6000,
+            "height": 4000
+          },
+          "processed": {
+            "width": 800,
+            "height": 533
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 55296,
+            "deLaCaja": 112320
+          },
+          "colores": [
+            {
+              "hex": "#cbcbc2",
+              "parte": 0.6261,
+              "pixeles": 34622,
+              "cruce": {
+                "hex": "#cbcbc2",
+                "candidatas": [
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 6.1,
+                    "distancia": 5,
+                    "tono": 116.2,
+                    "razonCroma": 4
+                  },
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 10.5,
+                    "distancia": 7,
+                    "tono": 22.6,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#81a492",
+              "parte": 0.281,
+              "pixeles": 15536,
+              "cruce": {
+                "hex": "#81a492",
+                "candidatas": [
+                  {
+                    "codigo": "030",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Fashion Verde",
+                    "nombreEn": "deep matte green",
+                    "pms": "3405",
+                    "acabado": "matte",
+                    "hexGlobo": "#43b88e",
+                    "deltaE": 28,
+                    "distancia": 8.9,
+                    "tono": 3.5,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "126",
+                    "nombre": "Té Verde",
+                    "nombreCompleto": "Pastel Dusk Té Verde",
+                    "nombreEn": "dusty pastel sage green",
+                    "pms": "623",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#aad5ba",
+                    "deltaE": 18,
+                    "distancia": 13.9,
+                    "tono": 5.3,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "032",
+                    "nombre": "Verde Selva",
+                    "nombreCompleto": "Fashion Verde Selva",
+                    "nombreEn": "matte dark green",
+                    "pms": "341",
+                    "acabado": "matte",
+                    "hexGlobo": "#007b45",
+                    "deltaE": 36.8,
+                    "distancia": 22,
+                    "tono": 7.8,
+                    "razonCroma": 0.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#91886b",
+              "parte": 0.0929,
+              "pixeles": 5138,
+              "cruce": {
+                "hex": "#91886b",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 21.5,
+                    "distancia": 11.9,
+                    "tono": 10,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un tono era el mismo color con otra luz y se juntó con el suyo.",
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

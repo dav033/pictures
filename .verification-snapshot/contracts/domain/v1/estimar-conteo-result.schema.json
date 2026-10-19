@@ -1,0 +1,452 @@
+{
+  "$id": "estimar-conteo-result.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "operation_schema_version": {
+      "type": "string",
+      "const": "estimar-conteo-result.v1"
+    },
+    "objetivo": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "conteo": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "exacto": {
+              "type": "boolean"
+            },
+            "tolerancia": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "conteo",
+            "exacto",
+            "tolerancia"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidatos": {
+      "minItems": 1,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "etiqueta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "arco",
+              "semiarco",
+              "guirnalda",
+              "columna",
+              "pared",
+              "centro_mesa"
+            ]
+          },
+          "repeticiones": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          },
+          "total_formula": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "total_motor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_vigente": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "fuente": {
+            "type": "string",
+            "enum": [
+              "formula",
+              "motor"
+            ]
+          },
+          "total_instalado": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "eje_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "globos_por_metro": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formula_clasica": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reparto_por_tamano": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pulgadas": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "cantidad": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "proporcion": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "pulgadas",
+                "cantidad",
+                "proporcion"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "puerta_fisica": {
+            "type": "object",
+            "properties": {
+              "dentro": {
+                "type": "boolean"
+              },
+              "avisos": {
+                "maxItems": 12,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            },
+            "required": [
+              "dentro",
+              "avisos"
+            ],
+            "additionalProperties": false
+          },
+          "avisos": {
+            "maxItems": 24,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 900
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "brecha": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "objetivo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "diferencia": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "absoluta": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "relativa": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "tolerancia": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "dentro_de_tolerancia": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "objetivo",
+                  "diferencia",
+                  "absoluta",
+                  "relativa",
+                  "tolerancia",
+                  "dentro_de_tolerancia"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sugerencia": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "no_necesaria",
+                      "propuesta",
+                      "sin_ajuste_posible",
+                      "no_evaluada",
+                      "cortada_por_tope"
+                    ]
+                  },
+                  "via": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "formula",
+                          "motor"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cambios": {
+                    "maxItems": 9,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "campo": {
+                          "type": "string",
+                          "enum": [
+                            "densidad",
+                            "ancho_m",
+                            "alto_m",
+                            "largo_m",
+                            "tamano_globo",
+                            "globos_ancho",
+                            "globos_capa",
+                            "abajo",
+                            "arriba"
+                          ]
+                        },
+                        "antes": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "despues": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "campo",
+                        "antes",
+                        "despues"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "total_resultante": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "brecha": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "objetivo": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "diferencia": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "absoluta": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "relativa": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "tolerancia": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "dentro_de_tolerancia": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "objetivo",
+                          "diferencia",
+                          "absoluta",
+                          "relativa",
+                          "tolerancia",
+                          "dentro_de_tolerancia"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "estado",
+                  "via",
+                  "cambios",
+                  "total_resultante",
+                  "brecha",
+                  "motivo"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "etiqueta",
+          "tipo",
+          "repeticiones",
+          "total_formula",
+          "total_motor",
+          "total_vigente",
+          "fuente",
+          "total_instalado",
+          "eje_m",
+          "globos_por_metro",
+          "formula_clasica",
+          "reparto_por_tamano",
+          "puerta_fisica",
+          "avisos",
+          "nota",
+          "brecha",
+          "sugerencia"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "mejor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "operation_schema_version",
+    "objetivo",
+    "candidatos",
+    "mejor"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,104 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000161-1",
+  "image_sha256": "45e585c0d4db03c823f9a9e13589bc6cbc2142398b0d04564e8b47313b53f5e6",
+  "idempotency_key": "ecefac1c9703e13a35418372c9521ad4d109578e8eaea882ff57d8a57b04d7ef",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000161/foto-1.png",
+    "orden": "950000161"
+  },
+  "anotacion": {
+    "image_id": "950000161-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.red",
+          "balloon.modeling.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.white",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Standalone red modeling-balloon crab sculpture with white balloon eyes"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "No wall or floor is visible; placement is inferred from the isolated product-style view"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000161-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion modeling latex balloons in red and white, all at a single 2-inch size, set against white background.",
+    "palabras": 29,
+    "caracteres": 192,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.white",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:19:38.704Z",
+    "recompilado_en": "2026-09-03T14:45:24.881Z"
+  }
+}

@@ -1,0 +1,606 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Correcta: arco clásico blanco y negro de unas 38 capas de 4, un solo tamaño.",
+  "descartadas": [],
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "9d88c3ea-8241-571b-8f3c-78299fe8e21a",
+    "concepto": {
+      "titulo": "real-14-images-29",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "negro",
+        "blanco"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco",
+        "tipo": "arco",
+        "rol_escena": "focal",
+        "ubicacion": "arco_central",
+        "medidas": {
+          "ancho_m": 2.4,
+          "alto_m": 2.2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239516967",
+            "variant_id": "46594235269415",
+            "color": "negro",
+            "participacion": 0.5,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "color": "blanco",
+            "participacion": 0.5,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "arco",
+        "colores_referencia": [
+          "negro",
+          "blanco"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "9d88c3ea-8241-571b-8f3c-78299fe8e21a",
+      "concepto": {
+        "titulo": "real-14-images-29",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "negro",
+          "blanco"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco",
+          "tipo": "arco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634239516967",
+              "variant_id": "46594235269415",
+              "color": "negro",
+              "participacion": 0.5,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634235781415",
+              "variant_id": "46594221343015",
+              "color": "blanco",
+              "participacion": 0.5,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "arco",
+          "colores_referencia": [
+            "negro",
+            "blanco"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+        "Arco: la foto muestra unos 152 globos y el plan tenía 116; densidad media → lujosa: quedó en 145."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "9212595fe8018dee7682dfe2d7f961830d095f889ce187948dd8988a8b63c3f4",
+    "request_id": "f3f686c6-92e2-51cf-bb71-1a4b9887ca24",
+    "compras": [
+      {
+        "variant_id": "46594221343015",
+        "product_id": "8634235781415",
+        "sku": "B2B-20000723",
+        "sku_original": "B2B-20000723",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+        "inventory_quantity": 930449,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 72,
+        "design_quantity": 72,
+        "waste_reserve": 12,
+        "required_quantity": 84,
+        "unidades_con_merma": 84,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 72,
+        "leftover_inventory": 16,
+        "consumption_cost": 21902,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 28,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+      },
+      {
+        "variant_id": "46594235269415",
+        "product_id": "8634239516967",
+        "sku": "B2B-20000781",
+        "sku_original": "B2B-20000781",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+        "inventory_quantity": 957375,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "negro",
+        "unidades_necesarias": 73,
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "unidades_con_merma": 73,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 73,
+        "leftover_inventory": 27,
+        "consumption_cost": 19034,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 27,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 145
+      },
+      "total_unidades": 145,
+      "total_cop": 52148,
+      "design_quantity": 145,
+      "target_waste_reserve": 12,
+      "covered_waste_reserve": 12,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 55,
+      "purchase_cost": 52148,
+      "consumption_cost": 40936,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 5.46,
+        "total_unidades": 145,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235269415",
+            "sku": "B2B-20000781",
+            "sku_original": "B2B-20000781",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+            "inventory_quantity": 957375,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+            "color": "negro",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 73,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 72,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 145,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 37807
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 95,
+          "exacto": false,
+          "estimado_total": 152,
+          "racimos": 38,
+          "globos_por_racimo": 4,
+          "por_tamano": [
+            {
+              "clase": "mediano",
+              "proporcion": 1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.92
+        },
+        "globos_foto": 152,
+        "globos_antes": 116,
+        "globos_despues": 145,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          }
+        ],
+        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "arco",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 2.4,
+        "height": 2.2,
+        "length": null
+      },
+      "installation_length_m": 5.46,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "waste_adjusted_quantity": 73
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 72,
+        "waste_reserve": 0,
+        "required_quantity": 72,
+        "waste_adjusted_quantity": 72
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "design_quantity": 72,
+        "waste_reserve": 12,
+        "required_quantity": 84,
+        "waste_adjusted_quantity": 84,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 72,
+        "leftover_inventory": 16,
+        "consumption_cost": 21902,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 16,
+        "potential_surplus": 28
+      },
+      {
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "waste_adjusted_quantity": 73,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 73,
+        "leftover_inventory": 27,
+        "consumption_cost": 19034,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 27,
+        "potential_surplus": 27
+      }
+    ],
+    "totals": {
+      "design_quantity": 145,
+      "target_waste_reserve": 12,
+      "covered_waste_reserve": 12,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 55,
+      "required_quantity": 157,
+      "consumption_cost": 40936,
+      "purchase_cost": 52148,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 157,
+      "purchase_quantity": 200,
+      "operational_surplus": 43,
+      "potential_surplus": 55
+    },
+    "warnings": []
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594221343015",
+        "productId": "8634235781415",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 72,
+        "designQuantity": 72,
+        "wasteReserve": 12,
+        "requiredQuantity": 84,
+        "purchaseQuantity": 100,
+        "used": 72,
+        "leftoverInventory": 16,
+        "consumptionCost": 21902,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594221343015",
+        "nombre": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 28
+      },
+      {
+        "id": "46594235269415",
+        "productId": "8634239516967",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "negro",
+        "cantidadNecesaria": 73,
+        "designQuantity": 73,
+        "wasteReserve": 0,
+        "requiredQuantity": 73,
+        "purchaseQuantity": 100,
+        "used": 73,
+        "leftoverInventory": 27,
+        "consumptionCost": 19034,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235269415",
+        "nombre": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 27
+      }
+    ],
+    "total": 52148,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 52148,
+    "consumptionCost": 40936,
+    "targetWasteReserve": 12,
+    "coveredWasteReserve": 12,
+    "leftoverInventory": 43,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "9212595fe8018dee7682dfe2d7f961830d095f889ce187948dd8988a8b63c3f4"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594221343015",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 72,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 28
+      },
+      {
+        "variant_id": "46594235269415",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 73,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 27
+      }
+    ],
+    "total": 52148
+  },
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 95,
+      "exacto": false,
+      "estimado_total": 152,
+      "racimos": 38,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "mediano",
+          "proporcion": 1
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.92,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594235269415": "negro",
+    "46594221343015": "blanco"
+  },
+  "extras_foto": []
+}

@@ -1,0 +1,1337 @@
+{
+ "regla": "mismo_globo (services/ai-api/app/presentaciones.py) sobre _candidate (services/ai-api/app/plan.py)",
+ "vectores": [
+  {
+   "caso": "x12-sin-color-y-x50-dorado",
+   "que": "La variante ×12 sin colores propios (NULL) y la ×50 etiquetada «dorado» del mismo producto son el mismo globo: sin colores propios valen los del producto.",
+   "pedida": "a12",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a12",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": null,
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b50",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 36000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [
+      "dorado"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a12",
+    "b50"
+   ]
+  },
+  {
+   "caso": "colores-con-tildes-mayusculas-y-repetidos",
+   "que": "Los colores se comparan sin tildes, en minúscula y sin repetir.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "azul"
+     ],
+     "colores_variante": [
+      "Azúl",
+      "AZUL",
+      "azul"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "azul"
+     ],
+     "colores_variante": [
+      "azul"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "colores-en-json-de-texto",
+   "que": "Una lista de colores que llega como JSON de texto se lee igual que un arreglo.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": "[\"Dorado\"]",
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [
+      "dorado"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "colores-en-otro-orden-no-son-el-mismo",
+   "que": "El orden de los colores cuenta (la comparación es de tuplas): rojo+azul y azul+rojo son globos distintos.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [
+      "rojo",
+      "azul"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [
+      "azul",
+      "rojo"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [
+      "rojo",
+      "azul"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "c"
+   ]
+  },
+  {
+   "caso": "color-distinto-no-agrupa",
+   "que": "Un producto que vende colores distintos como variantes de la misma talla: cada color es su globo.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo",
+      "azul"
+     ],
+     "colores_variante": [
+      "rojo"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo",
+      "azul"
+     ],
+     "colores_variante": [
+      "rojo"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo",
+      "azul"
+     ],
+     "colores_variante": [
+      "azul"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "titulo-gris-reemplaza-plateado",
+   "que": "Un producto cuyo título dice «gris» (y no «plata») cambia «plateado» por «gris»: el catálogo archiva el gris como plateado.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Fashion Gris",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [
+      "plateado"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Fashion Gris",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [
+      "gris"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Fashion Gris",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "caso": "titulo-gris-y-plata-no-cambia",
+   "que": "Si el título también dice «plata», la regla del gris no aplica: «plateado» y «gris» son colores distintos.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Gris Plata",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [
+      "plateado"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Gris Plata",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [
+      "gris"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Gris Plata",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "plateado"
+     ],
+     "colores_variante": [
+      "plateado"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "c"
+   ]
+  },
+  {
+   "caso": "titulo-vino-reemplaza-rojo",
+   "que": "Un producto cuyo título nombra un tono de vino cambia «rojo» por «burdeos».",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Metal Vinotinto",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo"
+     ],
+     "colores_variante": [
+      "rojo"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Metal Vinotinto",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo"
+     ],
+     "colores_variante": [
+      "burdeos"
+     ],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Metal Vinotinto",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "rojo"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "caso": "diametro-negativo-es-ninguno",
+   "que": "Un diámetro negativo es «sin diámetro»: coincide con NULL y no con un diámetro real.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": null,
+     "forma": "redondo",
+     "diam_pulg": -1,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": null,
+     "forma": "redondo",
+     "diam_pulg": null,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": null,
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "texto-con-espacios-y-vacio",
+   "que": "El código de talla y la forma se recortan, y un texto vacío es ninguno.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": " R12 ",
+     "forma": " redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo ",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12 ",
+     "forma": "",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "d",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 3,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "talla-parecida-no-agrupa",
+   "que": "La talla es su código, no solo el diámetro: LOL 6 y LOL 660 miden lo mismo y no son el mismo globo.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "6",
+     "forma": "redondo",
+     "diam_pulg": 6,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "6",
+     "forma": "redondo",
+     "diam_pulg": 6,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "660",
+     "forma": "redondo",
+     "diam_pulg": 6,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "caso": "forma-distinta-no-agrupa",
+   "que": "La forma cuenta.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "corazon",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "c"
+   ]
+  },
+  {
+   "caso": "otro-producto-no-agrupa",
+   "que": "Mismo diámetro, talla, forma y color de OTRO producto no es el mismo globo.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-2",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "c"
+   ]
+  },
+  {
+   "caso": "paquete-no-vendible-no-cuenta",
+   "que": "Un paquete que la tienda no vende (agotado, sin precio o sin unidades) no es una presentación.",
+   "pedida": "a",
+   "filas": [
+    {
+     "product_id": "prod-1",
+     "variant_id": "a",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 12,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "b",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 50,
+     "disponible": false,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "c",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 0,
+     "unidades_paq": 80,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "d",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 10000,
+     "unidades_paq": 0,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    },
+    {
+     "product_id": "prod-1",
+     "variant_id": "e",
+     "sku": null,
+     "sku_original": null,
+     "source_snapshot_id": "snapshot-vectores",
+     "source_variant_id": null,
+     "inventory_quantity": null,
+     "unidades_inferidas": null,
+     "producto_titulo": "Globo Látex Sempertex",
+     "variante_titulo": null,
+     "precio": 4000,
+     "unidades_paq": 3,
+     "disponible": true,
+     "producto_disponible": true,
+     "codigo_tamano": "R12",
+     "forma": "redondo",
+     "diam_pulg": 12,
+     "colores_producto": [
+      "dorado"
+     ],
+     "colores_variante": [],
+     "acabados_producto": [],
+     "descripcion": null,
+     "imagen": null,
+     "currency": "COP"
+    }
+   ],
+   "esperado": [
+    "a",
+    "e"
+   ]
+  }
+ ]
+}

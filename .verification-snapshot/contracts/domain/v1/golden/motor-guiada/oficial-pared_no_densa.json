@@ -1,0 +1,27 @@
+{
+ "caso": "oficial-pared_no_densa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "13e0f4288250f5269e4c156bdc8daae79cc4ddda8e815ea277ddf70535e84620",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_01_PARED_NO_DENSA",
+   "motivo": "No hay un constructor de pared ligera que deje ver el fondo."
+  }
+ ],
+ "piezas": {},
+ "total": {
+  "lineas": [],
+  "unidades": 0
+ },
+ "caja": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

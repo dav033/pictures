@@ -1,0 +1,204 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12403-1",
+  "image_sha256": "9d4b5a8af10f0eca40b0537159077b08d6bc4c41b6de7719dca305cfd2127257",
+  "idempotency_key": "d90f077d714b7975b161b133c361aeb9f69582c43bc52e8a365a30e4a3663d73",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12403/foto-1.jpg",
+    "orden": "12403"
+  },
+  "anotacion": {
+    "image_id": "12403-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "pink walls and a dark tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A freestanding illuminated marquee sign filled with pink, sand, and white balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.sand",
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.fashion.sand",
+            "size_code": "LOL-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense organic wall of sand, dusty rose, and white balloons covering the background."
+      }
+    ],
+    "non_purchased_elements": [
+      "a number marquee"
+    ],
+    "uncertainties": [
+      "The large sand balloons are difficult to distinguish between Link-O-Loon and round latex models."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.sand",
+      "balloon.modeling.latex.fashion.white",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "LOL-12",
+      "R-12",
+      "R-5",
+      "R-9",
+      "T160",
+      "T260"
+    ],
+    "sin_resolver": [
+      "SET INFLADOR Y 30 TUBITOS 260 FASHION SURTIDOS"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12403-1",
+    "caption": "eventdecor_style_v3, a decorative accessory, grounded across the front, built from 12-inch matte Fashion dusty rose round latex balloons, 9-inch and 5-inch matte Fashion sand round latex balloons, 5-inch matte Fashion white round latex balloons, mixed organically rather than graded, a balloon wall, installed against the rear wall, built from 12-inch matte Fashion sand Link-O-Loon® linking latex balloons and matte Fashion dusty rose round latex balloons, 9-inch and 5-inch matte Fashion sand round latex balloons, 5-inch matte Fashion white round latex balloons, mixed organically rather than graded, alongside a number marquee, set against pink walls and a dark tiled floor.",
+    "palabras": 99,
+    "caracteres": 678,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.sand",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.fashion.sand",
+        "size_code": "LOL-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:53:55.906Z",
+    "recompilado_en": "2026-09-03T14:45:22.051Z"
+  }
+}

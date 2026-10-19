@@ -1,0 +1,187 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000098-1",
+  "image_sha256": "96fc08976bcf8590640e541c1805c08e8705071fed15dcb6bf48815506152ead",
+  "idempotency_key": "6db5a8c0bf79fbb40a5faba73dda0313a07dfd1d24b1da17d1cf6dfadfb61ee0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000098/foto-1.png",
+    "orden": "950000098"
+  },
+  "anotacion": {
+    "image_id": "950000098-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense black-and-white balloon wall forming the central rectangular panel."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.lime_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic green balloon garland spanning the top of the panel."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.neon.green",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.neon.green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Violet balloon bow with two matching neon-green modeled balloon hand accents attached to the panel."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.neon.green",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000098-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in black and white, all at a single 5-inch size, an organic balloon garland, anchored to the balloon wall, built from fluorescent Neon green round latex balloons and high-shine Reflex lime green round latex balloons, all at a single 5-inch size, with a coordinated decoration kit, anchored to the balloon wall, built from 2-inch fluorescent Neon green modeling latex balloons, 5-inch high-shine Reflex violet round latex balloons, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 95,
+    "caracteres": 624,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.neon.green",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.neon.green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:05:44.588Z",
+    "recompilado_en": "2026-09-03T14:45:24.254Z"
+  }
+}

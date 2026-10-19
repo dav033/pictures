@@ -1,0 +1,99 @@
+{
+ "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "fb1296702c6f53763f855332e7f5c5d04da144b288bb85d2bf58628caf9bd68e",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 13,
+  "cubierta": 13,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 6,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 24,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634255638823",
+   "variantId": "46594264858919"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "073",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634275266855",
+   "variantId": "46594302181671"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "073",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634275266855",
+   "variantId": "46594302411047"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "073",
+   "cantidad": 16,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634275266855",
+   "variantId": "47466211803431"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "806",
+   "cantidad": 20,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "9661845995815",
+   "variantId": "49475777921319"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "806",
+   "cantidad": 20,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "9661845995815",
+   "variantId": "49475778085159"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "806",
+   "cantidad": 8,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475778183463"
+  }
+ ]
+}

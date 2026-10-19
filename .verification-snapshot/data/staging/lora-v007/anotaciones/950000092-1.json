@@ -1,0 +1,142 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000092-1",
+  "image_sha256": "a899b72aec34b192e265a7f1a0d8da925247be731f65f7c48cb64884ee854af9",
+  "idempotency_key": "ad4db056e0f9eb25d32c3e3837c49d789047e4e857d6b70dc2db997307ab881e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000092/foto-1.png",
+    "orden": "950000092"
+  },
+  "anotacion": {
+    "image_id": "950000092-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white wall and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Closed three-dimensional circular balloon arch with organic clusters, twisting eucalyptus-green balloons, pumpkins, and gold accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "pumpkin-shaped balloon figures"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000092-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 2-inch matte Fashion eucalyptus green modeling latex balloons, 9-inch matte Fashion round latex balloons in eucalyptus green and merlot, 5-inch matte Fashion orange round latex balloons and high-shine Reflex gold round latex balloons, mixed organically rather than graded, alongside pumpkin-shaped balloon figures, set against plain white wall and no visible floor.",
+    "palabras": 64,
+    "caracteres": 456,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:00:53.550Z",
+    "recompilado_en": "2026-09-03T14:45:24.196Z"
+  }
+}

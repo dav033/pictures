@@ -1,0 +1,99 @@
+{
+ "caso": "oficial-aro_circular",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "29c80a5f2d1f76823bfad56ad975c14ceec4c6a01b5ef8fc3760aa1245ce8030",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 12,
+  "cubierta": 12,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221080871"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 19,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634235781415",
+   "variantId": "46594221179175"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233631015"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "040",
+   "cantidad": 18,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233794855"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 5,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233860391"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 7,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 18,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264858919"
+  }
+ ]
+}

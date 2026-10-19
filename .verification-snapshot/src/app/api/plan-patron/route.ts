@@ -1,0 +1,138 @@
+import { z } from "zod";
+import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
+import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES, PythonPlanPatronLineasSchema } from "@/lib/ia/nucleo/python-adapter";
+import { PlanEditError } from "@/lib/plan/edicion-error";
+import { RechazoVistaPatronError, vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
+import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
+import { MODOS_PATRON_COLOR, PatronColorV1Schema } from "@/lib/plan/patron-color";
+import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
+
+/**
+ * Vista previa del editor de patrones de color (ADR-0028 §10): el navegador
+ * manda el plan, la estructura y el patrón en borrador (`null` pide la
+ * sugerencia) y recibe la rejilla, el conteo y los textos que escribe Python.
+ * Transporte puro: no firma, no escribe en la base y no toca el catálogo; la
+ * edición que sí cambia el plan va por `/api/plan-editar` (acción `patron`).
+ * Un rechazo `patron_invalido` trae además los estilos que Python admite para
+ * la pieza (`modos_admitidos`), para que el editor los ofrezca aunque no haya
+ * sugerencia. Con `lineas` (las líneas resueltas de la pieza) Python nombra
+ * cada color por lo que se compra, como al resolver. Los rechazos que solo da
+ * la vista previa del deslizador (`sin_patron`, `patron_activo`,
+ * `reparto_no_corresponde`) no dicen que la propuesta cambió: el editor los
+ * calla (`VistaPatronSinDibujoError`).
+ *
+ * Misma autenticación que `/api/plan-editar` (la sesión que exige
+ * `src/proxy.ts`), repetida aquí como guardia del handler.
+ */
+
+const BodySchema = z.object({
+  plan: PlanDecoracionSchema,
+  estructura_id: z.string().trim().min(1).max(160),
+  patron_color: PatronColorV1Schema.nullable(),
+  /** Colors slider over a confeti while dragging: previewed, never saved here. */
+  participaciones: EdicionRepartoSchema.shape.participaciones.optional(),
+  /** With `patron_color` null: the starting point of that style instead of the preset. */
+  modo: z.enum(MODOS_PATRON_COLOR).optional(),
+  /** With `modo`: the editor's draft; Python keeps from it what the new style admits. */
+  desde: PatronColorV1Schema.optional(),
+  /**
+   * The structure's resolved lines as the browser holds them (strict, at most
+   * 256): Python names each color by what is bought, as resolution does. A
+   * naming hint only; nothing here counts or prices.
+   */
+  lineas: PythonPlanPatronLineasSchema.optional(),
+}).strict().refine((body) => body.participaciones === undefined || body.patron_color === null, {
+  message: "participaciones y patron_color no van juntos.",
+  path: ["participaciones"],
+}).refine((body) => body.modo === undefined || (body.patron_color === null && body.participaciones === undefined), {
+  message: "modo solo pide el punto de partida de un estilo.",
+  path: ["modo"],
+}).refine((body) => body.desde === undefined || body.modo !== undefined, {
+  message: "desde solo acompaña a modo.",
+  path: ["desde"],
+});
+
+/** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
+const LIMITE_CUERPO_BYTES = PYTHON_MAX_BODY_BYTES;
+const SUPERFICIE = "/api/plan-patron";
+
+function requestIdDe(request: Request): string {
+  const cabecera = request.headers.get("x-request-id");
+  return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
+}
+
+type CuerpoLeido = { ok: true; json: unknown } | { ok: false; status: 400 | 413; mensaje: string; codigo: string };
+
+async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
+  const demasiado = { ok: false, status: 413, mensaje: "La solicitud es demasiado grande.", codigo: "PAYLOAD_TOO_LARGE" } as const;
+  const declarado = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declarado) && declarado > LIMITE_CUERPO_BYTES) return demasiado;
+  let texto: string;
+  try {
+    texto = await request.text();
+  } catch {
+    return { ok: false, status: 400, mensaje: "El cuerpo de la solicitud no se pudo leer.", codigo: "INVALID_JSON" };
+  }
+  if (Buffer.byteLength(texto, "utf8") > LIMITE_CUERPO_BYTES) return demasiado;
+  try {
+    return { ok: true, json: JSON.parse(texto) as unknown };
+  } catch {
+    return { ok: false, status: 400, mensaje: "El cuerpo de la solicitud no es JSON válido.", codigo: "INVALID_JSON" };
+  }
+}
+
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-patron", atenderPOST);
+
+async function atenderPOST(request: Request) {
+  const requestIdHttp = requestIdDe(request);
+  const cabeceras = { "X-Request-ID": requestIdHttp };
+  const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {
+    const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje, codigoOrigen: codigo, requestId: requestIdHttp });
+    registrarFalloUi(SUPERFICIE, uiError);
+    return Response.json({ error: mensaje, ui_error: uiError }, { status, headers: cabeceras });
+  };
+
+  if (!isAuthenticatedRequest(request)) return rechazoTransporte(401, "La sesión no es válida.", "UNAUTHORIZED");
+  const cuerpo = await leerCuerpo(request);
+  if (!cuerpo.ok) return rechazoTransporte(cuerpo.status, cuerpo.mensaje, cuerpo.codigo);
+
+  try {
+    const body = BodySchema.parse(cuerpo.json);
+    const { patron, modos_admitidos: modosAdmitidos } = await vistaPreviaPatronPython({
+      plan: body.plan,
+      estructuraId: body.estructura_id,
+      patronColor: body.patron_color,
+      ...(body.participaciones === undefined ? {} : { participaciones: body.participaciones }),
+      ...(body.modo === undefined ? {} : { modo: body.modo }),
+      ...(body.desde === undefined ? {} : { desde: body.desde }),
+      ...(body.lineas === undefined ? {} : { lineas: body.lineas }),
+      correlationId: requestIdHttp,
+      signal: request.signal,
+    });
+    return Response.json({ patron, modos_admitidos: modosAdmitidos }, { headers: cabeceras });
+  } catch (error) {
+    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : requestIdHttp);
+    registrarFalloUi(SUPERFICIE, uiError);
+    const responder = (datos: Record<string, unknown>, status: number) => Response.json({ ...datos, ui_error: uiError }, { status, headers: cabeceras });
+    if (error instanceof z.ZodError) return responder({ error: "La vista previa del patrón no tiene un formato válido.", detalles: error.issues }, 400);
+    if (error instanceof PlanEditError) {
+      // `patron_invalido`: `motivo` estable y `mensaje` de Python para el decorador, y los estilos de la pieza.
+      const modosAdmitidos = error instanceof RechazoVistaPatronError ? error.modosAdmitidos : null;
+      return responder({
+        error: error.message,
+        ...(error.causa ? { causa: error.causa } : {}),
+        ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}),
+        ...(modosAdmitidos ? { modos_admitidos: modosAdmitidos } : {}),
+      }, error.status);
+    }
+    if (isPythonAdapterError(error)) {
+      return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
+    }
+    console.error("[plan-patron] error inesperado:", error);
+    return responder({ error: "No se pudo dibujar el patrón." }, 500);
+  }
+}

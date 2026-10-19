@@ -1,0 +1,429 @@
+{
+  "id": "real-20-semiarcoilusionazul-1200x1200",
+  "fuente": "SemiarcoIlusionAzul_1200x1200.webp",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-20-semiarcoilusionazul-1200x1200.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "803b8cd3-8e6c-46ba-b0dc-75ac66e98817",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "silver shimmer wall backdrop",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Silver metallic foil square panel shimmer grid backdrop behind balloons.",
+          "reference_bbox": {
+            "x": 0.395,
+            "y": 0.284,
+            "width": 0.33299999999999996,
+            "height": 0.5289999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.7962
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "foil/plastic",
+            "shape": "shape not determinable",
+            "composition": "100% metallic silver foil backdrop grid panel."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary backdrop element supporting the organic balloon arrangement.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "blue organic balloon garland with foil star accents",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.99,
+          "visible_evidence": "Organic blue latex balloon garland with three light blue foil star balloons attached at top left, top right, and middle left.",
+          "reference_bbox": {
+            "x": 0.171,
+            "y": 0.043,
+            "width": 0.605,
+            "height": 0.9059999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "dark royal blue",
+              "bright blue",
+              "pearl light blue",
+              "metallic blue"
+            ],
+            "measured_colors": [
+              {
+                "color": "azul",
+                "share": 0.0433
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex and foil",
+            "shape": "tall dense asymmetrical half-arch, on the center, curving toward the right, strong top overhang, standing on the floor",
+            "composition": "40% dark royal blue round balloons, 30% sky blue balloons, 20% light ice blue balloons, and 10% metallic light blue star foil balloon accents scattered along the curve.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "blanco"
+              ],
+              "pesos": [
+                70,
+                30
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 38,
+              "exacto": false,
+              "estimado_total": 45,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.2
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.3
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "839",
+                "familia": "silk",
+                "nombre": "Azul Ártico",
+                "nombre_completo": "Silk Azul Ártico",
+                "parte": 0.2381,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "240",
+                "familia": "neon",
+                "nombre": "Azul",
+                "nombre_completo": "Neón Azul",
+                "parte": 0.2284,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "044",
+                "familia": "fashion",
+                "nombre": "Azul Naval",
+                "nombre_completo": "Fashion Azul Naval",
+                "parte": 0.15,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E02",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main balloon garland structure framing the top and left side of the backdrop.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Organic balloon garland framing a silver shimmer foil backdrop with metallic star balloons.",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "dark royal blue",
+          "bright blue",
+          "light blue",
+          "metallic silver"
+        ],
+        "priority": [
+          "dark royal blue",
+          "bright blue",
+          "light blue",
+          "metallic silver"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "f1015ceb0101b9a8a37702c724d5f56a26cfe16c88b2f3d36ee7760028471c1b",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 800,
+            "height": 800
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 85659,
+            "deLaCaja": 144304
+          },
+          "colores": [
+            {
+              "hex": "#95b7c5",
+              "parte": 0.2381,
+              "pixeles": 20398,
+              "cruce": {
+                "hex": "#95b7c5",
+                "candidatas": [
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 10.3,
+                    "distancia": 13,
+                    "tono": 7.9,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "440",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Satín Azul",
+                    "nombreEn": "satin light blue",
+                    "pms": "292",
+                    "acabado": "satin",
+                    "hexGlobo": "#b1d5e0",
+                    "deltaE": 10.8,
+                    "distancia": 13.3,
+                    "tono": 8,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 12.6,
+                    "distancia": 15.3,
+                    "tono": 9.2,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#1279b4",
+              "parte": 0.2284,
+              "pixeles": 19565,
+              "cruce": {
+                "hex": "#1279b4",
+                "candidatas": [
+                  {
+                    "codigo": "240",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Neón Azul",
+                    "nombreEn": "neon blue",
+                    "pms": "801",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#609fd6",
+                    "deltaE": 15.8,
+                    "distancia": 8,
+                    "tono": 0.4,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 11.9,
+                    "distancia": 14.6,
+                    "tono": 10,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "042",
+                    "nombre": "Azul Hortensia",
+                    "nombreCompleto": "Fashion Azul Hortensia",
+                    "nombreEn": "matte blue",
+                    "pms": "2129",
+                    "acabado": "matte",
+                    "hexGlobo": "#6f8fd0",
+                    "deltaE": 16.2,
+                    "distancia": 23.1,
+                    "tono": 17.6,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#022566",
+              "parte": 0.15,
+              "pixeles": 12850,
+              "cruce": {
+                "hex": "#022566",
+                "candidatas": [
+                  {
+                    "codigo": "044",
+                    "nombre": "Azul Naval",
+                    "nombreCompleto": "Fashion Azul Naval",
+                    "nombreEn": "matte navy blue",
+                    "pms": "7687",
+                    "acabado": "matte",
+                    "hexGlobo": "#172c59",
+                    "deltaE": 14.5,
+                    "distancia": 12.9,
+                    "tono": 6.1,
+                    "razonCroma": 1.4
+                  },
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 18.8,
+                    "distancia": 14,
+                    "tono": 4.9,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 27.2,
+                    "distancia": 31.8,
+                    "tono": 20.8,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,160 @@
+{
+ "caso": "idea-deco-real-09-images-24",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "80b0fc94124d1d8e022dba8d9a7c2db29483f764953e39df1e5ebfb77998080e",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "009",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "059",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "107",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "009",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "107",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "009",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "059",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "107",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "009",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 34,
+   "caja": [
+    -110,
+    200,
+    -250,
+    110,
+    269,
+    -198
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "009",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "059",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "107",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "009",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "107",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "009",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "059",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "107",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "009",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 34
+ },
+ "caja": [
+  -110,
+  200,
+  -250,
+  110,
+  269,
+  -198
+ ],
+ "referenciaPython": {
+  "globos": 41
+ }
+}

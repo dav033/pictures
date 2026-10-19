@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-106",
+  "image_sha256": "8888a10d7017b9cddca98c69a6ec60b0a4f599752fc8fadf63f6ec023d0ac84c",
+  "idempotency_key": "aa28a5c28aa79a0ff5cf0228bfa58adb48222108f3f60a7f65d9e3c57c430aa1",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-106.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arbol_de_Navidad_Manuel_Valle.png?v=1670008036",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-106",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+          "balloon.round.latex.fashion.chocolate_brown",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.lime_green",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "graded",
+        "evidence": "Vertical symmetrical balloon column tapering from larger balloons at the base to smaller balloons at the top."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-106",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion chocolate brown round latex balloons, high-shine Reflex round latex balloons in gold, lime green and silver and translucent Crystal red round latex balloons with a printed pattern, set against white wall and white floor.",
+    "palabras": 46,
+    "caracteres": 311,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:10:34.490Z"
+  }
+}

@@ -231,7 +231,6 @@ export function Taller3D() {
       try {
         const escena = crearEscena(lienzo);
         escenaRef.current = escena;
-        escena.tapadoAbajo(tapadoRef.current);
         quitarOyentesContexto = prepararContexto(lienzo, escena);
         observador = new ResizeObserver(() => escena.redimensionar());
         observador.observe(lienzo);
@@ -315,7 +314,6 @@ export function Taller3D() {
       visor.mostrar(fila);
       encuadradoRef.current = null;
       // Una vista «desde la foto» pendiente no espera: si no se aplica aquí, saltaría después, en otro dibujo.
-      vistaFotoPendiente.current = null;
       return;
     }
     // Si la pieza elegida cuelga de otra, se ven las anclas de esa otra; en el editor solitario, las de la raíz si se piden.
@@ -357,6 +355,10 @@ export function Taller3D() {
   const ponNodo = useCallback((id: string, cambio: Partial<NodoEscena>, agrupar?: string) => {
     cambiarVista({ ...escenaVista, nodos: escenaVista.nodos.map((n) => (n.id === id ? { ...n, ...cambio } : n)) }, agrupar ? { agrupar } : undefined);
   }, [cambiarVista, escenaVista]);
+  const cambiarVistaSolitario = useCallback((vista: VistaSolitario) => {
+    if (vista.todosLosGlobos) vistaFotoPendiente.current = null;
+    setVistaSolitario(vista);
+  }, []);
 
   // Escena a mano en el visor: clic elige, arrastrar mueve/gira/sube, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
   const editable = listo && armadaEscena !== null && !todosLosGlobos && !ia.escenaAntes;
@@ -578,8 +580,9 @@ export function Taller3D() {
   const { verMedidas, alternarMedidas } = useMedidasDePieza(puedeMedir ? seleccion : null);
   const elegirPanel = (p: Panel) => setPanel((actual) => (actual === p ? null : p));
   /** Lo que la hoja tapa del lienzo (px); se recuerda para aplicarlo al crear el visor. */
-  const tapadoRef = useRef(0);
-  const tapar = useCallback((px: number) => { tapadoRef.current = px; escenaRef.current?.tapadoAbajo(px); }, []);
+  const [tapado, setTapado] = useState(0);
+  const tapar = useCallback((px: number) => setTapado(px), []);
+  useEffect(() => { escenaRef.current?.tapadoAbajo(tapado); }, [tapado, visor]);
   const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
   const elegirPestanaHoja = (p: PestanaHoja) => { setPestanaHoja(p); if (hoja === "cerrada" || p === "ia") setHoja("media"); };
   /** Tras mandar un pedido a la IA en el teléfono, la hoja baja a media altura: queda a la vista la escena y la tarjeta del turno. */
@@ -685,7 +688,7 @@ export function Taller3D() {
     const parte = nodoElegido ?? raizSolitario;
     return (
       <ParametrosPieza escena={escenaVista} raizId={raizSolitario.id} nodo={parte}
-        onPieza={(pieza, agrupar) => ponNodo(parte.id, { pieza }, agrupar ? `${agrupar}-${parte.id}` : undefined)} onEscena={(e) => cambiarVista(e)} vista={vistaSolitario} onVista={setVistaSolitario} />
+        onPieza={(pieza, agrupar) => ponNodo(parte.id, { pieza }, agrupar ? `${agrupar}-${parte.id}` : undefined)} onEscena={(e) => cambiarVista(e)} vista={vistaSolitario} onVista={cambiarVistaSolitario} />
     );
   })() : null;
 

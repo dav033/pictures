@@ -1,0 +1,389 @@
+{
+  "id": "real-02-34722b3ec9978bfe7439a121c16a1db7",
+  "fuente": "34722b3ec9978bfe7439a121c16a1db7.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-02-34722b3ec9978bfe7439a121c16a1db7.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "7c5ce9d2-e9e0-437c-9271-c1e8e382aa9b",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.75
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Halloween balloon arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A full symmetrical balloon arch bridging from the left floor across the top to the right floor, consisting of orange and black balloons.",
+          "reference_bbox": {
+            "x": 0.012,
+            "y": 0.085,
+            "width": 0.977,
+            "height": 0.883
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte orange",
+              "matte black",
+              "matte white",
+              "lime green"
+            ],
+            "measured_colors": [
+              {
+                "color": "negro",
+                "share": 0.3682
+              },
+              {
+                "color": "naranja",
+                "share": 0.1459
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense arch, spanning the full width, standing on the floor",
+            "composition": "50% matte orange round balloons and 45% matte black round balloons arranged in alternating clusters along a spiral pattern, topped with 5% small white skull, green, and orange printed accent balloons.",
+            "patron_color": {
+              "modo": "espiral",
+              "colores": [
+                "naranja",
+                "negro"
+              ],
+              "globos_por_racimo": 4,
+              "motas": [
+                "blanco",
+                "verde"
+              ],
+              "simetria": "espejo",
+              "confianza": 0.95
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 110,
+              "exacto": false,
+              "estimado_total": 180,
+              "racimos": 45,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.85
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": 0.164,
+              "racimos_visibles": 38,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "naranja",
+                "negro"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "blanco",
+                  "posicion": "cada_n"
+                },
+                {
+                  "clase": "latex",
+                  "color": "verde",
+                  "posicion": "cada_n"
+                }
+              ],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "061",
+                "familia": "fashion",
+                "nombre": "Naranja",
+                "nombre_completo": "Fashion Naranja",
+                "parte": 0.4435,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.2958,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal balloon decoration element.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "hanging skeleton prop",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.92,
+          "visible_evidence": "A human skeleton prop suspended behind the balloon arch with bare branches.",
+          "reference_bbox": {
+            "x": 0.446,
+            "y": 0.287,
+            "width": 0.193,
+            "height": 0.421
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "off-white",
+              "brown"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.6832
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "plastic",
+            "shape": "shape not determinable",
+            "composition": "100% plastic skeleton hanging in the background behind the arch."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Key thematic background prop.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "A large Halloween balloon arch made of orange and black latex balloons with small accent balloons (skulls, green eyeballs, small pumpkins).",
+        "density": "dense",
+        "symmetry": "symmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "matte orange",
+          "matte black",
+          "off-white",
+          "lime green"
+        ],
+        "priority": [
+          "matte orange",
+          "matte black",
+          "off-white",
+          "lime green"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "d801501db23a7ca824cb72c451242055a499a6ee9929ed8de4024b7ed89bab8d",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 450,
+            "height": 600
+          },
+          "processed": {
+            "width": 450,
+            "height": 600
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 83310,
+            "deLaCaja": 170328
+          },
+          "colores": [
+            {
+              "hex": "#bc4c0c",
+              "parte": 0.4435,
+              "pixeles": 36948,
+              "cruce": {
+                "hex": "#bc4c0c",
+                "candidatas": [
+                  {
+                    "codigo": "061",
+                    "nombre": "Naranja",
+                    "nombreCompleto": "Fashion Naranja",
+                    "nombreEn": "matte orange",
+                    "pms": "021",
+                    "acabado": "matte",
+                    "hexGlobo": "#e75d1d",
+                    "deltaE": 14.1,
+                    "distancia": 7.5,
+                    "tono": 2.4,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#1b0f0a",
+              "parte": 0.2958,
+              "pixeles": 24644,
+              "cruce": {
+                "hex": "#1b0f0a",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 8.1,
+                    "distancia": 8.8,
+                    "tono": 41.8,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#908861",
+              "parte": 0.2607,
+              "pixeles": 21718,
+              "cruce": {
+                "hex": "#908861",
+                "candidatas": [
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 24.7,
+                    "distancia": 29.6,
+                    "tono": 26.2,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 47.1,
+                    "distancia": 43.5,
+                    "tono": 30.4,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000015-1",
+  "image_sha256": "db6c17e946e0833336ad391bda8db26d656a879fa38480c53080f675f6a5de7c",
+  "idempotency_key": "d0fca89e442fca22a380fb63ce39fab789f8eeab3b94eb6151b31554f524df39",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000015/foto-1.png",
+    "orden": "950000015"
+  },
+  "anotacion": {
+    "image_id": "950000015-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "not visible (isolated product cutout, no wall or floor shown)",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green",
+          "balloon.round.latex.silk.amethyst",
+          "balloon.round.latex.fashion.peach",
+          "balloon.round.latex.silk.spring_pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.peach",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.spring_pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A single cascading organic garland running vertically, mixing mint, amethyst, peach and pink round balloons of varying sizes in clusters, with paper butterflies attached throughout."
+      }
+    ],
+    "non_purchased_elements": [
+      "paper butterfly cutouts",
+      "a small round table",
+      "party plates and cups"
+    ],
+    "uncertainties": [
+      "A thin metal arch frame is faintly visible behind the garland but was too obscured to annotate as its own structure.",
+      "Some small purple modeling-balloon clusters near the top may be present but could not be confidently distinguished from the round silk balloons."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.assorted_colors",
+      "balloon.modeling.latex.silk.mint_green",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.assorted_colors",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000015-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 9-inch matte Fashion peach round latex balloons and satin Silk round latex balloons in amethyst and spring pink, 5-inch satin Silk mint green round latex balloons, mixed organically rather than graded, alongside paper butterfly cutouts, a small round table and party plates and cups, set against not visible (isolated product cutout, no wall or floor shown).",
+    "palabras": 67,
+    "caracteres": 440,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.spring_pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:54:10.888Z",
+    "recompilado_en": "2026-09-03T14:45:23.345Z"
+  }
+}

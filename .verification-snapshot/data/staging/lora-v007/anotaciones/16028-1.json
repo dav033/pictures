@@ -1,0 +1,107 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "16028-1",
+  "image_sha256": "272ed71c89fe9d470da08b9c4a5e7ba5003d2821da443a42811904c89d4c361f",
+  "idempotency_key": "7914b1c5ffac22e44b4ca1e4e7f391a9d09bb5bbff1430851c11bbe9c3aab540",
+  "source": {
+    "kind": "order_photo",
+    "ref": "16028/foto-1.jpg",
+    "orden": "16028"
+  },
+  "anotacion": {
+    "image_id": "16028-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a white paneled wall and ceiling",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 4,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "four symmetric clusters of white and coffee brown round balloons floating near the ceiling on either side of the frame, each tied with curling ribbon"
+      }
+    ],
+    "non_purchased_elements": [
+      "curling ribbon",
+      "white roses",
+      "a tall candle"
+    ],
+    "uncertainties": [
+      "lower part of the setup is cropped out, so the full table arrangement is not visible"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "16028-1",
+    "caption": "eventdecor_style_v3, four matching balloon bouquets, suspended overhead, built from matte Fashion round latex balloons in coffee brown and white, all at a single 12-inch size, alongside curling ribbon, white roses and a tall candle, set against a white paneled wall and ceiling.",
+    "palabras": 42,
+    "caracteres": 278,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:49.185Z",
+    "recompilado_en": "2026-09-03T14:45:22.698Z"
+  }
+}

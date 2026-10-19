@@ -1,0 +1,119 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000064-1",
+  "image_sha256": "89363b38537ab3d1ebeca01da77b5dcd5d1854d7cccc0b3175d519123178f986",
+  "idempotency_key": "7ef9eb52a4253bdb9b98db13ac37a37f281e543d388ed5df7f47c7aa05160462",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000064/foto-1.jpg",
+    "orden": "950000064"
+  },
+  "anotacion": {
+    "image_id": "950000064-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.aquamarine",
+          "balloon.round.latex.fashion.deep_turquoise",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.aquamarine",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "tied cluster of round balloons with light aquamarine and darker turquoise/blue tones plus metallic high-shine bottom balloons; strings hanging at base"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "top three balloons are metallic silver, a color not present in the allowed concept list, so they were left out of visible_concept_ids rather than force-matched",
+      "champagne reflex balloons from the order are not distinguishable in this photo, likely not visible or hidden behind others",
+      "cannot fully separate which balloons are R-9 vs R-5 by sight due to perspective; relied on order data"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.champagne"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000064-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion round latex balloons in aquamarine and deep turquoise, 5-inch high-shine Reflex blue round latex balloons, mixed organically rather than graded, set against plain white studio background, no floor visible.",
+    "palabras": 42,
+    "caracteres": 304,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.aquamarine",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:54.157Z",
+    "recompilado_en": "2026-09-03T14:45:23.896Z"
+  }
+}

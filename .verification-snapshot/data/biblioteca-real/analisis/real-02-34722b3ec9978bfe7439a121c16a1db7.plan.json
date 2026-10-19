@@ -1,0 +1,653 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Cuerpo del arco en 12 pulgadas correcto; faltaban los ~18 acentos de 5 pulgadas con cara (calavera, lima y calabaza) y sus adornos negros, que se cuentan en la foto.",
+  "descartadas": [],
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "f0ed5df6-4256-5f1a-be5d-420ae56c86f9",
+    "concepto": {
+      "titulo": "real-02-34722b3ec9978bfe7439a121c16a1db7",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "naranja",
+        "negro"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco",
+        "tipo": "arco",
+        "rol_escena": "focal",
+        "ubicacion": "arco_central",
+        "medidas": {
+          "ancho_m": 2.4,
+          "alto_m": 2.2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634238599463",
+            "variant_id": "46594228715815",
+            "color": "naranja",
+            "participacion": 0.53,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634239516967",
+            "variant_id": "46594235269415",
+            "color": "negro",
+            "participacion": 0.47,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Cuerpo del arco naranja y negro en racimos de 12 pulgadas; los acentos de 5 pulgadas con cara van aparte.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "arco",
+        "colores_referencia": [
+          "naranja",
+          "negro"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "f0ed5df6-4256-5f1a-be5d-420ae56c86f9",
+      "concepto": {
+        "titulo": "real-02-34722b3ec9978bfe7439a121c16a1db7",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "naranja",
+          "negro"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco",
+          "tipo": "arco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 2.52,
+            "alto_m": 2.31
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634238599463",
+              "variant_id": "46594228715815",
+              "color": "naranja",
+              "participacion": 0.53,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634239516967",
+              "variant_id": "46594235269415",
+              "color": "negro",
+              "participacion": 0.47,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Cuerpo del arco naranja y negro en racimos de 12 pulgadas; los acentos de 5 pulgadas con cara van aparte.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "arco",
+          "colores_referencia": [
+            "naranja",
+            "negro"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+        "Arco: la foto muestra unos 180 globos y el plan tenía 116; densidad media → lujosa, ancho 2,4 → 2,52 m y alto 2,2 → 2,31 m equivalentes a la foto (no medidos): quedó en 153."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "5ae4e9ad589b96f0674d21d2fb4848ad816f8f4616f2ce0af828ec1fb89b87ec",
+    "request_id": "0e412dbf-7ba1-57e5-95bf-b9d468544774",
+    "compras": [
+      {
+        "variant_id": "46594228715815",
+        "product_id": "8634238599463",
+        "sku": "B2B-20000773",
+        "sku_original": "B2B-20000773",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594228715815",
+        "inventory_quantity": 986124,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "naranja",
+        "unidades_necesarias": 81,
+        "design_quantity": 81,
+        "waste_reserve": 0,
+        "required_quantity": 81,
+        "unidades_con_merma": 81,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 81,
+        "leftover_inventory": 19,
+        "consumption_cost": 21120,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 19,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Naranja_-_Orange_061.jpg?v=1763150269"
+      },
+      {
+        "variant_id": "46594235269415",
+        "product_id": "8634239516967",
+        "sku": "B2B-20000781",
+        "sku_original": "B2B-20000781",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+        "inventory_quantity": 957375,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "negro",
+        "unidades_necesarias": 72,
+        "design_quantity": 72,
+        "waste_reserve": 13,
+        "required_quantity": 85,
+        "unidades_con_merma": 85,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 72,
+        "leftover_inventory": 15,
+        "consumption_cost": 22163,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 28,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 153
+      },
+      "total_unidades": 153,
+      "total_cop": 52148,
+      "design_quantity": 153,
+      "target_waste_reserve": 13,
+      "covered_waste_reserve": 13,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 47,
+      "purchase_cost": 52148,
+      "consumption_cost": 43283,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 5.73,
+        "total_unidades": 153,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634238599463",
+            "variant_id": "46594228715815",
+            "sku": "B2B-20000773",
+            "sku_original": "B2B-20000773",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594228715815",
+            "inventory_quantity": 986124,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+            "color": "naranja",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 81,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Naranja_-_Orange_061.jpg?v=1763150269",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235269415",
+            "sku": "B2B-20000781",
+            "sku_original": "B2B-20000781",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+            "inventory_quantity": 957375,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+            "color": "negro",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 72,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 153,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 39893
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 110,
+          "exacto": false,
+          "estimado_total": 180,
+          "racimos": 45,
+          "globos_por_racimo": 4,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.15
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.85
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 180,
+        "globos_antes": 116,
+        "globos_despues": 153,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          },
+          {
+            "campo": "ancho_m",
+            "antes": 2.4,
+            "despues": 2.52
+          },
+          {
+            "campo": "alto_m",
+            "antes": 2.2,
+            "despues": 2.31
+          }
+        ],
+        "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "arco",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 2.52,
+        "height": 2.31,
+        "length": null
+      },
+      "installation_length_m": 5.73,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634238599463",
+        "variant_id": "46594228715815",
+        "color": "naranja",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 81,
+        "waste_reserve": 0,
+        "required_quantity": 81,
+        "waste_adjusted_quantity": 81
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 72,
+        "waste_reserve": 0,
+        "required_quantity": 72,
+        "waste_adjusted_quantity": 72
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634238599463",
+        "variant_id": "46594228715815",
+        "design_quantity": 81,
+        "waste_reserve": 0,
+        "required_quantity": 81,
+        "waste_adjusted_quantity": 81,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 81,
+        "leftover_inventory": 19,
+        "consumption_cost": 21120,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 19,
+        "potential_surplus": 19
+      },
+      {
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "design_quantity": 72,
+        "waste_reserve": 13,
+        "required_quantity": 85,
+        "waste_adjusted_quantity": 85,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 72,
+        "leftover_inventory": 15,
+        "consumption_cost": 22163,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 15,
+        "potential_surplus": 28
+      }
+    ],
+    "totals": {
+      "design_quantity": 153,
+      "target_waste_reserve": 13,
+      "covered_waste_reserve": 13,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 47,
+      "required_quantity": 166,
+      "consumption_cost": 43283,
+      "purchase_cost": 52148,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 166,
+      "purchase_quantity": 200,
+      "operational_surplus": 34,
+      "potential_surplus": 47
+    },
+    "warnings": []
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594228715815",
+        "productId": "8634238599463",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "naranja",
+        "cantidadNecesaria": 81,
+        "designQuantity": 81,
+        "wasteReserve": 0,
+        "requiredQuantity": 81,
+        "purchaseQuantity": 100,
+        "used": 81,
+        "leftoverInventory": 19,
+        "consumptionCost": 21120,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594228715815",
+        "nombre": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 19
+      },
+      {
+        "id": "46594235269415",
+        "productId": "8634239516967",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "negro",
+        "cantidadNecesaria": 72,
+        "designQuantity": 72,
+        "wasteReserve": 13,
+        "requiredQuantity": 85,
+        "purchaseQuantity": 100,
+        "used": 72,
+        "leftoverInventory": 15,
+        "consumptionCost": 22163,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235269415",
+        "nombre": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 28
+      }
+    ],
+    "total": 52148,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 52148,
+    "consumptionCost": 43283,
+    "targetWasteReserve": 13,
+    "coveredWasteReserve": 13,
+    "leftoverInventory": 34,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "5ae4e9ad589b96f0674d21d2fb4848ad816f8f4616f2ce0af828ec1fb89b87ec"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594228715815",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 81,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 19
+      },
+      {
+        "variant_id": "46594235269415",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 72,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 28
+      }
+    ],
+    "total": 52148
+  },
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 110,
+      "exacto": false,
+      "estimado_total": 180,
+      "racimos": 45,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.15
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.85
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594228715815": "naranja",
+    "46594235269415": "negro"
+  },
+  "extras_foto": [
+    {
+      "variantId": "46594221146407",
+      "sku": "B2B-20000437",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+      "detalleCantidad": "estimado a partir de la foto: unos 6 acentos blancos de 5 pulgadas con calavera dibujada a mano"
+    },
+    {
+      "variantId": "46594213118247",
+      "sku": "B2B-20000462",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+      "detalleCantidad": "estimado a partir de la foto: unos 7 acentos verde lima de 5 pulgadas con cara dibujada a mano"
+    },
+    {
+      "variantId": "46594228486439",
+      "sku": "B2B-20000486",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja — R-5 / PAQUETE X 50 · R-5 · naranja",
+      "detalleCantidad": "estimado a partir de la foto: unos 5 acentos naranjas de 5 pulgadas con cara de calabaza dibujada a mano"
+    },
+    {
+      "variantId": "46594300936487",
+      "sku": "B2B-20001244",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Tubito Fashion Negro — T260 / PAQUETE X 20 · T260 · negro",
+      "detalleCantidad": "estimado a partir de la foto: adornos negros torcidos sobre los 18 acentos (2 o 3 adornos por globo para modelar)"
+    }
+  ]
+}

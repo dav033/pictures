@@ -1,0 +1,199 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000099-1",
+  "image_sha256": "b5807b207cbde84b62ed4f555baaefeb4b16f7d0895f7daee1272c574890c537",
+  "idempotency_key": "c68f318aeda9f6ba33387fbbb11b2659e5871af27fa25e7eea353ce75c80c1fa",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000099/foto-1.jpg",
+    "orden": "950000099"
+  },
+  "anotacion": {
+    "image_id": "950000099-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white tiled floor with an orange runner",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange_and_black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange_and_black",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a square backdrop panel covered in an orange-and-black four-petal clover balloon pattern with a printed Happy Halloween banner across it"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "a shiny mint-teal organic balloon garland framing the top and left side of the backdrop and piling onto the floor"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a rounded teal balloon-covered column/topiary shape topped with purple pumpkin decorations, standing beside the spiderweb pedestal box"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.mint_green",
+          "balloon.round.latex.solid.printed_halloween_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "a ribbon-tied balloon bouquet at far right with green balloons and larger balloons printed with Halloween lettering"
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed Happy Halloween banner",
+      "a white pedestal box with a spiderweb design",
+      "a black spider prop",
+      "purple pumpkin decorations"
+    ],
+    "uncertainties": [
+      "the clover-pattern balloons could be solid orange and solid black balloons rather than a single bicolor orange_and_black concept",
+      "the teal column and floor pile may be a continuation of the same garland rather than a distinct columna structure",
+      "some silver/black balloons in the bouquet are not in the allowed concept list and were excluded"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.orange_and_black",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Araña Metalink"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000099-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion orange and black round latex balloons, all at a single 12-inch size, an organic balloon garland, standing to one side, built from satin Silk mint green round latex balloons, all 5-inch, a balloon bouquet, standing to one side, built from 5-inch satin Silk mint green round latex balloons, 12-inch round latex balloons with printed Halloween lettering, mixed organically rather than graded, with a balloon column, standing to one side, built from satin Silk mint green round latex balloons, all at a single 5-inch size, alongside a printed Happy Halloween banner, a white pedestal box with a spiderweb design, a black spider prop and purple pumpkin decorations, set against white walls and a white tiled floor with an orange runner.",
+    "palabras": 132,
+    "caracteres": 826,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.orange_and_black",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange_and_black",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:10:34.231Z",
+    "recompilado_en": "2026-09-03T14:45:24.264Z"
+  }
+}

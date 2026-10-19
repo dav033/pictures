@@ -1,0 +1,150 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000176-1",
+  "image_sha256": "40071a2713bf1e568726de7742770fcfea72df12bb45601c094d21908a0dba83",
+  "idempotency_key": "2d33a824a6941e6bf634d02d9adf58da0bb71aeb2c6ce64620ce54fdeac20c9f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000176/foto-1.jpg",
+    "orden": "950000176"
+  },
+  "anotacion": {
+    "image_id": "950000176-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and pink checkered floor mat",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.raspberry",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.raspberry",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense three-dimensional balloon arch with a central opening, using pink, beige, and shiny gold-toned round balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Grouped heart-shaped and round balloons positioned on the left, with a balloon cluster at floor level."
+      }
+    ],
+    "non_purchased_elements": [
+      "a white display ladder",
+      "a white pedestal",
+      "a printed sign",
+      "a pink checkered floor mat"
+    ],
+    "uncertainties": [
+      "The exact finish of the shiny gold-toned balloons is uncertain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000176-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 9-inch matte Fashion round latex balloons in latte and raspberry, 5-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from matte Fashion latte round latex balloons, all 9-inch, alongside a white display ladder, a white pedestal, a printed sign and a pink checkered floor mat, set against off-white brick wall and pink checkered floor mat.",
+    "palabras": 79,
+    "caracteres": 514,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.raspberry",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:24:12.799Z",
+    "recompilado_en": "2026-09-03T14:45:25.101Z"
+  }
+}

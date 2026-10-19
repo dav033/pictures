@@ -1,0 +1,3085 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Dos columnas orgánicas con un rosado gigante al pie de cada una y racimos de 5 pulgadas; el rosado es rosa bebé y el malva es lavanda apagado (no orquídea).",
+  "descartadas": [],
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "13cc280f-e5fb-5e27-adce-2f4b81db1f21",
+    "concepto": {
+      "titulo": "real-07-eb12910e210c94b6184d025127acce95",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "rosado",
+        "lila",
+        "dorado"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "rol_escena": "focal",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239844647",
+            "variant_id": "46594235826471",
+            "color": "rosado",
+            "participacion": 0.4,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "color": "lila",
+            "participacion": 0.35,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "color": "dorado",
+            "participacion": 0.25,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Columna orgánica izquierda rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+        "variant_overrides": [
+          {
+            "objetivo_variant_id": "46594270986535",
+            "product_id": "8634309804327",
+            "variant_id": "46594358640935",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271084839",
+            "product_id": "8634309804327",
+            "variant_id": "46594358706471",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271150375",
+            "product_id": "8634309804327",
+            "variant_id": "46594358772007",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271183143",
+            "product_id": "8634309804327",
+            "variant_id": "46594358968615",
+            "color": "lila"
+          }
+        ],
+        "referencia_element_id": "REF_01_E03",
+        "estructura_oficial": "columna_asimetrica",
+        "colores_referencia": [
+          "rosado",
+          "lila",
+          "dorado"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "rol_escena": "soporte",
+        "ubicacion": "lateral_derecho",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239844647",
+            "variant_id": "46594235826471",
+            "color": "rosado",
+            "participacion": 0.4,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "color": "lila",
+            "participacion": 0.35,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "color": "dorado",
+            "participacion": 0.25,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Columna orgánica derecha rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+        "variant_overrides": [
+          {
+            "objetivo_variant_id": "46594270986535",
+            "product_id": "8634309804327",
+            "variant_id": "46594358640935",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271084839",
+            "product_id": "8634309804327",
+            "variant_id": "46594358706471",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271150375",
+            "product_id": "8634309804327",
+            "variant_id": "46594358772007",
+            "color": "lila"
+          },
+          {
+            "objetivo_variant_id": "46594271183143",
+            "product_id": "8634309804327",
+            "variant_id": "46594358968615",
+            "color": "lila"
+          }
+        ],
+        "referencia_element_id": "REF_01_E04",
+        "estructura_oficial": "columna_asimetrica",
+        "colores_referencia": [
+          "rosado",
+          "lila",
+          "dorado"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "13cc280f-e5fb-5e27-adce-2f4b81db1f21",
+      "concepto": {
+        "titulo": "real-07-eb12910e210c94b6184d025127acce95",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "rosado",
+          "lila",
+          "dorado"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica",
+          "tipo": "columna",
+          "rol_escena": "focal",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "organica_fina",
+          "materiales": [
+            {
+              "product_id": "8634239844647",
+              "variant_id": "46594235826471",
+              "color": "rosado",
+              "participacion": 0.4,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634258424103",
+              "variant_id": "46594271150375",
+              "color": "lila",
+              "participacion": 0.35,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634255638823",
+              "variant_id": "46594264695079",
+              "color": "dorado",
+              "participacion": 0.25,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Columna orgánica izquierda rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+          "variant_overrides": [
+            {
+              "objetivo_variant_id": "46594270986535",
+              "product_id": "8634309804327",
+              "variant_id": "46594358640935",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271084839",
+              "product_id": "8634309804327",
+              "variant_id": "46594358706471",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271150375",
+              "product_id": "8634309804327",
+              "variant_id": "46594358772007",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271183143",
+              "product_id": "8634309804327",
+              "variant_id": "46594358968615",
+              "color": "lila"
+            }
+          ],
+          "referencia_element_id": "REF_01_E03",
+          "estructura_oficial": "columna_asimetrica",
+          "colores_referencia": [
+            "rosado",
+            "lila",
+            "dorado"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_derecho",
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "organica_fina",
+          "materiales": [
+            {
+              "product_id": "8634239844647",
+              "variant_id": "46594235826471",
+              "color": "rosado",
+              "participacion": 0.4,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634258424103",
+              "variant_id": "46594271150375",
+              "color": "lila",
+              "participacion": 0.35,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634255638823",
+              "variant_id": "46594264695079",
+              "color": "dorado",
+              "participacion": 0.25,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Columna orgánica derecha rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+          "variant_overrides": [
+            {
+              "objetivo_variant_id": "46594270986535",
+              "product_id": "8634309804327",
+              "variant_id": "46594358640935",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271084839",
+              "product_id": "8634309804327",
+              "variant_id": "46594358706471",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271150375",
+              "product_id": "8634309804327",
+              "variant_id": "46594358772007",
+              "color": "lila"
+            },
+            {
+              "objetivo_variant_id": "46594271183143",
+              "product_id": "8634309804327",
+              "variant_id": "46594358968615",
+              "color": "lila"
+            }
+          ],
+          "referencia_element_id": "REF_01_E04",
+          "estructura_oficial": "columna_asimetrica",
+          "colores_referencia": [
+            "rosado",
+            "lila",
+            "dorado"
+          ]
+        }
+      ],
+      "supuestos": [
+        "las medidas en metros parten de un tamano frecuente y se ajustan con la lectura de la foto.",
+        "los tamanos son los que se ven en la foto (auditoria 2026-10-06).",
+        "Columna orgánica: los tamaños de la foto piden la mezcla organica_fina, no clasica.",
+        "Columna orgánica: la foto muestra unos 55 globos y el plan tenía 39; densidad media → lujosa: quedó en 48."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "0e6c6cb5f47021b92cb5848579682a0f07f8e04190068e6b96fca7cae7c93572",
+    "request_id": "d2258ba7-5ccd-575c-95bb-1f112b0d92a4",
+    "compras": [
+      {
+        "variant_id": "46594235629863",
+        "product_id": "8634239844647",
+        "sku": "B2B-20000440",
+        "sku_original": "B2B-20000440",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235629863",
+        "inventory_quantity": 979521,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "rosado",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088"
+      },
+      {
+        "variant_id": "46594235728167",
+        "product_id": "8634239844647",
+        "sku": "B2B-20000578",
+        "sku_original": "B2B-20000578",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235728167",
+        "inventory_quantity": 984958,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "rosado",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 1109,
+        "purchase_cost": 7921,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 7921,
+        "subtotal": 7921,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088"
+      },
+      {
+        "variant_id": "46594235826471",
+        "product_id": "8634239844647",
+        "sku": "B2B-20000726",
+        "sku_original": "B2B-20000726",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235826471",
+        "inventory_quantity": 959894,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rosado",
+        "unidades_necesarias": 18,
+        "design_quantity": 18,
+        "waste_reserve": 0,
+        "required_quantity": 18,
+        "unidades_con_merma": 18,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 18,
+        "leftover_inventory": 32,
+        "consumption_cost": 4693,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 32,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088"
+      },
+      {
+        "variant_id": "46594235957543",
+        "product_id": "8634239844647",
+        "sku": "B2B-20012054",
+        "sku_original": "B2B-20012054",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235957543",
+        "inventory_quantity": 998689,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 3",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "color": "rosado",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 3,
+        "paquetes": 1,
+        "purchase_quantity": 3,
+        "used": 2,
+        "leftover_inventory": 1,
+        "consumption_cost": 6749,
+        "purchase_cost": 10124,
+        "additional_package_for_waste": false,
+        "sobrante": 1,
+        "precio_paquete": 10124,
+        "subtotal": 10124,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088"
+      },
+      {
+        "variant_id": "46594264629543",
+        "product_id": "8634255638823",
+        "sku": "B2B-20014169",
+        "sku_original": "B2B-20014169",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594264629543",
+        "inventory_quantity": 961469,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "dorado",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "unidades_con_merma": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1064,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "sobrante": 46,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594264695079",
+        "product_id": "8634255638823",
+        "sku": "B2B-20014156",
+        "sku_original": "B2B-20014156",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+        "inventory_quantity": 958502,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 13,
+        "design_quantity": 13,
+        "waste_reserve": 0,
+        "required_quantity": 13,
+        "unidades_con_merma": 13,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 13,
+        "leftover_inventory": 37,
+        "consumption_cost": 7534,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "sobrante": 37,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594264727847",
+        "product_id": "8634255638823",
+        "sku": "B2B-20015523",
+        "sku_original": "B2B-20015523",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+        "inventory_quantity": 995905,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "dorado",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2951,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "sobrante": 5,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "estructuras": [
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594264891687",
+        "product_id": "8634255638823",
+        "sku": "B2B-20017755",
+        "sku_original": "B2B-20017755",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594264891687",
+        "inventory_quantity": 993763,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "dorado",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 7,
+        "required_quantity": 11,
+        "unidades_con_merma": 11,
+        "unidades_paquete": 80,
+        "paquetes": 1,
+        "purchase_quantity": 80,
+        "used": 4,
+        "leftover_inventory": 69,
+        "consumption_cost": 3984,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "sobrante": 76,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594358640935",
+        "product_id": "8634309804327",
+        "sku": "B2B-20017173",
+        "sku_original": "B2B-20017173",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594358640935",
+        "inventory_quantity": 998409,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "lila",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201"
+      },
+      {
+        "variant_id": "46594358706471",
+        "product_id": "8634309804327",
+        "sku": "B2B-20017295",
+        "sku_original": "B2B-20017295",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594358706471",
+        "inventory_quantity": 999406,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-9 / PAQUETE X 50",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "color": "lila",
+        "unidades_necesarias": 5,
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "unidades_con_merma": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 792,
+        "purchase_cost": 7921,
+        "additional_package_for_waste": false,
+        "sobrante": 45,
+        "precio_paquete": 7921,
+        "subtotal": 7921,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201"
+      },
+      {
+        "variant_id": "46594358772007",
+        "product_id": "8634309804327",
+        "sku": "B2B-20017176",
+        "sku_original": "B2B-20017176",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594358772007",
+        "inventory_quantity": 997807,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "lila",
+        "unidades_necesarias": 16,
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "unidades_con_merma": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 34,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201"
+      },
+      {
+        "variant_id": "46594358968615",
+        "product_id": "8634309804327",
+        "sku": "B2B-20017179",
+        "sku_original": "B2B-20017179",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594358968615",
+        "inventory_quantity": 999593,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "lila",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "sobrante": 3,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-5": 18,
+        "R-9": 16,
+        "R-12": 47,
+        "R-24": 2,
+        "R-18": 4
+      },
+      "total_unidades": 87,
+      "total_cop": 160526,
+      "design_quantity": 87,
+      "target_waste_reserve": 7,
+      "covered_waste_reserve": 7,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 408,
+      "purchase_cost": 160526,
+      "consumption_cost": 38374,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 150021,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "pedido": "R-18",
+        "entregado": "R-24",
+        "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para rosado."
+      },
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "pedido": "R-24",
+        "entregado": "R-18",
+        "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para lila."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "pedido": "R-18",
+        "entregado": "R-24",
+        "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para rosado."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "pedido": "R-24",
+        "entregado": "R-18",
+        "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+      }
+    ],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594235629863",
+      "sobrante_alto:46594235728167",
+      "sobrante_alto:46594235826471",
+      "sobrante_alto:46594235957543",
+      "sobrante_alto:46594264629543",
+      "sobrante_alto:46594264695079",
+      "sobrante_alto:46594264727847",
+      "sobrante_alto:46594264891687",
+      "sobrante_alto:46594358640935",
+      "sobrante_alto:46594358706471",
+      "sobrante_alto:46594358772007",
+      "sobrante_alto:46594358968615"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 2,
+        "total_unidades": 39,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235629863",
+            "sku": "B2B-20000440",
+            "sku_original": "B2B-20000440",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235629863",
+            "inventory_quantity": 979521,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358640935",
+            "sku": "B2B-20017173",
+            "sku_original": "B2B-20017173",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358640935",
+            "inventory_quantity": 998409,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-5 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264629543",
+            "sku": "B2B-20014169",
+            "sku_original": "B2B-20014169",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264629543",
+            "inventory_quantity": 961469,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235728167",
+            "sku": "B2B-20000578",
+            "sku_original": "B2B-20000578",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235728167",
+            "inventory_quantity": 984958,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358706471",
+            "sku": "B2B-20017295",
+            "sku_original": "B2B-20017295",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358706471",
+            "inventory_quantity": 999406,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-9 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264891687",
+            "sku": "B2B-20017755",
+            "sku_original": "B2B-20017755",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264891687",
+            "inventory_quantity": 993763,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80",
+            "color": "dorado",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235826471",
+            "sku": "B2B-20000726",
+            "sku_original": "B2B-20000726",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235826471",
+            "inventory_quantity": 959894,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 8,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358772007",
+            "sku": "B2B-20017176",
+            "sku_original": "B2B-20017176",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358772007",
+            "inventory_quantity": 997807,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "sku": "B2B-20014156",
+            "sku_original": "B2B-20014156",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+            "inventory_quantity": 958502,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235957543",
+            "sku": "B2B-20012054",
+            "sku_original": "B2B-20012054",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235957543",
+            "inventory_quantity": 998689,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 3",
+            "color": "rosado",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24,
+            "diam_cm": 61,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": {
+              "pedido": "R-18",
+              "entregado": "R-24",
+              "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para rosado."
+            }
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358968615",
+            "sku": "B2B-20017179",
+            "sku_original": "B2B-20017179",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358968615",
+            "inventory_quantity": 999593,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6",
+            "color": "lila",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358968615",
+            "sku": "B2B-20017179",
+            "sku_original": "B2B-20017179",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358968615",
+            "inventory_quantity": 999593,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6",
+            "color": "lila",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": {
+              "pedido": "R-24",
+              "entregado": "R-18",
+              "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para lila."
+            }
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 21,
+            "pct": 53.85
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 8,
+            "pct": 20.51
+          },
+          {
+            "diam_pulg": 9,
+            "forma": "redondo",
+            "unidades": 7,
+            "pct": 17.95
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 2,
+            "pct": 5.13
+          },
+          {
+            "diam_pulg": 24,
+            "forma": "redondo",
+            "unidades": 1,
+            "pct": 2.56
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "ubicacion": "lateral_derecho",
+        "repeticiones": 1,
+        "eje_m": 2,
+        "total_unidades": 48,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235629863",
+            "sku": "B2B-20000440",
+            "sku_original": "B2B-20000440",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235629863",
+            "inventory_quantity": 979521,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358640935",
+            "sku": "B2B-20017173",
+            "sku_original": "B2B-20017173",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358640935",
+            "inventory_quantity": 998409,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-5 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264629543",
+            "sku": "B2B-20014169",
+            "sku_original": "B2B-20014169",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264629543",
+            "inventory_quantity": 961469,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235728167",
+            "sku": "B2B-20000578",
+            "sku_original": "B2B-20000578",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235728167",
+            "inventory_quantity": 984958,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358706471",
+            "sku": "B2B-20017295",
+            "sku_original": "B2B-20017295",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358706471",
+            "inventory_quantity": 999406,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-9 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264891687",
+            "sku": "B2B-20017755",
+            "sku_original": "B2B-20017755",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264891687",
+            "inventory_quantity": 993763,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80",
+            "color": "dorado",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9,
+            "diam_cm": 22.9,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235826471",
+            "sku": "B2B-20000726",
+            "sku_original": "B2B-20000726",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235826471",
+            "inventory_quantity": 959894,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 10,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358772007",
+            "sku": "B2B-20017176",
+            "sku_original": "B2B-20017176",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358772007",
+            "inventory_quantity": 997807,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 9,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "sku": "B2B-20014156",
+            "sku_original": "B2B-20014156",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+            "inventory_quantity": 958502,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634239844647",
+            "variant_id": "46594235957543",
+            "sku": "B2B-20012054",
+            "sku_original": "B2B-20012054",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235957543",
+            "inventory_quantity": 998689,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 3",
+            "color": "rosado",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24,
+            "diam_cm": 61,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosado_-_Pink_009.jpg?v=1762966088",
+            "sustitucion": {
+              "pedido": "R-18",
+              "entregado": "R-24",
+              "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para rosado."
+            }
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634309804327",
+            "variant_id": "46594358968615",
+            "sku": "B2B-20017179",
+            "sku_original": "B2B-20017179",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594358968615",
+            "inventory_quantity": 999593,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6",
+            "color": "lila",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lavanda_-_Lavender_150.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264727847",
+            "sku": "B2B-20015523",
+            "sku_original": "B2B-20015523",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+            "inventory_quantity": 995905,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+            "color": "dorado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+            "sustitucion": {
+              "pedido": "R-24",
+              "entregado": "R-18",
+              "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+            }
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 26,
+            "pct": 54.17
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 10,
+            "pct": 20.83
+          },
+          {
+            "diam_pulg": 9,
+            "forma": "redondo",
+            "unidades": 9,
+            "pct": 18.75
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 2,
+            "pct": 4.17
+          },
+          {
+            "diam_pulg": 24,
+            "forma": "redondo",
+            "unidades": 1,
+            "pct": 2.08
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "consumo_cop": 15951
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "consumo_cop": 19888
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_COLUMNA_ASIMETRICA",
+        "referencia_element_id": "REF_01_E03",
+        "decision": "coincide",
+        "lectura": {
+          "globos_visibles": 38,
+          "exacto": false,
+          "estimado_total": 45,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.15
+            },
+            {
+              "clase": "gigante",
+              "proporcion": 0.05
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 45,
+        "globos_antes": 39,
+        "globos_despues": 39,
+        "cambios": [],
+        "motivo": "El plan ya sigue la foto."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "referencia_element_id": "REF_01_E04",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 46,
+          "exacto": false,
+          "estimado_total": 55,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.15
+            },
+            {
+              "clase": "gigante",
+              "proporcion": 0.05
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 55,
+        "globos_antes": 39,
+        "globos_despues": 48,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          }
+        ],
+        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 0.55,
+        "height": 2,
+        "length": null
+      },
+      "installation_length_m": 4,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 2
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235629863",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358640935",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264629543",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235728167",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358706471",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264891687",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235826471",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358772007",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235957543",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 24,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358968615",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358968615",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235629863",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358640935",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264629543",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235728167",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358706471",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264891687",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 9,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235826471",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358772007",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 9,
+        "waste_reserve": 0,
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634239844647",
+        "variant_id": "46594235957543",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 24,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634309804327",
+        "variant_id": "46594358968615",
+        "color": "lila",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264727847",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634239844647",
+        "variant_id": "46594235629863",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634239844647",
+        "variant_id": "46594235728167",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 1109,
+        "purchase_cost": 7921,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634239844647",
+        "variant_id": "46594235826471",
+        "design_quantity": 18,
+        "waste_reserve": 0,
+        "required_quantity": 18,
+        "waste_adjusted_quantity": 18,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 18,
+        "leftover_inventory": 32,
+        "consumption_cost": 4693,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 32,
+        "potential_surplus": 32
+      },
+      {
+        "product_id": "8634239844647",
+        "variant_id": "46594235957543",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 3,
+        "package_count": 1,
+        "purchase_quantity": 3,
+        "used": 2,
+        "leftover_inventory": 1,
+        "consumption_cost": 6749,
+        "purchase_cost": 10124,
+        "additional_package_for_waste": false,
+        "operational_surplus": 1,
+        "potential_surplus": 1
+      },
+      {
+        "product_id": "8634255638823",
+        "variant_id": "46594264629543",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1064,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "operational_surplus": 46,
+        "potential_surplus": 46
+      },
+      {
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "design_quantity": 13,
+        "waste_reserve": 0,
+        "required_quantity": 13,
+        "waste_adjusted_quantity": 13,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 13,
+        "leftover_inventory": 37,
+        "consumption_cost": 7534,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "operational_surplus": 37,
+        "potential_surplus": 37
+      },
+      {
+        "product_id": "8634255638823",
+        "variant_id": "46594264727847",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2951,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "operational_surplus": 5,
+        "potential_surplus": 5
+      },
+      {
+        "product_id": "8634255638823",
+        "variant_id": "46594264891687",
+        "design_quantity": 4,
+        "waste_reserve": 7,
+        "required_quantity": 11,
+        "waste_adjusted_quantity": 11,
+        "units_per_package": 80,
+        "package_count": 1,
+        "purchase_quantity": 80,
+        "used": 4,
+        "leftover_inventory": 69,
+        "consumption_cost": 3984,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "operational_surplus": 69,
+        "potential_surplus": 76
+      },
+      {
+        "product_id": "8634309804327",
+        "variant_id": "46594358640935",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634309804327",
+        "variant_id": "46594358706471",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 792,
+        "purchase_cost": 7921,
+        "additional_package_for_waste": false,
+        "operational_surplus": 45,
+        "potential_surplus": 45
+      },
+      {
+        "product_id": "8634309804327",
+        "variant_id": "46594358772007",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 34,
+        "potential_surplus": 34
+      },
+      {
+        "product_id": "8634309804327",
+        "variant_id": "46594358968615",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 3,
+        "potential_surplus": 3
+      }
+    ],
+    "totals": {
+      "design_quantity": 87,
+      "target_waste_reserve": 7,
+      "covered_waste_reserve": 7,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 408,
+      "required_quantity": 94,
+      "consumption_cost": 38374,
+      "purchase_cost": 160526,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 94,
+      "purchase_quantity": 495,
+      "operational_surplus": 401,
+      "potential_surplus": 408
+    },
+    "warnings": [
+      "sobrante_alto:46594235629863",
+      "sobrante_alto:46594235728167",
+      "sobrante_alto:46594235826471",
+      "sobrante_alto:46594235957543",
+      "sobrante_alto:46594264629543",
+      "sobrante_alto:46594264695079",
+      "sobrante_alto:46594264727847",
+      "sobrante_alto:46594264891687",
+      "sobrante_alto:46594358640935",
+      "sobrante_alto:46594358706471",
+      "sobrante_alto:46594358772007",
+      "sobrante_alto:46594358968615"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594235629863",
+        "productId": "8634239844647",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 863,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235629863",
+        "nombre": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "id": "46594235728167",
+        "productId": "8634239844647",
+        "tamano": "R-9",
+        "tamanoCodigo": "R-9",
+        "diamPulg": 9,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 1109,
+        "purchaseCost": 7921,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235728167",
+        "nombre": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50",
+        "precioPaquete": 7921,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 7921,
+        "sobrante": 43
+      },
+      {
+        "id": "46594235826471",
+        "productId": "8634239844647",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 18,
+        "designQuantity": 18,
+        "wasteReserve": 0,
+        "requiredQuantity": 18,
+        "purchaseQuantity": 50,
+        "used": 18,
+        "leftoverInventory": 32,
+        "consumptionCost": 4693,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235826471",
+        "nombre": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 32
+      },
+      {
+        "id": "46594235957543",
+        "productId": "8634239844647",
+        "tamano": "R-24",
+        "tamanoCodigo": "R-24",
+        "diamPulg": 24,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 3,
+        "used": 2,
+        "leftoverInventory": 1,
+        "consumptionCost": 6749,
+        "purchaseCost": 10124,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235957543",
+        "nombre": "B2b Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 3",
+        "precioPaquete": 10124,
+        "unidadesPaquete": 3,
+        "paquetes": 1,
+        "subtotal": 10124,
+        "sobrante": 1
+      },
+      {
+        "id": "46594264629543",
+        "productId": "8634255638823",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 4,
+        "designQuantity": 4,
+        "wasteReserve": 0,
+        "requiredQuantity": 4,
+        "purchaseQuantity": 50,
+        "used": 4,
+        "leftoverInventory": 46,
+        "consumptionCost": 1064,
+        "purchaseCost": 13301,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594264629543",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50",
+        "precioPaquete": 13301,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13301,
+        "sobrante": 46
+      },
+      {
+        "id": "46594264695079",
+        "productId": "8634255638823",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 13,
+        "designQuantity": 13,
+        "wasteReserve": 0,
+        "requiredQuantity": 13,
+        "purchaseQuantity": 50,
+        "used": 13,
+        "leftoverInventory": 37,
+        "consumptionCost": 7534,
+        "purchaseCost": 28977,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594264695079",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "precioPaquete": 28977,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 28977,
+        "sobrante": 37
+      },
+      {
+        "id": "46594264727847",
+        "productId": "8634255638823",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E04"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 6,
+        "used": 1,
+        "leftoverInventory": 5,
+        "consumptionCost": 2951,
+        "purchaseCost": 17704,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594264727847",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+        "precioPaquete": 17704,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 17704,
+        "sobrante": 5
+      },
+      {
+        "id": "46594264891687",
+        "productId": "8634255638823",
+        "tamano": "R-9",
+        "tamanoCodigo": "R-9",
+        "diamPulg": 9,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 4,
+        "designQuantity": 4,
+        "wasteReserve": 7,
+        "requiredQuantity": 11,
+        "purchaseQuantity": 80,
+        "used": 4,
+        "leftoverInventory": 69,
+        "consumptionCost": 3984,
+        "purchaseCost": 28977,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594264891687",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80",
+        "precioPaquete": 28977,
+        "unidadesPaquete": 80,
+        "paquetes": 1,
+        "subtotal": 28977,
+        "sobrante": 76
+      },
+      {
+        "id": "46594358640935",
+        "productId": "8634309804327",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 863,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594358640935",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "id": "46594358706471",
+        "productId": "8634309804327",
+        "tamano": "R-9",
+        "tamanoCodigo": "R-9",
+        "diamPulg": 9,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 5,
+        "designQuantity": 5,
+        "wasteReserve": 0,
+        "requiredQuantity": 5,
+        "purchaseQuantity": 50,
+        "used": 5,
+        "leftoverInventory": 45,
+        "consumptionCost": 792,
+        "purchaseCost": 7921,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594358706471",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-9 / PAQUETE X 50",
+        "precioPaquete": 7921,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 7921,
+        "sobrante": 45
+      },
+      {
+        "id": "46594358772007",
+        "productId": "8634309804327",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 16,
+        "designQuantity": 16,
+        "wasteReserve": 0,
+        "requiredQuantity": 16,
+        "purchaseQuantity": 50,
+        "used": 16,
+        "leftoverInventory": 34,
+        "consumptionCost": 4172,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594358772007",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "id": "46594358968615",
+        "productId": "8634309804327",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_COLUMNA_ASIMETRICA",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA_ASIMETRICA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 6,
+        "used": 3,
+        "leftoverInventory": 3,
+        "consumptionCost": 3600,
+        "purchaseCost": 7199,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594358968615",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7199,
+        "sobrante": 3
+      }
+    ],
+    "total": 160526,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 160526,
+    "consumptionCost": 38374,
+    "targetWasteReserve": 7,
+    "coveredWasteReserve": 7,
+    "leftoverInventory": 401,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "0e6c6cb5f47021b92cb5848579682a0f07f8e04190068e6b96fca7cae7c93572"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594235629863",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594235728167",
+        "nombre": "R-9 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 7921,
+        "subtotal": 7921,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594235826471",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 18,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 32
+      },
+      {
+        "variant_id": "46594235957543",
+        "nombre": "R-24 / PAQUETE X 3",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 3,
+        "paquetes": 1,
+        "precio_paquete": 10124,
+        "subtotal": 10124,
+        "sobrante": 1
+      },
+      {
+        "variant_id": "46594264629543",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "sobrante": 46
+      },
+      {
+        "variant_id": "46594264695079",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 13,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 37
+      },
+      {
+        "variant_id": "46594264727847",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "sobrante": 5
+      },
+      {
+        "variant_id": "46594264891687",
+        "nombre": "R-9 / PAQUETE X 80",
+        "cantidad_necesaria": 4,
+        "unidades_paquete": 80,
+        "paquetes": 1,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 76
+      },
+      {
+        "variant_id": "46594358640935",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594358706471",
+        "nombre": "R-9 / PAQUETE X 50",
+        "cantidad_necesaria": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 7921,
+        "subtotal": 7921,
+        "sobrante": 45
+      },
+      {
+        "variant_id": "46594358772007",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "variant_id": "46594358968615",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 3
+      }
+    ],
+    "total": 160526
+  },
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E03",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    },
+    {
+      "referencia_element_id": "REF_01_E04",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 38,
+      "exacto": false,
+      "estimado_total": 45,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.3
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.5
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.15
+        },
+        {
+          "clase": "gigante",
+          "proporcion": 0.05
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E03"
+    },
+    {
+      "globos_visibles": 46,
+      "exacto": false,
+      "estimado_total": 55,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.3
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.5
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.15
+        },
+        {
+          "clase": "gigante",
+          "proporcion": 0.05
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E04"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594235629863": "rosa bebé",
+    "46594235728167": "rosa bebé",
+    "46594235826471": "rosa bebé",
+    "46594235957543": "rosa bebé",
+    "46594358640935": "lavanda",
+    "46594358706471": "lavanda",
+    "46594358772007": "lavanda",
+    "46594358968615": "lavanda",
+    "46594264629543": "dorado cromado",
+    "46594264891687": "dorado cromado",
+    "46594264695079": "dorado cromado",
+    "46594264727847": "dorado cromado"
+  },
+  "extras_foto": []
+}

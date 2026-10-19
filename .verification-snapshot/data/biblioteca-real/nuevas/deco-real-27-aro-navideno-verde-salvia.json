@@ -1,0 +1,178 @@
+{
+  "id": "deco-real-27-aro-navideno-verde-salvia",
+  "titulo": "Aro navideño verde salvia con copos de nieve",
+  "tematica": "Navidad verde salvia, perla y dorado",
+  "eventos": [
+    "Navidad",
+    "Novena navideña",
+    "Fiesta de fin de año"
+  ],
+  "edad": {
+    "min": 0,
+    "max": 90
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-27-aro-navideno-verde-salvia.jpg",
+      "fuente": "sempertex-07.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "aro_circular",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594222620967",
+      "sku": "B2B-20014541",
+      "cantidad": 32,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-5 / PAQUETE X 20 · R-5 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594222686503",
+      "sku": "B2B-20014545",
+      "cantidad": 27,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-9 / PAQUETE X 12 · R-9 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594222752039",
+      "sku": "B2B-20014539",
+      "cantidad": 36,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 12 · R-12 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594222784807",
+      "sku": "B2B-20014540",
+      "cantidad": 45,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 50 · R-12 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594222817575",
+      "sku": "B2B-20016060",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-18 / PAQUETE X 6 · R-18 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594222883111",
+      "sku": "B2B-20014547",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-24 / PAQUETE X 3 · R-24 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+    },
+    {
+      "variantId": "46594306179367",
+      "sku": "B2B-20009540",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Infinity® Copos De Nieve Cristal Y Satin Surtido — R-12 / PAQUETE X 12 · R-12 · con copos de nieve",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (4 esferas impresas; en la foto se ven 2 azul grisáceo y 2 plata perlado, el surtido del catálogo trae transparente y azul satinado)"
+    },
+    {
+      "variantId": "48718442758439",
+      "sku": "B2B-20018494",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Silk Perla Crema — R-18 / PAQUETE X 6 · R-18 · champaña perlado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (esfera grande junto a la cuerda dorada)"
+    },
+    {
+      "variantId": "48718443249959",
+      "sku": "B2B-20018559",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Silk Azul Ártico — R-5 / PAQUETE X 20 · R-5 · azul ártico",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (esferas pequeñas azules)"
+    },
+    {
+      "variantId": "48718443348263",
+      "sku": "B2B-20018483",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Redondo Silk Perla Crema — R-5 / PAQUETE X 20 · R-5 · champaña perlado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (esferas pequeñas champaña)"
+    },
+    {
+      "variantId": "46594221080871",
+      "sku": "B2B-20000435",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12 · R-5 · blanco",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (esferas pequeñas blancas)"
+    },
+    {
+      "variantId": "46594308505895",
+      "sku": "B2B-20000520",
+      "cantidad": 39,
+      "nota": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50 · R-5 · blanco perla",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (3 copos de nieve de unos 13 globos cada uno: 7 al centro y 6 en las puntas)"
+    },
+    {
+      "variantId": "46594304409895",
+      "sku": "B2B-20001194",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Tubito Satin Perla — T160 / PAQUETE X 50 · T160 · blanco perla",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (bolitas de los brazos de los tres copos)"
+    },
+    {
+      "variantId": "46594283766055",
+      "sku": "B2B-20014179",
+      "cantidad": 11,
+      "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (6 para la cuerda trenzada del tramo libre del aro y 5 para las 14 tapitas de las esferas)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Consigue un aro metálico de unos 2 metros de diámetro y fíjalo bien a la pared o a una base firme."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos verde eucalipto en varios tamaños (5, 9, 12, 18 y 24 pulgadas), únelos en grupos y cubre unas dos terceras partes del aro, con más volumen abajo."
+    },
+    {
+      "orden": 3,
+      "texto": "En el tramo del aro que queda libre, enrolla globos para modelar dorados torcidos entre sí, como una cuerda."
+    },
+    {
+      "orden": 4,
+      "texto": "Haz las esferas: a los globos de copos de nieve, al globo perlado grande y a los pequeños azules, champaña y blancos ponles una tapita hecha con un trozo de globo para modelar dorado, y pégalos sobre la guirnalda."
+    },
+    {
+      "orden": 5,
+      "texto": "Arma tres copos de nieve con globos perlados pequeños de 5 pulgadas y bolitas de globo para modelar perlado, y cuélgalos dentro del aro."
+    },
+    {
+      "orden": 6,
+      "texto": "Revisa que todo quede firme y que no queden huecos grandes antes de la celebración."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#82a796",
+    "#d3d4cf",
+    "#afaa99",
+    "#8098a8",
+    "#998c6a"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

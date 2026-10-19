@@ -137,7 +137,7 @@ prueba("usa el estilo PromptBar y conserva adjuntar, texto y enviar", () => {
 });
 prueba("enviar: el submit llama a onEnviar y se deshabilita sin texto ni adjuntos", () => {
   let enviados = 0;
-  const barra = createElement(PromptBar, { variant: "normal", leading: null, loading: false, canSend: true, onSend: () => { enviados += 1; }, onCancel: () => {}, children: null });
+  const barra = createElement(PromptBar, { variant: "normal", leading: null, loading: false, canSend: true, onSend: () => { enviados += 1; }, onCancel: () => {} }, null);
   const [form] = buscar(barra, (e) => e.type === "form");
   let prevenido = false;
   (form!.props.onSubmit as (e: { preventDefault(): void }) => void)({ preventDefault: () => { prevenido = true; } });
@@ -148,7 +148,7 @@ prueba("enviar: el submit llama a onEnviar y se deshabilita sin texto ni adjunto
 });
 prueba("cancelar: con la respuesta en curso aparece el botón y llama a onCancelar", () => {
   let cancelados = 0;
-  const barra = createElement(PromptBar, { variant: "grande", leading: null, loading: true, canSend: false, onSend: () => {}, onCancel: () => { cancelados += 1; }, children: null });
+  const barra = createElement(PromptBar, { variant: "grande", leading: null, loading: true, canSend: false, onSend: () => {}, onCancel: () => { cancelados += 1; } }, null);
   const [boton] = buscar(barra, (e) => e.props["data-testid"] === "cancelar-respuesta");
   (boton!.props.onClick as () => void)();
   assert.equal(cancelados, 1);

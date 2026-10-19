@@ -1,0 +1,147 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000116-1",
+  "image_sha256": "45251c0488244e8f25a5e5e3fc94d80ff9d62187d20d3bca05a006429201ee3c",
+  "idempotency_key": "a0bf225a8a71592db0820fcd09664c9855c4ebf7d012d47541a66c151103cc8e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000116/foto-1.png",
+    "orden": "950000116"
+  },
+  "anotacion": {
+    "image_id": "950000116-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and green carpeted floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.lime_green",
+          "balloon.link.latex.fashion.orange",
+          "balloon.link.latex.fashion.violet",
+          "balloon.round.latex.reflex.lime_green",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.fashion.lime_green",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.link.latex.fashion.orange",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.link.latex.fashion.violet",
+            "size_code": "LOL-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large organic balloon garland spans the upper wall and cascades downward, with lime green, orange, violet, and shiny reflex balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "metallic fringe curtain",
+      "wooden crates",
+      "cardboard plinths",
+      "Halloween figures"
+    ],
+    "uncertainties": [
+      "Dense clusters make exact separation of the listed balloon finishes difficult."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.lime_green",
+      "balloon.link.latex.fashion.orange",
+      "balloon.link.latex.fashion.violet",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [
+      "LOL-12",
+      "LOL-6",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000116-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 6-inch matte Fashion Link-O-Loon® linking latex balloons in lime green and orange, 12-inch matte Fashion violet Link-O-Loon® linking latex balloons, 5-inch high-shine Reflex round latex balloons in lime green and violet, mixed organically rather than graded, alongside metallic fringe curtain, wooden crates, cardboard plinths and Halloween figures, set against off-white brick wall and green carpeted floor.",
+    "palabras": 68,
+    "caracteres": 501,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.lime_green",
+      "balloon.link.latex.fashion.orange",
+      "balloon.link.latex.fashion.violet",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.fashion.lime_green",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.link.latex.fashion.orange",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.link.latex.fashion.violet",
+        "size_code": "LOL-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:08:09.162Z",
+    "recompilado_en": "2026-09-03T14:45:24.360Z"
+  }
+}

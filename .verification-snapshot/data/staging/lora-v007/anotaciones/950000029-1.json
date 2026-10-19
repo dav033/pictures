@@ -1,0 +1,134 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000029-1",
+  "image_sha256": "89610523e7ce098e805703352aa68cc515a8204a88ee3317bb3cbab77936b782",
+  "idempotency_key": "d64ec64228c4ce3daff47ba2002f10255443a06940797b92f2c2ddd42864a55b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000029/foto-1.jpg",
+    "orden": "950000029"
+  },
+  "anotacion": {
+    "image_id": "950000029-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white wall and floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.gold",
+          "balloon.modeling.latex.silk.spring_pink",
+          "balloon.round.latex.pastel_dusk.green_tea",
+          "balloon.round.latex.silk.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.silk.gold",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.spring_pink",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Floral balloon bouquet with large balloon flowers, mint centers, pink balloon sprigs, and a metallic gold bow."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact pink product variant is uncertain.",
+      "Placement is inferred because no surrounding venue is visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.gold",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.satin.white",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000029-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 2-inch satin Silk modeling latex balloons in gold and spring pink, 9-inch muted Pastel Dusk green tea round latex balloons, 5-inch satin Silk gold round latex balloons, mixed organically rather than graded, set against plain white wall and floor.",
+    "palabras": 49,
+    "caracteres": 324,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.silk.gold",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.silk.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.silk.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.spring_pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:57:40.321Z",
+    "recompilado_en": "2026-09-03T14:45:23.492Z"
+  }
+}

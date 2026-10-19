@@ -1,0 +1,128 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000078-1",
+  "image_sha256": "fe0eb3de5b5d38706e31fba5e628452ae1274f88179d7e2a62c04ae80e16203d",
+  "idempotency_key": "a07ae2955d338ea70fa83f86ea0d4d895b9f688c8502b326d0a515af5849d6e8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000078/foto-1.png",
+    "orden": "950000078"
+  },
+  "anotacion": {
+    "image_id": "950000078-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background, no venue surfaces visible",
+      "symmetry": "unknown"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.imperial_red",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical bouquet banded by color from bright red and merlot at top down through coral to a pale pink at the base, all balloons matching in diameter."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Isolated product photo on white background; real installation placement/venue is not shown.",
+      "Palest balloons at the base could be the pastel matte pink or a very light cream tone; assumed pastel matte pink from the allowed list."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000078-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion round latex balloons in coral, imperial red and merlot and Pastel Matte pastel pink round latex balloons, all at a single 9-inch size, set against white studio background, no venue surfaces visible.",
+    "palabras": 44,
+    "caracteres": 290,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:42.915Z",
+    "recompilado_en": "2026-09-03T14:45:24.060Z"
+  }
+}

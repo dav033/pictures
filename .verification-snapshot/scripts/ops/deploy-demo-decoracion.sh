@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR=/home/ec2-user/demo-decoracion
+DATA_VOLUME=demo-decoracion-data
+IMAGE=demo-decoracion:latest
+DEPLOY_SHA=${1:-}
+
+# authorized_keys ejecuta este script como comando forzado. En ese caso SSH
+# conserva el comando solicitado por Actions en SSH_ORIGINAL_COMMAND.
+if [[ -z "$DEPLOY_SHA" && ${SSH_ORIGINAL_COMMAND:-} =~ ([0-9a-f]{40}) ]]; then
+  DEPLOY_SHA=${BASH_REMATCH[1]}
+fi
+
+if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Expected an exact 40-character deployment SHA." >&2
+  exit 2
+fi
+
+cd "$APP_DIR"
+
+git fetch --depth 50 origin main
+if ! git cat-file -e "$DEPLOY_SHA^{commit}" 2>/dev/null; then
+  git fetch --depth 1 origin "$DEPLOY_SHA"
+fi
+if ! git merge-base --is-ancestor "$DEPLOY_SHA" origin/main; then
+  echo "Refusing SHA outside origin/main: $DEPLOY_SHA" >&2
+  exit 3
+fi
+git checkout "$DEPLOY_SHA" -- .
+
+# `git checkout <sha> -- .` adds and updates but never deletes: a file the
+# release removed stayed in the build context and broke the Next build
+# (2026-09-25). Drop every tracked file the release no longer has. Untracked
+# files (.env.production and its backups) are never touched. `-f` because
+# this checkout has no commit of its own: every tracked file counts as staged.
+comm -23 <(git ls-files | sort) <(git ls-tree -r --name-only "$DEPLOY_SHA" | sort) \
+  | xargs -r -d '\n' git rm -q -f --ignore-unmatch --
+
+docker build -t "$IMAGE" .
+
+docker stop demo-decoracion || true
+docker rm demo-decoracion || true
+
+# El volumen conserva datos runtime. Solo se sobreescribe/añade el contenido
+# versionado de data; archivos persistentes no presentes en el checkout quedan.
+docker volume create "$DATA_VOLUME" >/dev/null
+docker run --rm --user 0:0 \
+  --mount "type=volume,src=$DATA_VOLUME,dst=/target" \
+  --mount "type=bind,src=$APP_DIR/data,dst=/source,readonly" \
+  node:22-alpine sh -c 'cp -a /source/. /target/'
+
+# REGISTRO_VERSION: el commit desplegado va en cada línea del registro (src/lib/registro/version.ts).
+docker run -d --name demo-decoracion \
+  --network stack_web \
+  --restart unless-stopped \
+  --env-file .env.production \
+  --env REGISTRO_VERSION="$DEPLOY_SHA" \
+  -v "$DATA_VOLUME:/app/data" \
+  "$IMAGE"
+
+docker image prune -f

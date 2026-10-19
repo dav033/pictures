@@ -1,0 +1,142 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000156-1",
+  "image_sha256": "49edae6497efc487075a43a30520526ee416525b73d966f9fae7f9b4c716c4e2",
+  "idempotency_key": "d93503e125c4879ea2d24a8d10bb441f83ce0a6da704584d9dd731e1e6865aee",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000156/foto-1.jpg",
+    "orden": "950000156"
+  },
+  "anotacion": {
+    "image_id": "950000156-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.lime_green",
+          "balloon.link.latex.fashion.yellow",
+          "balloon.modeling.latex.fashion.white",
+          "balloon.modeling.latex.pastel_dusk.lavender",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.fashion.lime_green",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.link.latex.fashion.yellow",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.white",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.pastel_dusk.lavender",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "White balloon bunny mounted on a rounded yellow and lime green balloon base with lavender loops and pink ear accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "pink balloon accents"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.lime_green",
+      "balloon.link.latex.fashion.yellow",
+      "balloon.modeling.latex.fashion.white",
+      "balloon.modeling.latex.pastel_dusk.lavender",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000156-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, placed on the main table, built from 6-inch matte Fashion Link-O-Loon® linking latex balloons in lime green and yellow, 2-inch matte Fashion white modeling latex balloons and muted Pastel Dusk lavender modeling latex balloons, 5-inch matte Fashion white round latex balloons, mixed organically rather than graded, alongside pink balloon accents, set against plain white background; floor not visible.",
+    "palabras": 63,
+    "caracteres": 451,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.lime_green",
+      "balloon.link.latex.fashion.yellow",
+      "balloon.modeling.latex.fashion.white",
+      "balloon.modeling.latex.pastel_dusk.lavender",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.fashion.lime_green",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.link.latex.fashion.yellow",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.white",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_dusk.lavender",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:18:14.127Z",
+    "recompilado_en": "2026-09-03T14:45:24.788Z"
+  }
+}

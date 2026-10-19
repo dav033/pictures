@@ -1,0 +1,117 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12276-1",
+  "image_sha256": "44902142c77086ff41ed5677704bfae5e33007e5a3743081ba040aa2129169a8",
+  "idempotency_key": "bcce8f0039318f6113b0fbd74b35b770082e24b8fb3eb01a09d1bd6ea1a73112",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12276/foto-1.jpg",
+    "orden": "12276"
+  },
+  "anotacion": {
+    "image_id": "12276-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white and yellow painted brick walls and a red concrete floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.satin.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.silver",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Freestanding three-dimensional balloon arch spiraling royal blue, white, and satin silver round balloons over a chair setup."
+      }
+    ],
+    "non_purchased_elements": [
+      "a red armchair",
+      "a blue plastic chair",
+      "a corrugated metal roof"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.satin.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12276-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in royal blue and white and Satin silver round latex balloons, all at a single 12-inch size, alongside a red armchair, a blue plastic chair and a corrugated metal roof, set against white and yellow painted brick walls and a red concrete floor.",
+    "palabras": 61,
+    "caracteres": 369,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.satin.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.silver",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:36:19.878Z",
+    "recompilado_en": "2026-09-03T14:45:22.029Z"
+  }
+}

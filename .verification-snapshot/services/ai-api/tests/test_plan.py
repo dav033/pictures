@@ -1,0 +1,1006 @@
+from __future__ import annotations
+
+import hashlib
+import asyncio
+import json
+import time
+from pathlib import Path
+from typing import Sequence, cast
+from uuid import UUID
+
+import pytest
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
+
+from app.main import Settings, build_signature, create_app
+from app.operational_store import InMemoryOperationalStore
+from app.plan import (
+    BalloonApportionmentError,
+    PlanResolutionError,
+    PlanResolutionRequest,
+    _candidate,
+    _alternatives,
+    _apportion_margins,
+    _declared_pairs,
+    _despiece_with_plan_sizes,
+    _effective_proportions,
+    _eje,
+    _hamilton,
+    _product_variant_mismatches,
+    _material_waste_only_savings,
+    _required_sizes,
+    _MIXES,
+    _plan_density,
+    _optimizar_cobertura,
+    _plan_cost_optimizer_enabled,
+    resolve_plan,
+)
+
+
+ROOT = Path(__file__).parents[3]
+SNAPSHOT = "products_catalog:test"
+SECRET = "p" * 32
+
+
+def _identity_rows(
+    rows: Sequence[dict[str, object]],
+    product_ids: Sequence[str],
+    variant_ids: Sequence[str],
+) -> list[dict[str, object]]:
+    """Mirror the identity SQL: variant owners plus requested known products."""
+    identity: list[dict[str, object]] = [
+        {"product_id": row["product_id"], "variant_id": row["variant_id"]}
+        for row in rows
+        if row["variant_id"] in variant_ids
+    ]
+    known_products = dict.fromkeys(str(row["product_id"]) for row in rows)
+    identity.extend(
+        {"product_id": product_id, "variant_id": None}
+        for product_id in known_products
+        if product_id in product_ids
+    )
+    return identity
+
+
+class FakePlanStore:
+    def __init__(self, rows: Sequence[dict[str, object]], snapshot: str | None = SNAPSHOT) -> None:
+        self.rows = list(rows)
+        self.snapshot = snapshot
+        self.requested_snapshot: str | None = None
+        self.requested_ids: tuple[list[str], list[str]] | None = None
+        self.identity_calls: list[tuple[list[str], list[str]]] = []
+
+    async def published_snapshot(self, snapshot_id: str) -> str | None:
+        self.requested_snapshot = snapshot_id
+        return self.snapshot if snapshot_id == self.snapshot else None
+
+    async def fetch_plan_rows(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        self.requested_ids = (list(product_ids), list(variant_ids))
+        assert snapshot_id == SNAPSHOT
+        return self.rows
+
+    async def fetch_catalog_identity(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        assert snapshot_id == SNAPSHOT
+        self.identity_calls.append((list(product_ids), list(variant_ids)))
+        return _identity_rows(self.rows, product_ids, variant_ids)
+
+    async def check_ready(self) -> bool:
+        return True
+
+
+def _request(*, allowlist: list[dict[str, object]] | None = None) -> PlanResolutionRequest:
+    plan = json.loads(
+        (ROOT / "contracts" / "domain" / "v1" / "fixtures" / "plan-resuelto-ok.json").read_text(
+            encoding="utf-8"
+        )
+    )["plan"]
+    return PlanResolutionRequest.model_validate(
+        {
+            "context": {
+                "schema_version": "operational.v1",
+                "request_id": "00000000-0000-4000-8000-000000000001",
+                "correlation_id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                "deadline_at": "2030-01-01T00:00:00Z",
+                "deadline_ms": 1000,
+                "body_sha256": "a" * 64,
+                "scopes": ["plan.resolve"],
+            },
+            "schema_version": "plan-resolution.v1",
+            "plan": plan,
+            "allowlist": allowlist or [{"product_id": "prod-rojo", "variant_ids": ["var-rojo-12"]}],
+            "catalog_snapshot_id": SNAPSHOT,
+        }
+    )
+
+
+def _row(*, variant_id: str = "var-rojo-12") -> dict[str, object]:
+    return {
+        "product_id": "prod-rojo",
+        "variant_id": variant_id,
+        "sku": "ROJO-12",
+        "sku_original": "ROJO-12",
+        "source_snapshot_id": SNAPSHOT,
+        "source_variant_id": "source-rojo-12",
+        "inventory_quantity": 100,
+        "unidades_inferidas": False,
+        "producto_titulo": "Globo látex rojo",
+        "variante_titulo": "R-12",
+        "precio": 12000,
+        "unidades_paq": 50,
+        "disponible": True,
+        "producto_disponible": True,
+        "codigo_tamano": "R-12",
+        "forma": "redondo",
+        "diam_pulg": 12,
+        "colores_producto": ["rojo"],
+        "colores_variante": [],
+        "acabados_producto": [],
+        "descripcion": "Globo de látex rojo",
+        "imagen": "https://cdn.example/rojo-12.jpg",
+        "currency": "COP",
+    }
+
+
+def test_plan_cost_optimizer_flag_defaults_on_and_accepts_documented_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PLAN_COST_OPTIMIZER_V2", raising=False)
+    assert _plan_cost_optimizer_enabled() is True
+
+    for value in ("1", "true", "TRUE", "on", "On"):
+        monkeypatch.setenv("PLAN_COST_OPTIMIZER_V2", value)
+        assert _plan_cost_optimizer_enabled() is True
+
+    for value in ("0", "false", "off", "yes"):
+        monkeypatch.setenv("PLAN_COST_OPTIMIZER_V2", value)
+        assert _plan_cost_optimizer_enabled() is False
+
+
+def test_coverage_optimizer_matches_global_package_search() -> None:
+    result = _optimizar_cobertura(
+        74,
+        [
+            {"variant_id": "R12-X12", "unidades_paquete": 12, "precio": 8832},
+            {"variant_id": "R12-X50", "unidades_paquete": 50, "precio": 28977},
+        ],
+    )
+
+    assert result is not None
+    assert result["costo"] == 46641
+    assert result["sobrante"] == 0
+    assert result["paquetes"] == 3
+
+
+def test_material_waste_savings_uses_float_unit_price_and_rounds_once() -> None:
+    balloons: list[dict[str, object]] = [
+        {"product_id": "P-BAL", "variant_id": variant} for variant in ("V-A", "V-B", "V-C")
+    ]
+    assert (
+        _material_waste_only_savings(
+            balloons,
+            [],
+            [
+                {
+                    "product_id": "P-BAL",
+                    "variant_id": "V-A",
+                    "design_quantity": 24,
+                    "units_per_package": 50,
+                    "package_count": 1,
+                    "purchase_cost": 1000,
+                },
+                {
+                    "product_id": "P-BAL",
+                    "variant_id": "V-B",
+                    "design_quantity": 30,
+                    "units_per_package": 10,
+                    "package_count": 3,
+                    "purchase_cost": 100,
+                },
+                {
+                    "product_id": "P-BAL",
+                    "variant_id": "V-C",
+                    "design_quantity": 30,
+                    "units_per_package": 10,
+                    "package_count": 3,
+                    "purchase_cost": 100,
+                },
+            ],
+        )
+        == 67
+    )
+
+
+def test_material_waste_savings_only_counts_balloon_purchases() -> None:
+    # Golden vector 09: MERMA models balloon bursts, so a non-geometric backdrop
+    # (1 unit, 1 per package) never saves a waste-only package.
+    telon: dict[str, object] = {
+        "product_id": "P-TELON",
+        "variant_id": "V-TELON",
+        "design_quantity": 1,
+        "units_per_package": 1,
+        "package_count": 1,
+        "purchase_cost": 20000,
+    }
+    balloon: dict[str, object] = {
+        "product_id": "P-BAL",
+        "variant_id": "V-BAL-R12",
+        "design_quantity": 60,
+        "units_per_package": 7,
+        "package_count": 9,
+        "purchase_cost": 13500,
+    }
+    special = [{"product_id": "P-TELON", "variant_id": "V-TELON"}]
+    balloons = [{"product_id": "P-BAL", "variant_id": "V-BAL-R12"}]
+
+    assert _material_waste_only_savings([], special, [telon]) == 0
+    assert _material_waste_only_savings([], [], [telon]) == 0
+    assert _material_waste_only_savings(balloons, special, [balloon, telon]) == 1500
+    # Another package presentation of a balloon product stays eligible.
+    other_presentation = {**balloon, "variant_id": "V-BAL-R12-X50"}
+    assert _material_waste_only_savings(balloons, special, [other_presentation]) == 1500
+    # A special element is excluded even when it shares the balloon product.
+    shared_special = {**telon, "product_id": "P-BAL"}
+    assert (
+        _material_waste_only_savings(
+            balloons, [{"product_id": "P-BAL", "variant_id": "V-TELON"}], [shared_special]
+        )
+        == 0
+    )
+
+
+@pytest.mark.anyio
+async def test_waste_reserve_buys_the_cheapest_additional_package() -> None:
+    # With a single balloon purchase the cheapest cover is that purchase, and
+    # only the delta of packages counts as an additional waste package: the
+    # totals used to report all 10 packages of the flagged line.
+    request = _request()
+    plan = json.loads(json.dumps(request.plan))
+    structure = cast(dict[str, object], plan["estructuras"][0])
+    structure["tipo"] = "columna"
+    structure["medidas"] = {"alto_m": 2.8}
+    payload = {**request.model_dump(mode="json", exclude_none=True), "plan": plan}
+    payload_request = PlanResolutionRequest.model_validate(payload)
+    row = _row()
+    row["precio"] = 1500
+    row["unidades_paq"] = 7
+
+    result = await resolve_plan(payload_request, FakePlanStore([row]))
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    purchase = cast(list[dict[str, object]], resolved["compras"])[0]
+    totals = cast(dict[str, object], resolved["totales"])
+    estimate = cast(dict[str, object], result["material_estimate"])
+    estimate_totals = cast(dict[str, object], estimate["totals"])
+
+    assert purchase["additional_package_for_waste"] is True
+    assert purchase["paquetes"] == 10
+    assert purchase["purchase_quantity"] == 70
+    assert purchase["waste_reserve"] == 5
+    assert purchase["required_quantity"] == 65
+    assert purchase["leftover_inventory"] == 5
+    assert purchase["consumption_cost"] == 13929
+    assert totals["natural_package_surplus"] == 3
+    assert totals["covered_waste_reserve"] == 5
+    assert totals["uncovered_waste_reserve"] == 0
+    assert totals["additional_waste_packages"] == 1
+    assert estimate_totals["additional_waste_packages"] == 1
+    # Naive purchase (ceil(65/7) = 10 packages) against what was bought (10).
+    assert totals["waste_only_savings_cop"] == 0
+    assert estimate_totals["waste_only_savings_cop"] == 0
+
+
+def test_alternatives_filter_allowlist_geometry_and_non_geometric_cost() -> None:
+    base = _candidate(_row(), SNAPSHOT)
+    assert base is not None
+    alternative_row = _row(variant_id="var-azul-12")
+    alternative_row["product_id"] = "prod-azul"
+    alternative_row["precio"] = 9000
+    alternative_row["colores_producto"] = ["rojo"]
+    alternative = _candidate(alternative_row, SNAPSHOT)
+    assert alternative is not None
+
+    structures = [
+        {
+            "lineas": [
+                {
+                    "color": "rojo",
+                    "forma": "redondo",
+                    "diam_pulg": 12,
+                    "acabado": None,
+                    "unidades": 24,
+                },
+                {
+                    "color": None,
+                    "forma": None,
+                    "diam_pulg": None,
+                    "unidades": 1,
+                },
+            ]
+        }
+    ]
+    purchases = [{"diam_pulg": None, "subtotal": 5000}]
+    alternatives = _alternatives(
+        {},
+        structures,
+        purchases,
+        {"prod-rojo": [base], "prod-azul": [alternative]},
+        {"prod-rojo": {base.variant_id}, "prod-azul": {alternative.variant_id}},
+        20000,
+    )
+
+    assert [item["familia_id"] for item in alternatives] == ["prod-azul", "prod-rojo"]
+    assert alternatives[0]["total_cop"] == 14000
+    assert alternatives[0]["ahorro_cop"] == 6000
+    assert alternatives[0]["etiqueta"] == "economica"
+
+
+def _signed_endpoint_request(
+    request: PlanResolutionRequest, *, nonce: UUID
+) -> tuple[bytes, dict[str, str]]:
+    operation = request.model_dump(mode="json", exclude={"context"}, exclude_none=True)
+    operation_hash = hashlib.sha256(
+        json.dumps(operation, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
+    operation_context = {
+        **request.context.model_dump(mode="json", exclude_none=True),
+        "body_sha256": operation_hash,
+    }
+    body = json.dumps(
+        {"context": operation_context, **operation},
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    timestamp = int(time.time())
+    headers = {
+        "content-type": "application/json",
+        "x-internal-schema-version": "operational.v1",
+        "x-internal-timestamp": str(timestamp),
+        "x-internal-nonce": str(nonce),
+        "x-internal-scopes": "plan.resolve",
+        "x-internal-signature": build_signature(
+            secret=SECRET,
+            method="POST",
+            path="/internal/v1/plan/resolve",
+            timestamp=timestamp,
+            nonce=nonce,
+            scopes=["plan.resolve"],
+            body=body,
+        ),
+    }
+    return body, headers
+
+
+@pytest.mark.anyio
+async def test_resolution_pins_snapshot_and_validates_composite_result() -> None:
+    store = FakePlanStore([_row()])
+
+    result = await resolve_plan(_request(), store)
+
+    assert store.requested_snapshot == SNAPSHOT
+    assert store.requested_ids is not None
+    assert store.requested_ids[0] == ["prod-rojo"]
+    assert result["operation_schema_version"] == "plan-resolution-result.v1"
+    assert result["catalog_snapshot_id"] == SNAPSHOT
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    assert resolved["plan_hash"]
+    totals = cast(dict[str, object], resolved["totales"])
+    assert totals["merma_porcentaje"] == 8.0
+    assert (
+        cast(dict[str, object], result["material_estimate"])["version"]
+        == "design-material-estimate-v1"
+    )
+    assert cast(dict[str, object], result["quote"])["currency"] == "COP"
+
+
+@pytest.mark.anyio
+async def test_non_allowlisted_variant_is_reported_without_catalog_escape() -> None:
+    store = FakePlanStore([_row()])
+
+    result = await resolve_plan(
+        _request(allowlist=[{"product_id": "prod-rojo", "variant_ids": ["other-variant"]}]),
+        store,
+    )
+
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    assert resolved["compras"] == []
+    assert resolved["sin_cobertura"]
+
+
+@pytest.mark.anyio
+async def test_resolution_request_rejects_legacy_dataset_allowlist() -> None:
+    with pytest.raises(ValidationError):
+        PlanResolutionRequest.model_validate(
+            {**_request().model_dump(), ("lora_" + "variant_ids"): ["var-rojo-12"]}
+        )
+
+
+@pytest.mark.anyio
+async def test_admissible_size_substitution_is_explicit_and_color_falls_back_to_product() -> None:
+    request = _request()
+    plan = json.loads(json.dumps(request.plan))
+    plan["estructuras"][0]["mezcla"] = "organica_fina"
+    row = _row()
+    row["colores_variante"] = ["color-variante-no-canonico"]
+    row["colores_producto"] = '["rojo"]'
+    result = await resolve_plan(
+        PlanResolutionRequest.model_validate(
+            {**request.model_dump(mode="json", exclude_none=True), "plan": plan}
+        ),
+        FakePlanStore([row]),
+    )
+
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    substitutions = cast(list[dict[str, object]], resolved["sustituciones"])
+    assert {item["pedido"] for item in substitutions} >= {"R-9", "R-18"}
+    assert all(item["entregado"] == "R-12" for item in substitutions)
+    assert resolved["compras"]
+
+
+@pytest.mark.anyio
+async def test_non_cop_catalog_row_is_rejected_fail_closed() -> None:
+    row = _row()
+    row["currency"] = "USD"
+
+    result = await resolve_plan(_request(), FakePlanStore([row]))
+
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    assert resolved["compras"] == []
+    assert resolved["sin_cobertura"]
+
+
+def test_resolution_request_requires_snapshot_and_unique_allowlist() -> None:
+    with pytest.raises(ValidationError):
+        _request(
+            allowlist=[{"product_id": "prod-rojo", "variant_ids": ["var-rojo-12", "var-rojo-12"]}]
+        )
+
+    with pytest.raises(ValidationError):
+        PlanResolutionRequest.model_validate(
+            {**_request().model_dump(exclude={"catalog_snapshot_id"})}
+        )
+
+    plan_one_one = _request().model_dump(mode="json")
+    plan_one_one["plan"]["plan_version"] = "1.1"
+    with pytest.raises(ValidationError):
+        PlanResolutionRequest.model_validate(plan_one_one)
+
+
+@pytest.mark.anyio
+async def test_invalid_plan_version_raises_invalid_plan() -> None:
+    request = _request()
+    request.plan["plan_version"] = "1.1"
+
+    with pytest.raises(PlanResolutionError) as raised:
+        await resolve_plan(request, FakePlanStore([_row()]))
+
+    assert raised.value.code == "invalid_plan"
+    assert raised.value.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_unknown_published_snapshot_fails_closed() -> None:
+    store = FakePlanStore([_row()], snapshot=None)
+
+    with pytest.raises(PlanResolutionError) as raised:
+        await resolve_plan(_request(), store)
+
+    assert str(raised.value) == "catalog_snapshot_not_found"
+    assert raised.value.status_code == 422
+
+
+def test_plan_resolution_endpoint_reuses_operational_auth_boundary() -> None:
+    request = _request()
+    body, headers = _signed_endpoint_request(
+        request, nonce=UUID("00000000-0000-4000-8000-000000000010")
+    )
+    app = create_app(
+        Settings(environment="test", hmac_secret=SECRET),
+        operational_store=InMemoryOperationalStore(),
+        catalog_store=FakePlanStore([_row()]),
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/internal/v1/plan/resolve", content=body, headers=headers)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["payload"]["catalog_snapshot_id"] == SNAPSHOT
+
+
+def test_plan_resolution_endpoint_reports_unknown_snapshot() -> None:
+    request = _request()
+    body, headers = _signed_endpoint_request(
+        request, nonce=UUID("00000000-0000-4000-8000-000000000011")
+    )
+    app = create_app(
+        Settings(environment="test", hmac_secret=SECRET),
+        operational_store=InMemoryOperationalStore(),
+        catalog_store=FakePlanStore([_row()], snapshot=None),
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/internal/v1/plan/resolve", content=body, headers=headers)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "catalog_snapshot_not_found"
+
+
+def _azul_row() -> dict[str, object]:
+    row = _row(variant_id="var-azul-12")
+    row["product_id"] = "prod-azul"
+    row["sku"] = "AZUL-12"
+    row["sku_original"] = "AZUL-12"
+    row["source_variant_id"] = "source-azul-12"
+    row["producto_titulo"] = "Globo látex azul"
+    row["colores_producto"] = ["azul"]
+    return row
+
+
+def _request_with_structure(
+    changes: dict[str, object],
+    *,
+    allowlist: list[dict[str, object]] | None = None,
+) -> PlanResolutionRequest:
+    request = _request(allowlist=allowlist)
+    payload = request.model_dump(mode="json", exclude_none=True)
+    plan = json.loads(json.dumps(payload["plan"]))
+    structure = cast(dict[str, object], plan["estructuras"][0])
+    structure.update(changes)
+    return PlanResolutionRequest.model_validate({**payload, "plan": plan})
+
+
+def _material(product_id: str, variant_id: str) -> dict[str, object]:
+    return {
+        "product_id": product_id,
+        "variant_id": variant_id,
+        "color": "rojo",
+        "participacion": 1,
+        "rol_material": "principal",
+    }
+
+
+_ROJO_ALLOWLIST: list[dict[str, object]] = [
+    {"product_id": "prod-rojo", "variant_ids": ["var-rojo-12"]}
+]
+
+
+def test_product_variant_mismatch_rules_are_strict_for_allowlist_and_tolerant_for_plan() -> None:
+    identity = [
+        {"product_id": "prod-rojo", "variant_id": "var-rojo-12"},
+        {"product_id": "prod-azul", "variant_id": "var-azul-12"},
+        {"product_id": "prod-rojo", "variant_id": None},
+        {"product_id": "prod-azul", "variant_id": None},
+    ]
+
+    assert _product_variant_mismatches(identity, {("prod-rojo", "var-rojo-12")}, set()) == []
+    # Allowlist pairs are strict even when the entry product is not a known product.
+    assert _product_variant_mismatches(identity, {("var-rojo-12", "var-rojo-12")}, set()) == [
+        ("var-rojo-12", "var-rojo-12")
+    ]
+    assert _product_variant_mismatches(identity, {("prod-azul", "var-rojo-12")}, set()) == [
+        ("prod-azul", "var-rojo-12")
+    ]
+    # Declared pairs tolerate a variant id repeated as product_id.
+    assert _product_variant_mismatches(identity, set(), {("var-rojo-12", "var-rojo-12")}) == []
+    assert _product_variant_mismatches(identity, set(), {("prod-azul", "var-rojo-12")}) == [
+        ("prod-azul", "var-rojo-12")
+    ]
+    # Unknown variants are not ownership errors.
+    assert (
+        _product_variant_mismatches(identity, {("prod-rojo", "var-x")}, {("prod-azul", "var-y")})
+        == []
+    )
+
+
+def test_declared_pairs_include_materials_and_overrides_but_not_override_targets() -> None:
+    plan = {
+        "estructuras": [
+            {
+                "materiales": [
+                    {"product_id": "prod-rojo", "variant_id": "var-rojo-12"},
+                    {"product_id": "prod-azul"},
+                ],
+                "variant_overrides": [
+                    {
+                        "objetivo_variant_id": "var-objetivo",
+                        "product_id": "prod-azul",
+                        "variant_id": "var-azul-12",
+                    }
+                ],
+            }
+        ]
+    }
+
+    assert _declared_pairs(plan) == {("prod-rojo", "var-rojo-12"), ("prod-azul", "var-azul-12")}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("changes", "allowlist"),
+    [
+        pytest.param(
+            {},
+            [{"product_id": "prod-azul", "variant_ids": ["var-rojo-12"]}],
+            id="allowlist-entry",
+        ),
+        pytest.param(
+            {"materiales": [_material("prod-rojo", "var-azul-12")]},
+            _ROJO_ALLOWLIST,
+            id="geometric-material",
+        ),
+        pytest.param(
+            {
+                "tipo": "backdrop",
+                "medidas": {},
+                "unidades_declaradas": 1,
+                "materiales": [_material("prod-azul", "var-rojo-12")],
+            },
+            [{"product_id": "prod-azul", "variant_ids": ["var-azul-12"]}],
+            id="non-geometric-material",
+        ),
+        pytest.param(
+            {
+                "variant_overrides": [
+                    {
+                        "objetivo_variant_id": "var-rojo-12",
+                        "product_id": "prod-rojo",
+                        "variant_id": "var-azul-12",
+                    }
+                ]
+            },
+            _ROJO_ALLOWLIST,
+            id="variant-override",
+        ),
+    ],
+)
+async def test_product_variant_mismatch_raises_before_commercial_fetch(
+    changes: dict[str, object], allowlist: list[dict[str, object]]
+) -> None:
+    store = FakePlanStore([_row(), _azul_row()])
+
+    with pytest.raises(PlanResolutionError) as raised:
+        await resolve_plan(_request_with_structure(changes, allowlist=allowlist), store)
+
+    assert raised.value.code == "allowlist_product_mismatch"
+    assert raised.value.status_code == 422
+    assert len(store.identity_calls) == 1
+    assert store.requested_ids is None
+
+
+@pytest.mark.anyio
+async def test_unknown_variant_stays_uncovered_instead_of_ownership_error() -> None:
+    store = FakePlanStore([_row(), _azul_row()])
+    request = _request_with_structure(
+        {
+            "tipo": "backdrop",
+            "medidas": {},
+            "unidades_declaradas": 1,
+            "materiales": [_material("prod-rojo", "var-desconocida")],
+        },
+        allowlist=[{"product_id": "prod-rojo", "variant_ids": ["var-rojo-12", "var-desconocida"]}],
+    )
+
+    result = await resolve_plan(request, store)
+
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    assert resolved["compras"] == []
+    assert resolved["sin_cobertura"]
+
+
+@pytest.mark.anyio
+async def test_variant_id_repeated_as_product_id_is_tolerated_and_canonicalized() -> None:
+    store = FakePlanStore([_row(), _azul_row()])
+    request = _request_with_structure({"materiales": [_material("var-rojo-12", "var-rojo-12")]})
+
+    result = await resolve_plan(request, store)
+
+    resolved = cast(dict[str, object], result["plan_resuelto"])
+    purchases = cast(list[dict[str, object]], resolved["compras"])
+    assert [purchase["variant_id"] for purchase in purchases] == ["var-rojo-12"]
+    assert purchases[0]["product_id"] == "prod-rojo"
+
+
+def test_plan_resolution_endpoint_reports_product_variant_mismatch() -> None:
+    request = _request(allowlist=[{"product_id": "prod-azul", "variant_ids": ["var-rojo-12"]}])
+    body, headers = _signed_endpoint_request(
+        request, nonce=UUID("00000000-0000-4000-8000-000000000012")
+    )
+    app = create_app(
+        Settings(environment="test", hmac_secret=SECRET),
+        operational_store=InMemoryOperationalStore(),
+        catalog_store=FakePlanStore([_row(), _azul_row()]),
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/internal/v1/plan/resolve", content=body, headers=headers)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "allowlist_product_mismatch"
+
+
+@pytest.mark.anyio
+async def test_official_structure_is_accepted_and_bound_to_the_plan_hash() -> None:
+    plain = await resolve_plan(_request(), FakePlanStore([_row()]))
+    official = await resolve_plan(
+        _request_with_structure({"estructura_oficial": "arco"}), FakePlanStore([_row()])
+    )
+    asymmetrical = await resolve_plan(
+        _request_with_structure({"estructura_oficial": "arco_asimetrico"}), FakePlanStore([_row()])
+    )
+
+    plain_resolved = cast(dict[str, object], plain["plan_resuelto"])
+    official_resolved = cast(dict[str, object], official["plan_resuelto"])
+    asymmetrical_resolved = cast(dict[str, object], asymmetrical["plan_resuelto"])
+    structures = cast(
+        list[dict[str, object]], cast(dict[str, object], official_resolved["plan"])["estructuras"]
+    )
+    assert structures[0]["estructura_oficial"] == "arco"
+    assert official_resolved["plan_hash"] != plain_resolved["plan_hash"]
+    # A plain official arch keeps the base geometry; the asymmetrical variant tapers its band.
+    assert official_resolved["totales"] == plain_resolved["totales"]
+    plain_units = cast(list[dict[str, object]], plain_resolved["estructuras"])[0]["total_unidades"]
+    asymmetrical_units = cast(list[dict[str, object]], asymmetrical_resolved["estructuras"])[0][
+        "total_unidades"
+    ]
+    assert isinstance(plain_units, int) and isinstance(asymmetrical_units, int)
+    assert abs(asymmetrical_units - plain_units * 0.7) <= 1
+
+
+def test_half_arch_axis_is_a_quarter_ellipse_that_uses_the_height() -> None:
+    # Regression: the axis used to be ``largo or ancho`` and ignored ``alto``, so a
+    # tall 1.2 m x 2.2 m half arch counted fewer balloons than a 1.8 m column.
+    tall = _eje("semiarco", {"ancho_m": 1.2, "alto_m": 2.2})
+    assert tall == pytest.approx(2.7284, abs=1e-3)
+    assert tall > _eje("columna", {"alto_m": 1.8})
+    assert _eje("semiarco", {"ancho_m": 1.2, "alto_m": 3.0}) > tall
+    # The chat sends largo_m as depth: with width and height the ellipse wins.
+    assert _eje("semiarco", {"ancho_m": 1.2, "alto_m": 2.2, "largo_m": 0.5}) == pytest.approx(tall)
+    assert _eje("semiarco", {"largo_m": 3.0}) == 3.0
+    assert _eje("semiarco", {"ancho_m": 2.4}) == 2.4
+    assert _eje("guirnalda", {"largo_m": 2.5, "alto_m": 2.2}) == 2.5
+
+
+def _plan_with_sizes(*sizes: int) -> dict[str, object]:
+    return {
+        "restricciones": {
+            "tamanos": [
+                {"valor": f"R-{size}", "polaridad": "obligatorio", "procedencia": "explicito"}
+                for size in sizes
+            ]
+        }
+    }
+
+
+def _arch(mix: str, materials: Sequence[dict[str, object]], repeats: int = 1) -> dict[str, object]:
+    return {
+        "tipo": "arco",
+        "medidas": {"ancho_m": 3, "alto_m": 2.4},
+        "densidad": "media",
+        "mezcla": mix,
+        "repeticiones": repeats,
+        "materiales": list(materials),
+    }
+
+
+def test_mandatory_sizes_renormalize_the_mix_and_the_total() -> None:
+    # Mirror of scripts/test-geometria-plan.ts (ADR 0022). The effective mix
+    # used to be filtered without renormalizing while the total still came from
+    # the full mix, so "solo R-12" quoted 65 balloons instead of 104 and a size
+    # outside the mix multiplied the count.
+    one = [{"participacion": 1.0}]
+
+    def total(mix: str, *sizes: int) -> int:
+        _axis, demands, _unplaced = _despiece_with_plan_sizes(
+            _plan_with_sizes(*sizes), _arch(mix, one)
+        )
+        return sum(cast(int, demand["cantidad"]) for demand in demands)
+
+    assert total("organica_fina") == 119
+    assert total("organica_fina", 12) == 104
+    assert total("organica_fina", 12, 18) == 94
+    assert total("clasica", 18, 24) == 64
+    assert total("organica_fina", 36) == 35
+    _axis, demands, unplaced = _despiece_with_plan_sizes(
+        _plan_with_sizes(12, 36), _arch("organica_fina", one)
+    )
+    assert unplaced == (36,)
+    assert {demand["pulgadas"] for demand in demands} == {12}
+    assert _despiece_with_plan_sizes(_plan_with_sizes(36), _arch("organica_fina", one))[2] == ()
+    sizes = (5, 9, 12, 18, 24, 36)
+    for mix in _MIXES:
+        for mask in range(1, 2 ** len(sizes)):
+            requested = [size for index, size in enumerate(sizes) if (mask >> index) & 1]
+            proportions, missing = _effective_proportions(mix, set(requested))
+            assert abs(sum(share for _diameter, share in proportions) - 1) < 1e-9
+            assert all(diameter in requested for diameter, _share in proportions)
+            in_mix = [diameter for diameter, _share in _MIXES[mix] if diameter in requested]
+            assert list(missing) == (
+                [size for size in requested if size not in in_mix] if in_mix else []
+            )
+
+
+def test_mandatory_size_parsing_is_identical_to_typescript() -> None:
+    # Mirror of scripts/test-geometria-plan.ts. TypeScript read
+    # restricciones.tamanos[].valor with Number() and Python with int(): both
+    # accepted "R-12" and differed on decimals, exponents, hexadecimal,
+    # underscores, non-ASCII digits and the empty string, so the same plan got
+    # different counts, costs and plan_hash on each backend.
+    def sizes(*values: str) -> set[int]:
+        return _required_sizes(
+            {"restricciones": {"tamanos": [{"valor": value} for value in values]}}
+        )
+
+    assert sizes("R-12", "r12", "18", " R-24 ", "R-12") == {12, 18, 24}
+    assert (
+        sizes(
+            "R-12.5",
+            "R-0x0C",
+            "R-1e1",
+            "R-",
+            "R-1_0",
+            "R-١٢",
+            "R-0",
+            "R-1234",
+            "grandes",
+        )
+        == set()
+    ), "antes: R-1_0 daba 10 pulgadas en Python y R-12.5 daba 12,5 en TypeScript"
+    assert _required_sizes(
+        {
+            "restricciones": {
+                "tamanos": [
+                    {"valor": "R-12", "polaridad": "prohibido"},
+                    {"valor": "R-18"},
+                ]
+            }
+        }
+    ) == {18}
+    assert _required_sizes({}) == set()
+
+
+def test_hamilton_refuses_quotas_that_do_not_add_up_to_the_total() -> None:
+    # The guard is what turns the old silent undercount into a failure.
+    with pytest.raises(BalloonApportionmentError):
+        _hamilton(10, [3.0, 3.0], [0.0, 0.0])
+    assert _hamilton(10, [5.5, 4.5], [0.0, 0.0]) == [6, 4]
+
+
+def test_both_margins_keep_size_totals_independent_of_the_number_of_colors() -> None:
+    # Mirror of the sweep in scripts/test-geometria-plan.ts: a single Hamilton
+    # over size x material cells dropped the R-24 accent as soon as a second
+    # color appeared, and the color split drifted on repeated pieces.
+    splits: list[list[float]] = [
+        [1.0],
+        [0.5, 0.5],
+        [0.6, 0.4],
+        [0.7, 0.2, 0.1],
+        [0.34, 0.33, 0.33],
+        [0.4, 0.3, 0.2, 0.1],
+    ]
+    for mix in _MIXES:
+        reference = _despiece_with_plan_sizes({}, _arch(mix, [{"participacion": 1.0}]))[1]
+        by_size = {
+            cast(int, demand["pulgadas"]): cast(int, demand["cantidad"]) for demand in reference
+        }
+        base_total = sum(by_size.values())
+        for split in splits:
+            materials = [
+                {"color": f"color-{index}", "participacion": share}
+                for index, share in enumerate(split)
+            ]
+            _axis, demands, _unplaced = _despiece_with_plan_sizes({}, _arch(mix, materials, 3))
+            totals_by_size: dict[int, int] = {}
+            totals_by_material: dict[int, int] = {}
+            for demand in demands:
+                diameter = cast(int, demand["pulgadas"])
+                index = cast(int, demand["material_index"])
+                totals_by_size[diameter] = totals_by_size.get(diameter, 0) + cast(
+                    int, demand["cantidad"]
+                )
+                totals_by_material[index] = totals_by_material.get(index, 0) + cast(
+                    int, demand["cantidad"]
+                )
+            assert sum(totals_by_size.values()) == base_total * 3
+            for diameter, units in totals_by_size.items():
+                assert units == by_size[diameter] * 3
+            for index, units in totals_by_material.items():
+                assert abs(units / 3 - base_total * split[index]) < 1
+
+
+def test_plan_density_follows_the_structure_with_most_design_balloons() -> None:
+    # Mirror of planDensity in src/lib/materiales/estimacion.ts. TypeScript used
+    # "lujosa if any structure is lujosa" and Python the first structure, so the
+    # same mixed plan reached the image prompt with a different visual_density.
+    plan = {
+        "estructuras": [
+            {"estructura_id": "EST_01_GUIRNALDA", "densidad": "lujosa"},
+            {"estructura_id": "EST_02_PARED", "densidad": "media"},
+        ]
+    }
+    structures = [
+        {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "lineas": [{"unidades": 67, "diam_pulg": 12}],
+        },
+        {
+            "estructura_id": "EST_02_PARED",
+            "lineas": [{"unidades": 336, "diam_pulg": 12}, {"unidades": 1, "diam_pulg": None}],
+        },
+    ]
+    assert _plan_density(plan, structures)["densidad"] == "media"
+    # Tie: the first structure in plan order wins.
+    tied = [
+        {"estructura_id": "EST_01_GUIRNALDA", "lineas": [{"unidades": 10, "diam_pulg": 12}]},
+        {"estructura_id": "EST_02_PARED", "lineas": [{"unidades": 10, "diam_pulg": 12}]},
+    ]
+    assert _plan_density(plan, tied)["densidad"] == "lujosa"
+    assert _plan_density({"estructuras": []}, structures) == {}
+
+
+def test_margin_matrix_closes_both_margins() -> None:
+    matrix = _apportion_margins(10, ((12, 0.5), (18, 0.5)), [0.7, 0.3])
+    assert [sum(row) for row in matrix] == [5, 5]
+    assert [sum(row[column] for row in matrix) for column in range(2)] == [7, 3]
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"estructura_oficial": "columna_asimetrica"},  # tipo arco is not a column
+        {"estructura_oficial": "arco_no_denso"},  # densidad media is not airy
+        {"estructura_oficial": "pared_densa"},  # tipo arco is not a wall
+        {"estructura_oficial": "estructura_inventada"},
+    ],
+)
+def test_incoherent_official_structure_is_rejected_by_the_contract(
+    changes: dict[str, object],
+) -> None:
+    # The coherence table is generated from estructuras-oficiales.ts into the JSON Schema.
+    with pytest.raises(ValidationError):
+        _request_with_structure(changes)
+
+
+class _StoreThatWaitsForTheOtherCheck(FakePlanStore):
+    """``published_snapshot`` only answers once the identity check has started.
+
+    A resolve that runs both checks together finishes; one that awaits them
+    one after the other never starts the second and times out.
+    """
+
+    def __init__(self, rows: Sequence[dict[str, object]]) -> None:
+        super().__init__(rows)
+        self._identity_started = asyncio.Event()
+
+    async def published_snapshot(self, snapshot_id: str) -> str | None:
+        await asyncio.wait_for(self._identity_started.wait(), timeout=2)
+        return await super().published_snapshot(snapshot_id)
+
+    async def fetch_catalog_identity(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        self._identity_started.set()
+        return await super().fetch_catalog_identity(snapshot_id, product_ids, variant_ids)
+
+
+@pytest.mark.anyio
+async def test_snapshot_and_ownership_checks_run_together() -> None:
+    # Each check is a round trip to the catalog database; a card edit resolves
+    # twice, so running them together halves that wait.
+    store = _StoreThatWaitsForTheOtherCheck([_row()])
+
+    result = await resolve_plan(_request(), store)
+
+    assert result["catalog_snapshot_id"] == SNAPSHOT
+    assert len(store.identity_calls) == 1
+    assert store.requested_ids is not None

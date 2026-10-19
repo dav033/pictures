@@ -1,0 +1,183 @@
+import { TEXTO_PLAN_LISTO } from "@/lib/ia/omoikane/texto-final-turno";
+import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
+import type { DisponibilidadProducto } from "@/lib/plan/cobertura-materiales";
+import { coloresRealesProducto, coloresRealesVariante } from "@/lib/plan/colores-producto";
+import { mezclasCompatiblesConDiametros } from "@/lib/plan/mezclas";
+import type { PlanDecoracion } from "@/lib/plan/tipos";
+
+/**
+ * Deterministic convergence of one chat turn (E2E 2026-09-15: "Semiarcos rosa
+ * y plata" + "Quiero algo así para un cumpleaños" failed 4 of 5 real runs, two
+ * of them looping SIN_COBERTURA + COLORES_REFERENCIA_OMITIDOS until the 75 s
+ * deadline).
+ *
+ * - After `RECHAZOS_PARA_CONVERGER` refusals of `confirmar_plan_decoracion` in
+ *   the same turn, a refusal the server can repair is not sent back: photo
+ *   colors stop being claimed and the materials without size coverage are
+ *   removed (with a customer notice) before resolving again.
+ * - After `RECHAZOS_MAXIMOS` refusals the tool stops answering with repair
+ *   instructions: the model must reply to the customer.
+ * - `cierreAnticipado` ends the turn before the next model call once the turn
+ *   has run long enough, so the customer gets a useful question instead of a
+ *   timeout.
+ *
+ * Pure: no provider, HTTP, database or environment.
+ */
+export const RECHAZOS_PARA_CONVERGER = 2;
+export const RECHAZOS_MAXIMOS = 4;
+/** Without a plan, the turn answers with a question once it has run this long (route deadline: 75 s). */
+export const LIMITE_TURNO_SIN_PLAN_MS = 40_000;
+/** With a verified plan, the model still gets time for its summary up to this point. */
+export const LIMITE_TURNO_CON_PLAN_MS = 58_000;
+
+export const ACCION_PLAN_NO_CONVERGE = "No vuelvas a llamar confirmar_plan_decoracion ni a buscar en este mensaje. Responde ya al cliente, en una o dos frases y sin jerga: dile qué no pudiste armar con el catálogo disponible y pregúntale cómo prefiere seguir (por ejemplo con otros colores, otros tamaños u otra pieza).";
+
+/**
+ * Lo que el modelo debe corregir cuando la cantidad física estimada no cuadra (`ESTIMACION_INCONSISTENTE`).
+ * Sin piezas con armado del motor es la instrucción de siempre. Con ellas, no se le manda a tocar medidas,
+ * densidad ni mezcla de esa pieza: el motor las cuenta colocando cada globo y esos mandos no mueven su total,
+ * así que el modelo repetiría el mismo plan hasta agotar los intentos.
+ */
+export const ACCION_ESTIMACION_INCONSISTENTE = "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.";
+
+export function accionEstimacionInconsistente(piezasConArmadoDelMotor: readonly string[]): string {
+  if (piezasConArmadoDelMotor.length === 0) return ACCION_ESTIMACION_INCONSISTENTE;
+  const verbo = piezasConArmadoDelMotor.length === 1 ? "lleva" : "llevan";
+  return `La cantidad física estimada no es compatible con la escala solicitada. ${piezasConArmadoDelMotor.join(", ")} ${verbo} armado del motor y se cuenta con él: su densidad, su mezcla y sus medidas NO cambian el total, así que no las toques para corregirlo. Cambia el armado de esa pieza con armar_estructura (tamaño de globo, globos a lo ancho o por capa, largo) o vuelve a confirmarla sin armado. En las demás piezas sí revisa medidas, densidad, mezcla o número de estructuras. No cotices ni generes la imagen hasta corregirlo.`;
+}
+
+/** Candidates of several searches of the same turn: one entry per product with every variant seen. */
+export function unirCandidatosTurno(previos: readonly ProductoCandidato[], nuevos: readonly ProductoCandidato[]): ProductoCandidato[] {
+  const porProducto = new Map<string, ProductoCandidato>();
+  for (const candidato of [...previos, ...nuevos]) {
+    const anterior = porProducto.get(candidato.productId);
+    if (!anterior) {
+      porProducto.set(candidato.productId, candidato);
+      continue;
+    }
+    const variantes = new Map(anterior.variantes.map((variante) => [variante.variantId, variante]));
+    for (const variante of candidato.variantes) variantes.set(variante.variantId, variante);
+    // The latest search wins for product fields (event evidence, availability).
+    porProducto.set(candidato.productId, { ...candidato, variantes: [...variantes.values()] });
+  }
+  return [...porProducto.values()];
+}
+
+/** Colors and buildable mixes of every product this turn's searches returned. */
+export function disponibilidadDelTurno(candidatos: readonly ProductoCandidato[]): Map<string, DisponibilidadProducto> {
+  const disponibilidad = new Map<string, DisponibilidadProducto>();
+  for (const candidato of candidatos) {
+    const redondas = candidato.variantes.filter((variante) => variante.disponible && variante.forma === "redondo" && variante.diamPulg != null);
+    const colores = coloresRealesProducto(candidato.titulo, [...candidato.colores, ...candidato.variantes.flatMap((variante) => variante.colores)]);
+    disponibilidad.set(candidato.productId, {
+      titulo: candidato.titulo,
+      categoria: candidato.categoria,
+      colores,
+      // Coverage rule 1 needs the color the balloon really is, and a product's
+      // colors carry the color families of its tags. Without round variants
+      // (a foil number, a kit) there is no variant color to read: the product's
+      // colors stay, as before.
+      coloresVariante: redondas.length
+        ? [...new Set(redondas.flatMap((variante) => coloresRealesVariante(candidato.titulo, variante.colores, candidato.colores)))]
+        : colores,
+      mezclas: mezclasCompatiblesConDiametros([...new Set(redondas.map((variante) => variante.diamPulg!))]),
+      acabados: candidato.acabados,
+    });
+  }
+  return disponibilidad;
+}
+
+/**
+ * Removes the materials the resolver could not cover in every size, when the
+ * structure keeps its main material and at least one covered material. Shares
+ * are rescaled to add up to 1. Otherwise the structure is left as it is.
+ */
+export function quitarMaterialesSinCobertura(
+  plan: PlanDecoracion,
+  sinCobertura: ReadonlyArray<{ estructura_id: string; product_id: string }>,
+): { plan: PlanDecoracion; avisos: string[]; cambiado: boolean } {
+  const avisos: string[] = [];
+  let cambiado = false;
+  const estructuras = plan.estructuras.map((estructura) => {
+    const faltan = new Set(sinCobertura.filter((item) => item.estructura_id === estructura.estructura_id).map((item) => item.product_id));
+    if (faltan.size === 0) return estructura;
+    const quedan = estructura.materiales.filter((material) => !faltan.has(material.product_id));
+    // The main material is the design: without it the piece is not the one proposed.
+    const principalSinCobertura = estructura.materiales.some((material) => material.rol_material === "principal" && faltan.has(material.product_id));
+    if (principalSinCobertura || quedan.length === 0 || quedan.length === estructura.materiales.length) return estructura;
+    cambiado = true;
+    const total = quedan.reduce((suma, material) => suma + material.participacion, 0);
+    const materiales = quedan.map((material) => ({ ...material, participacion: material.participacion / total }));
+    materiales[0] = { ...materiales[0]!, participacion: materiales[0]!.participacion + (1 - materiales.reduce((suma, material) => suma + material.participacion, 0)) };
+    if (!materiales.some((material) => material.rol_material === "principal")) materiales[0] = { ...materiales[0]!, rol_material: "principal" };
+    const colores = [...new Set(materiales.map((material) => material.color).filter((color): color is string => Boolean(color)))];
+    for (const material of estructura.materiales.filter((item) => faltan.has(item.product_id))) {
+      avisos.push(`No tengo ${material.color ? `globos ${material.color}` : "uno de los globos"} en todos los tamaños que necesita ${estructura.nombre.toLowerCase()}${colores.length ? `: la armé con ${unirColores(colores)}` : ""}.`);
+    }
+    return { ...estructura, materiales };
+  });
+  return { plan: { ...plan, estructuras }, avisos, cambiado };
+}
+
+/**
+ * El globo grande de la punta de una columna orgánica que el producto no tiene en su talla, fuera.
+ *
+ * El motor (Python, `columnaorg/limites.py`) sube ese globo a R-36 cuando la punta es ancha, y ninguna mezcla ni
+ * ningún producto que el modelo elija lo cambia: la confirmación respondía SIN_COBERTURA hasta agotar el turno
+ * (banco de fotos 04, 2026-10-06). Con el 36 en la escalera de diámetros (`mezclas.ts`) el Python nuevo ya lo
+ * compra como el R-24 del mismo producto y esto no hace falta; con el de producción anterior (e447cfe) es la única
+ * salida que converge, y la columna sale sin el globo de arriba con su aviso.
+ *
+ * Solo cuando TODAS las tallas que faltan en la pieza son tallas que su propia mezcla no pide (es decir, la del
+ * globo de la punta): una talla de la mezcla la arregla la mezcla o el producto, no esto.
+ */
+export function sinCoronaSinCobertura(
+  plan: PlanDecoracion,
+  sinCobertura: ReadonlyArray<{ estructura_id: string; product_id: string; tamano: string }>,
+): { plan: PlanDecoracion; avisos: string[]; cambiado: boolean } {
+  const avisos: string[] = [];
+  let cambiado = false;
+  const estructuras = plan.estructuras.map((estructura) => {
+    const armado = estructura.armado_columna_organica;
+    const faltan = sinCobertura.filter((item) => item.estructura_id === estructura.estructura_id);
+    if (!armado || !armado.corona.activa || faltan.length === 0) return estructura;
+    const deLaMezcla = new Set(Object.entries(armado.tamanos.mezcla).filter(([, peso]) => typeof peso === "number" && peso > 0).map(([tamano]) => `R-${tamano}`));
+    if (faltan.some((item) => deLaMezcla.has(item.tamano))) return estructura;
+    cambiado = true;
+    const material = estructura.materiales[armado.corona.material] ?? estructura.materiales[0];
+    const tallas = [...new Set(faltan.map((item) => item.tamano.replace(/^R-/, "")))].join(" ni de ");
+    avisos.push(`No tengo ${material?.color ? `globos ${material.color}` : "ese globo"} de ${tallas}" para el globo grande de la punta de ${estructura.nombre.toLowerCase()}: la armé sin él.`);
+    return { ...estructura, armado_columna_organica: { ...armado, corona: { ...armado.corona, activa: false } } };
+  });
+  return { plan: { ...plan, estructuras }, avisos, cambiado };
+}
+
+function unirColores(colores: readonly string[]): string {
+  return colores.length <= 1 ? (colores[0] ?? "") : `${colores.slice(0, -1).join(", ")} y ${colores.at(-1)}`;
+}
+
+/**
+ * Text that closes the turn without another model call, or null to go on.
+ * With a plan the customer already sees the proposal; without one the turn
+ * asks how to go on, naming the photo or customer colors this turn's search
+ * does have.
+ */
+export function cierreAnticipado(input: {
+  transcurridoMs: number;
+  hayPlan: boolean;
+  coloresPedidos: readonly string[];
+  coloresDisponibles: readonly string[];
+}): string | null {
+  if (input.hayPlan) {
+    return input.transcurridoMs >= LIMITE_TURNO_CON_PLAN_MS
+      ? TEXTO_PLAN_LISTO
+      : null;
+  }
+  if (input.transcurridoMs < LIMITE_TURNO_SIN_PLAN_MS) return null;
+  const disponibles = input.coloresPedidos.filter((color) => input.coloresDisponibles.includes(color));
+  const faltan = input.coloresPedidos.filter((color) => !input.coloresDisponibles.includes(color));
+  if (disponibles.length > 0) {
+    return `No logré cerrar la propuesta con los tamaños que tengo disponibles${faltan.length ? ` en ${unirColores(faltan)}` : ""}. ¿Quieres que la arme con ${unirColores(disponibles)}, o prefieres cambiar algún color o pieza?`;
+  }
+  return "No logré cerrar la propuesta con los globos que tengo disponibles. ¿Me dices qué colores y qué piezas prefieres para armarla?";
+}

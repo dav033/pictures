@@ -1,0 +1,216 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000178-1",
+  "image_sha256": "5fbdfe46bafe5d1da124dfcb7079c4b005acbf7f5e0520bdc6c2e46ef9cd78f3",
+  "idempotency_key": "edb70c64bb03d22c733d92d9be08f60ee247657ca64988aa4e14547fea5cff11",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000178/foto-1.jpg",
+    "orden": "950000178"
+  },
+  "anotacion": {
+    "image_id": "950000178-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Superficie densa de globos que cubre la pared posterior, con tamaños y tonos rosados, beige y dorado mezclados."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Arco tridimensional circular de globos metálicos en la parte superior derecha, unido a la pared de globos."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Bouquet de globos impresos sobre varillas junto al oso de peluche."
+      },
+      {
+        "structure_id": "structure-4",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Estructura vertical independiente de globos rosados y detalles dorados en el lado izquierdo."
+      }
+    ],
+    "non_purchased_elements": [
+      "a teddy bear"
+    ],
+    "uncertainties": [
+      "The small pink balloons may be Link-O-Loon or round latex; their shape is not distinguishable.",
+      "The left vertical balloon structure may be a numeral rather than a column."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.pink",
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000178-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 5-inch matte Fashion round latex balloons in dusty rose and pink and high-shine Reflex gold round latex balloons, 9-inch matte Fashion sand round latex balloons, mixed organically rather than graded, an organic balloon arch, anchored to the balloon wall, built from high-shine Reflex gold round latex balloons, all 5-inch, a balloon bouquet, grounded across the front, with a balloon column, standing to one side, built from matte Fashion pink round latex balloons and high-shine Reflex gold round latex balloons, all 5-inch, alongside a teddy bear, set against off-white walls and a light wood floor.",
+    "palabras": 105,
+    "caracteres": 682,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:28:32.681Z",
+    "recompilado_en": "2026-09-03T14:45:25.126Z"
+  }
+}

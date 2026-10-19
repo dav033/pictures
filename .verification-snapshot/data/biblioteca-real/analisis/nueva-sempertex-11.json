@@ -1,0 +1,370 @@
+{
+  "id": "nueva-sempertex-11",
+  "fuente": "sempertex-11.png",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-31-arco-futbol-balones-gigantes.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "ad8268c5-f209-43af-81a8-4eb94b268861",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.5009
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "soccer balloon arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Full soccer-themed balloon arch with soccer ball pattern balloons on left side, lime green balloons across top curve, and black and white balloon clusters stacked along right pillar.",
+          "reference_bbox": {
+            "x": 0.178,
+            "y": 0.058,
+            "width": 0.5489999999999999,
+            "height": 0.9029999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "black",
+              "lime green"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.61
+              },
+              {
+                "color": "negro",
+                "share": 0.1436
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical arch, on the center, standing on the floor",
+            "composition": "30% soccer ball round balloons on left leg, 25% lime green balloons across top, 25% black balloons upper right, 20% white balloons lower right leg.",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "blanco",
+                "verde",
+                "negro"
+              ],
+              "pesos": [
+                35,
+                35,
+                30
+              ],
+              "confianza": 0.92
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 52,
+              "exacto": false,
+              "estimado_total": 65,
+              "racimos": 13,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.3
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": 0,
+              "racimos_visibles": 18,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "blanco",
+                "negro",
+                "verde"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "blanco",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "405",
+                "familia": "satin",
+                "nombre": "Blanco",
+                "nombre_completo": "Satín Blanco",
+                "parte": 0.6234,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "580",
+                "familia": "metal",
+                "nombre": "Negro",
+                "nombre_completo": "Metal Negro",
+                "parte": 0.1648,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "031",
+                "familia": "fashion",
+                "nombre": "Verde Lima",
+                "nombre_completo": "Fashion Verde Lima",
+                "parte": 0.155,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decoration item in scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Asymmetric soccer-themed balloon arch with printed soccer ball balloons on the left and color-blocked clusters (lime green, black, white) on the top and right.",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "white",
+          "black",
+          "lime green"
+        ],
+        "priority": [
+          "white",
+          "black",
+          "lime green"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "bf1dedc29c810c6227149023ef8b13b9a7b1e07cb01033882a5da4152574b6d0",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 6000,
+            "height": 4000
+          },
+          "processed": {
+            "width": 800,
+            "height": 533
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 42852,
+            "deLaCaja": 87138
+          },
+          "colores": [
+            {
+              "hex": "#fdfefc",
+              "parte": 0.6234,
+              "pixeles": 26716,
+              "cruce": {
+                "hex": "#fdfefc",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 2.4,
+                    "distancia": 1.2,
+                    "tono": 19.1,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 1.2,
+                    "distancia": 1.3,
+                    "tono": 167.6,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#272d24",
+              "parte": 0.1648,
+              "pixeles": 7060,
+              "cruce": {
+                "hex": "#272d24",
+                "candidatas": [
+                  {
+                    "codigo": "580",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Metal Negro",
+                    "nombreEn": "metallic black",
+                    "pms": null,
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#1a1a1a",
+                    "deltaE": 10.8,
+                    "distancia": 11.1,
+                    "tono": 162.8,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 18.9,
+                    "distancia": 15.7,
+                    "tono": 134,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#8ded08",
+              "parte": 0.155,
+              "pixeles": 6644,
+              "cruce": {
+                "hex": "#8ded08",
+                "candidatas": [
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 40.2,
+                    "distancia": 20.6,
+                    "tono": 4,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 62,
+                    "distancia": 45.4,
+                    "tono": 0.2,
+                    "razonCroma": 2.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Se dejó fuera un color que ocupaba menos del 6 % de la pieza (un reflejo, un borde o parte del fondo).",
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

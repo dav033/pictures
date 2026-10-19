@@ -1,0 +1,169 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "17871-1",
+  "image_sha256": "bcf8999645ae8c773a1f13c3c488e35177dcfb379e44ac1db83b47a08da23571",
+  "idempotency_key": "3e13ae0b149773e81e789849e87fae0a6d9bc20ce7eddd8d26d640f70da25f89",
+  "source": {
+    "kind": "order_photo",
+    "ref": "17871/foto-1.jpg",
+    "orden": "17871"
+  },
+  "anotacion": {
+    "image_id": "17871-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "black backdrop wall and white ceiling tiles",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of gold, silver and sand-toned round balloons in mixed sizes curving down the left edge of a backdrop panel"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat white panel with gold script lettering standing behind the balloon garland"
+      }
+    ],
+    "non_purchased_elements": [
+      "a purple stage light glow",
+      "a white lettered panel"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes on the garland could not be confidently read from the photo, several size options exist per color"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "17871-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, anchored to the decorated backdrop, built from 12-inch and 5-inch matte Fashion sand round latex balloons and high-shine Reflex gold round latex balloons, 9-inch and 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, alongside a purple stage light and a white lettered panel, set against black backdrop wall and white ceiling tiles.",
+    "palabras": 69,
+    "caracteres": 484,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:23.650Z",
+    "recompilado_en": "2026-09-03T14:45:22.881Z"
+  }
+}

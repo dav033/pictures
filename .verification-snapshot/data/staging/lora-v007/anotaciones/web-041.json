@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-041",
+  "image_sha256": "0af4bd55251adcd9e9b0395e214618fa3ce30b0e63fcaa557849d27680016896",
+  "idempotency_key": "c6a564b19eccc3fe9d9590cc1b91cc91a12ad8686d20664e4c96760afbc53e4c",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-041.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Bouquet-DSC_6363-000x1000_e0c48f13-2eed-426b-810a-0eb34476bd01.jpg?v=1642707211",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-041",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.chocolate_brown",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical bunch of round balloons with loose strings hanging below."
+      }
+    ],
+    "non_purchased_elements": [
+      "a gold balloon"
+    ],
+    "uncertainties": [
+      "The red balloons' printed pattern and finish are not clearly distinguishable.",
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Redondo Infinity® Estrellas"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-041",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion round latex balloons in chocolate brown and sand and high-shine Reflex lime green round latex balloons, alongside a gold balloon, set against white walls and a white floor.",
+    "palabras": 40,
+    "caracteres": 264,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:13:43.367Z"
+  }
+}

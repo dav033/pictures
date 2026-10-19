@@ -1,0 +1,168 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13599-1",
+  "image_sha256": "0adfa120715fd8903919881fc4bcff629bd07840e7b25a9786b7761d9542e46e",
+  "idempotency_key": "7d87f0487e04f7904fcf14ca88a6e8bda4503de34bdbbe444ba7f3be4e536dbf",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13599/foto-1.jpg",
+    "orden": "13599"
+  },
+  "anotacion": {
+    "image_id": "13599-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white walls; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.metallic.black",
+          "streamer.metallized_foil.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.grey",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.black",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "streamer.metallized_foil.silver",
+            "size_code": "PAQUETE X 2"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Black and grey round balloons with silver curling streamers are suspended across the ceiling."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.silver",
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.metallic.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.foil.silver",
+            "size_code": "18 IN"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.grey",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.black",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A floor-style bouquet with a silver heart balloon and black and grey round balloons rests on the right side of the bed."
+      }
+    ],
+    "non_purchased_elements": [
+      "a bedroom bed",
+      "a birthday cake",
+      "a name sign",
+      "paper confetti"
+    ],
+    "uncertainties": [
+      "Some pale round balloons in the ceiling installation cannot be matched to the allowed concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.silver",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.metallic.black",
+      "streamer.metallized_foil.silver"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "PAQUETE X 2",
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13599-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from 12-inch matte Fashion grey round latex balloons and Metallic black round latex balloons, metallized foil streamers in silver, a balloon bouquet, standing to one side, built from 18-inch Metallic silver heart-shaped foil balloons, 12-inch matte Fashion grey round latex balloons and Metallic black round latex balloons, mixed organically rather than graded, alongside a bedroom bed, a birthday cake, a name sign and paper confetti, set against off-white walls; floor not visible.",
+    "palabras": 80,
+    "caracteres": 558,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.silver",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.metallic.black",
+      "streamer.metallized_foil.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.foil.silver",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.grey",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.grey",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.black",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.black",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:53:04.850Z",
+    "recompilado_en": "2026-09-03T14:45:22.271Z"
+  }
+}

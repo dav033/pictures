@@ -1,0 +1,281 @@
+{
+  "id": "nueva-sempertex-03",
+  "fuente": "sempertex-03.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-23-sombrero-bruja-halloween.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "3d8c6e8f-b25f-4a29-8cc1-9dceff6240b3",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.6663
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Halloween Witch Hat and Pumpkin Balloon Sculpture",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A large freestanding balloon sculpture depicting a witch hat mounted on a metallic gold balloon stalk with two orange balloon pumpkins built into the base cluster.",
+          "reference_bbox": {
+            "x": 0.202,
+            "y": 0.258,
+            "width": 0.571,
+            "height": 0.611
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic dark gray",
+              "matte black",
+              "matte orange",
+              "chrome gold",
+              "matte beige"
+            ],
+            "measured_colors": [
+              {
+                "color": "beige",
+                "share": 0.5274
+              },
+              {
+                "color": "negro",
+                "share": 0.1574
+              },
+              {
+                "color": "gris",
+                "share": 0.1196
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical sculpture, on the center, standing on the floor",
+            "composition": "Central column structure with witch hat top made of dark metallic gray, black, orange, and gold balloons, with two orange balloon pumpkins attached at the base.",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "negro",
+                "naranja",
+                "dorado",
+                "beige"
+              ],
+              "pesos": [
+                30,
+                30,
+                25,
+                15
+              ],
+              "confianza": 0.85
+            },
+            "conteo": {
+              "globos_visibles": 95,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.8395,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "061",
+                "familia": "fashion",
+                "nombre": "Naranja",
+                "nombre_completo": "Fashion Naranja",
+                "parte": 0.1605,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "piso_frontal",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central visual element of the scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Halloween-themed balloon sculpture resembling a witch hat on a central stem with balloon pumpkins at the base",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "metallic dark gray",
+          "matte orange",
+          "matte black",
+          "chrome gold",
+          "matte beige"
+        ],
+        "priority": [
+          "metallic dark gray",
+          "matte orange",
+          "matte black",
+          "chrome gold",
+          "matte beige"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "73e24d4d99b1e0c2df6ef56eca7c728f2eb37e4beea08cf68740fbb39db2ecc0",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 4000,
+            "height": 6000
+          },
+          "processed": {
+            "width": 533,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 39088,
+            "deLaCaja": 61348
+          },
+          "colores": [
+            {
+              "hex": "#1b1515",
+              "parte": 0.8395,
+              "pixeles": 32816,
+              "cruce": {
+                "hex": "#1b1515",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 8.1,
+                    "distancia": 6.9,
+                    "tono": 19.4,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#8c3917",
+              "parte": 0.1605,
+              "pixeles": 6272,
+              "cruce": {
+                "hex": "#8c3917",
+                "candidatas": [
+                  {
+                    "codigo": "061",
+                    "nombre": "Naranja",
+                    "nombreCompleto": "Fashion Naranja",
+                    "nombreEn": "matte orange",
+                    "pms": "021",
+                    "acabado": "matte",
+                    "hexGlobo": "#e75d1d",
+                    "deltaE": 35.6,
+                    "distancia": 12.3,
+                    "tono": 1.4,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

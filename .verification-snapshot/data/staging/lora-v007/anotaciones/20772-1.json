@@ -1,0 +1,111 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "20772-1",
+  "image_sha256": "da5766ef89dc32161a6074220ce50e9a72e37ab38a283836fb9001e2b28cb39d",
+  "idempotency_key": "40461939831f33865a61a8855a5d69bef61e44580cef2f399e36a841869a33fc",
+  "source": {
+    "kind": "order_photo",
+    "ref": "20772/foto-1.jpg",
+    "orden": "20772"
+  },
+  "anotacion": {
+    "image_id": "20772-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "plain white wall, floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.pink",
+          "balloon.number.foil.sand",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.pink",
+            "size_code": "C-6"
+          },
+          {
+            "concept_id": "balloon.number.foil.sand",
+            "size_code": "16 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "pink heart-shaped balloons and pastel pink round balloons scattered organically around a champagne-gold '23' number balloon on the wall"
+      }
+    ],
+    "non_purchased_elements": [
+      "a hanging ribbon",
+      "ribbon bow accents"
+    ],
+    "uncertainties": [
+      "number balloon color reads as champagne/gold rather than a clear 'sand' tone; kept as the closest listed match"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.pink",
+      "balloon.number.foil.sand",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "C-6",
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "20772-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 6-inch matte Fashion pink heart-shaped latex balloons, 16-inch Metallic sand number foil balloons, Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, alongside a hanging ribbon and ribbon bow accents, set against plain white wall, floor not visible.",
+    "palabras": 53,
+    "caracteres": 376,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.pink",
+      "balloon.number.foil.sand",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.pink",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.number.foil.sand",
+        "size_code": "16 IN",
+        "inches": 16
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:43:54.284Z",
+    "recompilado_en": "2026-09-03T14:45:23.038Z"
+  }
+}

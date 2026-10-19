@@ -1,0 +1,100 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-072",
+  "image_sha256": "4a4dc5f20583bcbb312a7560afc26dbd39661758ded93cceb35f6060baeab836",
+  "idempotency_key": "21666a0b9efd08fa2f6b6e4251680aa4f1660f6d14d3d8a93c9e3204181c3f40",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-072.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Boo-Pumpkin-Calabaza-Boo_471b5f79-3f73-4075-bde1-76e3a6a67fe2.jpg?v=1642706502",
+    "product_breakdown_status": "partial_international_source_description",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-072",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "kit_1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.linkoloon.latex.fashion.white",
+          "balloon.modeling.latex.reflex.lime_green",
+          "balloon.round.latex.fashion.green",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Coordinated floor display with a dense organic balloon base, linked white balloon forms, and Halloween balloon accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "purple balloons",
+      "pumpkin-shaped balloons",
+      "dark round balloons"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.linkoloon.latex.fashion.white",
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.fashion.green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-072",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from high-shine Reflex lime green modeling latex balloons, matte Fashion round latex balloons in green, orange and white, high-shine Reflex silver round latex balloons and chain-link Link-O-Loon latex balloons in white, solid Fashion finish, alongside purple balloons, pumpkin-shaped balloons and dark round balloons, set against off-white wall and white floor.",
+    "palabras": 60,
+    "caracteres": 445,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.linkoloon.latex.fashion.white",
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.fashion.green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:15:33.008Z"
+  }
+}

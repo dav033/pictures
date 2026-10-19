@@ -1,0 +1,70 @@
+{
+ "caso": "idea-deco-real-25-guirnalda-dia-de-la-madre",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "270db8f290d7c998c0b63e2187e84babe6cdf2cad6a7df690283e4cdf72f3343",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "018",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "059",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "406",
+     "cantidad": 16
+    }
+   ],
+   "unidades": 52,
+   "caja": [
+    -137,
+    200,
+    -250,
+    137,
+    272,
+    -203
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "018",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "059",
+    "cantidad": 20
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "406",
+    "cantidad": 16
+   }
+  ],
+  "unidades": 52
+ },
+ "caja": [
+  -137,
+  200,
+  -250,
+  137,
+  272,
+  -203
+ ],
+ "referenciaPython": {
+  "globos": 64
+ }
+}

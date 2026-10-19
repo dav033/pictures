@@ -1,0 +1,282 @@
+{
+  "$id": "catalog-search.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "catalog-search.v1"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "price_max": {
+          "type": "number",
+          "minimum": 0
+        },
+        "categories": {
+          "maxItems": 32,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "occasions": {
+          "maxItems": 32,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "colors": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "finishes": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "shapes": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "diameters_inches": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "allowlist": {
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "variant_ids": {
+            "maxItems": 256,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          }
+        },
+        "required": [
+          "product_id",
+          "variant_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "catalog_snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "browse": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "message",
+    "filters",
+    "allowlist",
+    "limit"
+  ],
+  "additionalProperties": false,
+  "x-tonos-colores-catalogo": {
+    "lab": {
+      "dorado": [
+        68.3178,
+        2.869543,
+        63.89547
+      ],
+      "dorado rosa": [
+        71.717839,
+        15.714821,
+        12.341434
+      ],
+      "plateado": [
+        76.156527,
+        0.153938,
+        -4.518687
+      ],
+      "rojo": [
+        47.08862,
+        62.310497,
+        40.676119
+      ],
+      "azul": [
+        37.197344,
+        26.754833,
+        -63.071932
+      ],
+      "rosado": [
+        76.347578,
+        31.550884,
+        -3.083833
+      ],
+      "verde": [
+        57.44661,
+        -46.956561,
+        27.820957
+      ],
+      "blanco": [
+        100,
+        0.00526,
+        -0.010408
+      ],
+      "negro": [
+        9.766934,
+        0.001169,
+        -0.002312
+      ],
+      "morado": [
+        38.382654,
+        43.33315,
+        -42.437312
+      ],
+      "naranja": [
+        67.863049,
+        32.160026,
+        65.022087
+      ],
+      "amarillo": [
+        85.152515,
+        -3.037831,
+        74.552079
+      ],
+      "fucsia": [
+        48.213426,
+        70.600986,
+        -2.988971
+      ],
+      "transparente": [
+        100,
+        0.00526,
+        -0.010408
+      ],
+      "multicolor": [
+        100,
+        0.00526,
+        -0.010408
+      ],
+      "lila": [
+        72.278499,
+        23.877126,
+        -25.500662
+      ],
+      "turquesa": [
+        66.880247,
+        -37.202121,
+        -8.039464
+      ],
+      "beige": [
+        85.335097,
+        1.602219,
+        18.245612
+      ],
+      "cafe": [
+        36.625007,
+        16.534784,
+        27.66005
+      ],
+      "champagne": [
+        85.176142,
+        0.064658,
+        26.955076
+      ],
+      "violeta": [
+        46.443515,
+        50.288713,
+        -58.132499
+      ],
+      "coral": [
+        64.449621,
+        47.2287,
+        36.392082
+      ],
+      "menta": [
+        85.61255,
+        -24.842253,
+        6.972245
+      ],
+      "crema": [
+        93.553287,
+        -0.847434,
+        13.811573
+      ],
+      "nude": [
+        77.595835,
+        10.382859,
+        19.638356
+      ],
+      "burdeos": [
+        28.078492,
+        42.183125,
+        10.602691
+      ],
+      "gris": [
+        60.318574,
+        -0.848489,
+        -2.097784
+      ]
+    },
+    "delta_e_maximo": 45,
+    "escala": 100,
+    "colores_sin_venta": [
+      "gris"
+    ]
+  }
+}

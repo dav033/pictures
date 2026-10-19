@@ -1,0 +1,45 @@
+{
+ "caso": "idea-deco-real-25-guirnalda-dia-de-la-madre",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "270db8f290d7c998c0b63e2187e84babe6cdf2cad6a7df690283e4cdf72f3343",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 6,
+  "cubierta": 6,
+  "sinCubrir": 0
+ },
+ "pedido": [
+  {
+   "formatoId": "R-12",
+   "codigo": "406",
+   "cantidad": 16,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308735271"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "059",
+   "cantidad": 20,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634310426919",
+   "variantId": "46594359853351"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "018",
+   "cantidad": 16,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634363216167",
+   "variantId": "46594438168871"
+  }
+ ]
+}

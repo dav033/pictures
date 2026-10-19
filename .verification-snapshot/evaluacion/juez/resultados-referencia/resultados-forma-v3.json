@@ -1,0 +1,126 @@
+[
+ {
+  "id": "002",
+  "grupo": "v3-r1",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v3/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 60,
+   "nota_min": 60,
+   "nota_max": 60,
+   "composicion": 6,
+   "geometria": 6,
+   "colores": 6,
+   "orden_color": 5,
+   "escala": 7,
+   "densidad": 8,
+   "orientacion": 7,
+   "topologia": 6,
+   "atrezo_inventado": [
+    "Panel de madera con forma de arco",
+    "Pedestal blanco rectangular"
+   ],
+   "defectos": [
+    "Falta la guirnalda de globos en la parte superior del arco.",
+    "Faltan completamente los globos transparentes tipo burbuja.",
+    "Los tonos de rosa son metálicos y satinados en lugar de rosa pastel mate.",
+    "El orden de color está separado en bloques rígidos (rosa arriba, plata abajo) en vez de mezclados.",
+    "Las estructuras forman dos columnas independientes muy pesadas en la base."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "v3-r2",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v3/caso-2/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 42,
+   "nota_min": 42,
+   "nota_max": 42,
+   "composicion": 4,
+   "geometria": 5,
+   "colores": 5,
+   "orden_color": 4,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 5,
+   "topologia": 3,
+   "atrezo_inventado": [
+    "Panel de madera de fondo con arco grabado",
+    "Pedestal rectangular blanco para la tarta"
+   ],
+   "defectos": [
+    "La guirnalda no se conecta por la parte superior, dividiéndose en dos torres separadas.",
+    "Faltan por completo los globos transparentes y los tonos azul/gris pastel.",
+    "Los colores están agrupados en bloques opacos en lugar de estar mezclados orgánicamente.",
+    "El tono plateado es excesivamente oscuro respecto al cromo brillante de la referencia.",
+    "La estructura perdió el enmarcado del arco pasando a ser dos columnas independientes."
+   ]
+  }
+ },
+ {
+  "id": "004",
+  "grupo": "v3-r1",
+  "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+  "img": "../validacion-fase4/forma-v3/caso-4/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 28,
+   "nota_min": 28,
+   "nota_max": 28,
+   "composicion": 3,
+   "geometria": 3,
+   "colores": 6,
+   "orden_color": 2,
+   "escala": 4,
+   "densidad": 6,
+   "orientacion": 3,
+   "topologia": 2,
+   "atrezo_inventado": [
+    "Tres paneles de fondo rosa en arco",
+    "Pedestal cilíndrico blanco acanalado"
+   ],
+   "defectos": [
+    "La guirnalda orgánica continua se ha transformado en dos estructuras separadas.",
+    "Los colores se dividen en bloques (plata abajo, coral arriba) en lugar de estar integrados.",
+    "Faltan por completo los globos blancos y rosa claro presentes en la foto de referencia.",
+    "La forma cambia de una guirnalda arqueada a una pila piramidal masiva apoyada en el suelo.",
+    "Se añade una segunda composición de globos sobre un pedestal no presente en la referencia."
+   ]
+  }
+ },
+ {
+  "id": "004",
+  "grupo": "v3-r2",
+  "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+  "img": "../validacion-fase4/forma-v3/caso-4/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 62,
+   "nota_min": 62,
+   "nota_max": 62,
+   "composicion": 6,
+   "geometria": 7,
+   "colores": 6,
+   "orden_color": 5,
+   "escala": 7,
+   "densidad": 8,
+   "orientacion": 8,
+   "topologia": 6,
+   "atrezo_inventado": [
+    "Segundo panel de fondo rosa en forma de arco",
+    "Pedestales de estilo columna clásica blanca"
+   ],
+   "defectos": [
+    "Exceso de globos plateados cromados agrupados masivamente en la base.",
+    "Aparición de una estructura de globos independiente a la derecha.",
+    "Falta el globo de gran tamaño en la parte superior de la guirnalda.",
+    "Ausencia de la gama de globos rosa claro y blanco.",
+    "Los acentos metálicos plateados debían ser pequeños detalles dispersos y no bloques principales."
+   ]
+  }
+ }
+]

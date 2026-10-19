@@ -1,0 +1,160 @@
+{
+ "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "fb5a8f4494811fdc6219ba30f89154e3bd8d63230a25521983a6dc30d8d54add",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "044",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "640",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "044",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "640",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "044",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "640",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "640",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "044",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 45,
+   "caja": [
+    -107,
+    0,
+    -195,
+    107,
+    199,
+    -125
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "044",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "640",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "044",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "640",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "044",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "640",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "640",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "044",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 45
+ },
+ "caja": [
+  -107,
+  0,
+  -195,
+  107,
+  199,
+  -125
+ ],
+ "referenciaPython": {
+  "globos": 44
+ }
+}

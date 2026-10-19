@@ -1,0 +1,75 @@
+{
+ "caso": "catalogo-revision-r5-verde-r24-blanco",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "826",
+   "cantidad": 146,
+   "productId": "9407246172455",
+   "color": "verde",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "48718443479335",
+     "unidadesPaq": 20,
+     "precio": 4208
+    },
+    {
+     "variantId": "48718443446567",
+     "unidadesPaq": 50,
+     "precio": 9313
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "005",
+   "cantidad": 39,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594221539623",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 162862,
+  "reserva": {
+   "objetivo": 16,
+   "cubierta": 12,
+   "sinCubrir": 4,
+   "excedenteNatural": 14
+  },
+  "compras": [
+   {
+    "variantId": "46594221539623",
+    "paquetes": 13,
+    "cantidad": 39,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "48718443446567",
+    "paquetes": 2,
+    "cantidad": 100,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "48718443479335",
+    "paquetes": 3,
+    "cantidad": 46,
+    "reserva": 12,
+    "paraReserva": true
+   }
+  ]
+ }
+}

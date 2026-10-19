@@ -1,0 +1,108 @@
+{
+ "caso": "idea-deco-real-13-images-28",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "581cbab1fc7f650c862e8c1afd81690bc5ac1cd4b12713ee8112b4a4f98c46e6",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 15,
+  "cubierta": 14,
+  "sinCubrir": 1
+ },
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "968",
+   "cantidad": 19,
+   "reserva": 2,
+   "paquetes": 2,
+   "productId": "8634249838887",
+   "variantId": "46594251358503"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "968",
+   "cantidad": 24,
+   "reserva": 2,
+   "paquetes": 3,
+   "productId": "8634249838887",
+   "variantId": "46594251424039"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "968",
+   "cantidad": 6,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634249838887",
+   "variantId": "46594251489575"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "968",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634249838887",
+   "variantId": "46594251555111"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "406",
+   "cantidad": 13,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308473127"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "406",
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308604199"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "406",
+   "cantidad": 15,
+   "reserva": 3,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308636967"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "406",
+   "cantidad": 16,
+   "reserva": 2,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308735271"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "406",
+   "cantidad": 4,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308800807"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "406",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308866343"
+  }
+ ]
+}

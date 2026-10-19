@@ -1,0 +1,46 @@
+{
+ "caso": "catalogo-revision3-lol660-verde-selva",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "LOL-660",
+   "codigo": "032",
+   "cantidad": 34,
+   "productId": "8634219036967",
+   "color": "verde",
+   "diamPulg": 6,
+   "presentaciones": [
+    {
+     "variantId": "50427465498919",
+     "unidadesPaq": 20,
+     "precio": 14041
+    },
+    {
+     "variantId": "46594165375271",
+     "unidadesPaq": 50,
+     "precio": 32336
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 28082,
+  "reserva": {
+   "objetivo": 3,
+   "cubierta": 3,
+   "sinCubrir": 0,
+   "excedenteNatural": 6
+  },
+  "compras": [
+   {
+    "variantId": "50427465498919",
+    "paquetes": 2,
+    "cantidad": 34,
+    "reserva": 3,
+    "paraReserva": false
+   }
+  ]
+ }
+}

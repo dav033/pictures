@@ -1,0 +1,155 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000100-1",
+  "image_sha256": "64276ca493cf584cd8eefa33d3a66458ced50d76309ec4d1d18d97098a81550e",
+  "idempotency_key": "2c2d5730f020707ae1832ff75c85a48716c7e04df8fbd9d5ff242fdd1c793e24",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000100/foto-1.jpg",
+    "orden": "950000100"
+  },
+  "anotacion": {
+    "image_id": "950000100-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.latte",
+          "balloon.modeling.latex.silk.arctic_blue",
+          "balloon.modeling.latex.silk.spring_pink",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.spring_pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.latte",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.spring_pink",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.cream_pearl",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.spring_pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall floor-standing balloon bouquet with an organic round-balloon cluster, a balloon teddy bear, a support rod, and a balloon base."
+      }
+    ],
+    "non_purchased_elements": [
+      "a teddy bear figure",
+      "a support rod"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.latte",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000100-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 2-inch matte Fashion latte modeling latex balloons and satin Silk modeling latex balloons in arctic blue and spring pink, 5-inch satin Silk round latex balloons in arctic blue and cream pearl, 9-inch satin Silk spring pink round latex balloons, mixed organically rather than graded, alongside a teddy bear figure and a support rod, set against white wall and white floor.",
+    "palabras": 70,
+    "caracteres": 449,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.latte",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.latte",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.spring_pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.cream_pearl",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.spring_pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:06:26.606Z",
+    "recompilado_en": "2026-09-03T14:45:24.273Z"
+  }
+}

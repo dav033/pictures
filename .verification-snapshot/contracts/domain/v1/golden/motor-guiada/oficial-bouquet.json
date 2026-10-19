@@ -1,0 +1,67 @@
+{
+ "caso": "oficial-bouquet",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "9cac4b5167a1a03c21c87db075ccdbeaab405ddc239122b80f3816e4b1c7020f",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_BOUQUET": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 7,
+   "caja": [
+    -38,
+    0,
+    13,
+    38,
+    155,
+    67
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 7
+ },
+ "caja": [
+  -38,
+  0,
+  13,
+  38,
+  155,
+  67
+ ]
+}

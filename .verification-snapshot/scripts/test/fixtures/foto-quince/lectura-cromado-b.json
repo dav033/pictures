@@ -1,0 +1,152 @@
+{
+ "resumen": "Decoración de fiesta al fondo con marco de entrada, pared de lentejuelas, trono de quinceañera y guirnalda orgánica de globos en tonos rosado, dorado, morado y blanco.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 500,
+  "referencia": "sillón trono de 130 cm de alto que ocupa 0.26 del alto de la foto"
+ },
+ "pisoY": 0.52,
+ "sala": {
+  "pared": "#e8b8d0",
+  "piso": "#d9cbcd"
+ },
+ "piezas": [
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.05,
+     "y": 0.25,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.13,
+     "y": 0.22,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.23,
+     "y": 0.23,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.35,
+     "y": 0.21,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.45,
+     "y": 0.21,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.53,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.61,
+     "y": 0.23,
+     "grosor": 0.09
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 20,
+    "medianos": 55,
+    "chicos": 25,
+    "diametroGrande": 0.1,
+    "diametroMediano": 0.05,
+    "diametroChico": 0.03,
+    "formatoGrande": "R-18",
+    "formatoMediano": "R-12",
+    "formatoChico": "R-5"
+   },
+   "racimos": 0.6,
+   "colores": [
+    {
+     "nombre": "Fashion Rosado",
+     "hex": "#e8a2bd",
+     "peso": 35,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "Reflex Violeta",
+     "hex": "#6b2158",
+     "peso": 25,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Metal Dorado",
+     "hex": "#cfa24d",
+     "peso": 25,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Fashion Blanco",
+     "hex": "#f2ecee",
+     "peso": 15,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.6,
+   "yBase": 0.45,
+   "ancho": 0.12,
+   "alto": 0.26,
+   "colores": [
+    {
+     "nombre": "rosado",
+     "hex": "#e3a4c5",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#cca14c",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.39,
+   "yBase": 0.48,
+   "ancho": 0.15,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "plata",
+     "hex": "#d4c5cb",
+     "peso": 100,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "marco_tela",
+   "x": 0.28,
+   "yBase": 0.48,
+   "ancho": 0.12,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#f0eaec",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "primer plano: mesa de invitados con mantelería, vajilla, copas y personas"
+  }
+ ]
+}

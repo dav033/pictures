@@ -1,0 +1,792 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "4ec31b7d-3b84-5a25-a43e-878776e0880c",
+    "concepto": {
+      "titulo": "nueva-sempertex-05",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "coral",
+        "burdeos",
+        "blanco"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "nombre": "Guirnalda orgánica",
+        "tipo": "guirnalda",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {
+          "largo_m": 2.4
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634310426919",
+            "variant_id": "46594359886119",
+            "color": "coral",
+            "participacion": 0.36,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634363216167",
+            "variant_id": "46594438365479",
+            "color": "burdeos",
+            "participacion": 0.36,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634277921063",
+            "variant_id": "46594308768039",
+            "color": "blanco",
+            "participacion": 0.28,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E01: guirnalda diagonal coral, impresos Feliz día Mamá y perlados.",
+        "variant_overrides": [
+          {
+            "objetivo_variant_id": "46594438365479",
+            "product_id": "9751383343399",
+            "variant_id": "49778969248039",
+            "color": "burdeos"
+          }
+        ],
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "guirnalda",
+        "colores_referencia": [
+          "coral",
+          "burdeos",
+          "blanco"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Las flores de globos pequeños y la espiral dorada se cuentan aparte, a mano, sobre la foto."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "4ec31b7d-3b84-5a25-a43e-878776e0880c",
+      "concepto": {
+        "titulo": "nueva-sempertex-05",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "coral",
+          "burdeos",
+          "blanco"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda orgánica",
+          "tipo": "guirnalda",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634310426919",
+              "variant_id": "46594359886119",
+              "color": "coral",
+              "participacion": 0.36,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634363216167",
+              "variant_id": "46594438365479",
+              "color": "burdeos",
+              "participacion": 0.36,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634277921063",
+              "variant_id": "46594308768039",
+              "color": "blanco",
+              "participacion": 0.28,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E01: guirnalda diagonal coral, impresos Feliz día Mamá y perlados.",
+          "variant_overrides": [
+            {
+              "objetivo_variant_id": "46594438365479",
+              "product_id": "9751383343399",
+              "variant_id": "49778969248039",
+              "color": "burdeos"
+            }
+          ],
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "guirnalda",
+          "colores_referencia": [
+            "coral",
+            "burdeos",
+            "blanco"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Las flores de globos pequeños y la espiral dorada se cuentan aparte, a mano, sobre la foto.",
+        "Guirnalda orgánica: la foto muestra unos 75 globos y el plan tenía 51; densidad media → lujosa: quedó en 64."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "0f9a50ce5ddc2412e83c430e91f0004960021eee424835f917a21e663f516646",
+    "request_id": "17613427-ec72-5e64-9f77-87a0edddebee",
+    "compras": [
+      {
+        "variant_id": "46594308768039",
+        "product_id": "8634277921063",
+        "sku": "B2B-20000826",
+        "sku_original": "B2B-20000826",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594308768039",
+        "inventory_quantity": 990500,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 18,
+        "design_quantity": 18,
+        "waste_reserve": 6,
+        "required_quantity": 24,
+        "unidades_con_merma": 24,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 18,
+        "leftover_inventory": 26,
+        "consumption_cost": 6647,
+        "purchase_cost": 13847,
+        "additional_package_for_waste": false,
+        "sobrante": 32,
+        "precio_paquete": 13847,
+        "subtotal": 13847,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643"
+      },
+      {
+        "variant_id": "46594359886119",
+        "product_id": "8634310426919",
+        "sku": "B2B-20017232",
+        "sku_original": "B2B-20017232",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594359886119",
+        "inventory_quantity": 999177,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "coral",
+        "unidades_necesarias": 23,
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "unidades_con_merma": 23,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 27,
+        "consumption_cost": 5997,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 27,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Coral_Tropical_-_Tropical_Coral_059.jpg?v=1763148885"
+      },
+      {
+        "variant_id": "49778969248039",
+        "product_id": "9751383343399",
+        "sku": "B2B-20018727",
+        "sku_original": "B2B-20018727",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/49778969248039",
+        "inventory_quantity": 999791,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "multicolor",
+        "unidades_necesarias": 23,
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "unidades_con_merma": 23,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 27,
+        "consumption_cost": 11106,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "sobrante": 27,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/Capturadepantalla2025-02-26105822.png?v=1740585533"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 64
+      },
+      "total_unidades": 64,
+      "total_cop": 51027,
+      "design_quantity": 64,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 86,
+      "purchase_cost": 51027,
+      "consumption_cost": 23750,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594308768039",
+      "sobrante_alto:46594359886119",
+      "sobrante_alto:49778969248039"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "nombre": "Guirnalda orgánica",
+        "tipo": "guirnalda",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 2.4,
+        "total_unidades": 64,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634310426919",
+            "variant_id": "46594359886119",
+            "sku": "B2B-20017232",
+            "sku_original": "B2B-20017232",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594359886119",
+            "inventory_quantity": 999177,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50",
+            "color": "coral",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 23,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Coral_Tropical_-_Tropical_Coral_059.jpg?v=1763148885",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "9751383343399",
+            "variant_id": "49778969248039",
+            "sku": "B2B-20018727",
+            "sku_original": "B2B-20018727",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/49778969248039",
+            "inventory_quantity": 999791,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido — R-12 / PAQUETE X 50",
+            "color": "multicolor",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 23,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/Capturadepantalla2025-02-26105822.png?v=1740585533",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634277921063",
+            "variant_id": "46594308768039",
+            "sku": "B2B-20000826",
+            "sku_original": "B2B-20000826",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594308768039",
+            "inventory_quantity": 990500,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "satin",
+            "unidades": 18,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 64,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "consumo_cop": 22088
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 55,
+          "exacto": false,
+          "estimado_total": 75,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.35
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.55
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 75,
+        "globos_antes": 51,
+        "globos_despues": 64,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          }
+        ],
+        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "guirnalda",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": null,
+        "height": null,
+        "length": 2.4
+      },
+      "installation_length_m": 2.4,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "medium",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634310426919",
+        "variant_id": "46594359886119",
+        "color": "coral",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "waste_adjusted_quantity": 23
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "9751383343399",
+        "variant_id": "49778969248039",
+        "color": "multicolor",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "waste_adjusted_quantity": 23
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634277921063",
+        "variant_id": "46594308768039",
+        "color": "blanco",
+        "finish": "satin",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 18,
+        "waste_reserve": 0,
+        "required_quantity": 18,
+        "waste_adjusted_quantity": 18
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634277921063",
+        "variant_id": "46594308768039",
+        "design_quantity": 18,
+        "waste_reserve": 6,
+        "required_quantity": 24,
+        "waste_adjusted_quantity": 24,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 18,
+        "leftover_inventory": 26,
+        "consumption_cost": 6647,
+        "purchase_cost": 13847,
+        "additional_package_for_waste": false,
+        "operational_surplus": 26,
+        "potential_surplus": 32
+      },
+      {
+        "product_id": "8634310426919",
+        "variant_id": "46594359886119",
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "waste_adjusted_quantity": 23,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 27,
+        "consumption_cost": 5997,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 27,
+        "potential_surplus": 27
+      },
+      {
+        "product_id": "9751383343399",
+        "variant_id": "49778969248039",
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "waste_adjusted_quantity": 23,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 27,
+        "consumption_cost": 11106,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "operational_surplus": 27,
+        "potential_surplus": 27
+      }
+    ],
+    "totals": {
+      "design_quantity": 64,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 86,
+      "required_quantity": 70,
+      "consumption_cost": 23750,
+      "purchase_cost": 51027,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 70,
+      "purchase_quantity": 150,
+      "operational_surplus": 80,
+      "potential_surplus": 86
+    },
+    "warnings": [
+      "sobrante_alto:46594308768039",
+      "sobrante_alto:46594359886119",
+      "sobrante_alto:49778969248039"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594308768039",
+        "productId": "8634277921063",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 18,
+        "designQuantity": 18,
+        "wasteReserve": 6,
+        "requiredQuantity": 24,
+        "purchaseQuantity": 50,
+        "used": 18,
+        "leftoverInventory": 26,
+        "consumptionCost": 6647,
+        "purchaseCost": 13847,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594308768039",
+        "nombre": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
+        "precioPaquete": 13847,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13847,
+        "sobrante": 32
+      },
+      {
+        "id": "46594359886119",
+        "productId": "8634310426919",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "coral",
+        "cantidadNecesaria": 23,
+        "designQuantity": 23,
+        "wasteReserve": 0,
+        "requiredQuantity": 23,
+        "purchaseQuantity": 50,
+        "used": 23,
+        "leftoverInventory": 27,
+        "consumptionCost": 5997,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594359886119",
+        "nombre": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 27
+      },
+      {
+        "id": "49778969248039",
+        "productId": "9751383343399",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "multicolor",
+        "cantidadNecesaria": 23,
+        "designQuantity": 23,
+        "wasteReserve": 0,
+        "requiredQuantity": 23,
+        "purchaseQuantity": 50,
+        "used": 23,
+        "leftoverInventory": 27,
+        "consumptionCost": 11106,
+        "purchaseCost": 24143,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "49778969248039",
+        "nombre": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido — R-12 / PAQUETE X 50",
+        "precioPaquete": 24143,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 24143,
+        "sobrante": 27
+      }
+    ],
+    "total": 51027,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 51027,
+    "consumptionCost": 23750,
+    "targetWasteReserve": 6,
+    "coveredWasteReserve": 6,
+    "leftoverInventory": 80,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "0f9a50ce5ddc2412e83c430e91f0004960021eee424835f917a21e663f516646"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594308768039",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 18,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13847,
+        "subtotal": 13847,
+        "sobrante": 32
+      },
+      {
+        "variant_id": "46594359886119",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 23,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 27
+      },
+      {
+        "variant_id": "49778969248039",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 23,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "sobrante": 27
+      }
+    ],
+    "total": 51027
+  },
+  "descartadas": [],
+  "pistas_conteo_usadas": [
+    {
+      "globos_visibles": 55,
+      "exacto": false,
+      "estimado_total": 75,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.35
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.55
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.1
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ]
+}

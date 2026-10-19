@@ -1,0 +1,182 @@
+import "server-only";
+import { aProducto, variantesPorIds } from "./shopify/consultas";
+import { seleccionarProductos } from "./catalog-data";
+import { getDb } from "./db";
+import { borrarImagen, nuevoId } from "./store";
+import type { Categoria, Producto } from "./types";
+
+type FilaProducto = {
+  id: string;
+  nombre: string;
+  categoria: Categoria;
+  descripcion: string;
+  precio: number;
+  estilos: string;
+  colores: string;
+  emoji: string | null;
+  tono: string | null;
+  foto: string | null;
+};
+
+function filaAProducto(fila: FilaProducto): Producto {
+  return {
+    id: fila.id,
+    nombre: fila.nombre,
+    categoria: fila.categoria,
+    descripcion: fila.descripcion,
+    precio: fila.precio,
+    estilos: JSON.parse(fila.estilos),
+    colores: JSON.parse(fila.colores),
+    emoji: fila.emoji ?? undefined,
+    tono: fila.tono ?? undefined,
+    foto: fila.foto ?? undefined,
+  };
+}
+
+export function obtenerProductos(): Producto[] {
+  const filas = getDb()
+    .prepare("SELECT * FROM productos ORDER BY rowid")
+    .all() as unknown as FilaProducto[];
+  return filas.map(filaAProducto);
+}
+
+/**
+ * Frontera de autoridad comercial (Tarea 00.3 —
+ * docs/migracion-python/PLAN-MAESTRO-V2.md §2.2 y §6). `productosPorId`
+ * resuelve ids indistintamente desde dos fuentes que HOY comparten el mismo
+ * tipo `Producto` pero tienen procedencia muy distinta:
+ *
+ * - `"postgres_shopify"`: catálogo comercial vigente (`shopify_variante`,
+ *   respaldado por Postgres/Shopify) — fuente de verdad para venta/alquiler
+ *   real.
+ * - `"seed_demo"`: la tabla SQLite `productos`, sembrada desde
+ *   `CATALOGO_SEED` (`src/lib/catalog-data.ts`) — 14 productos demo ricos
+ *   sin proveedor, vigencia, modalidad ni fotos comerciales suficientes.
+ *
+ * Se alineará en espíritu con `SupplySourceClass`/`NonCommercialReferenceClass`
+ * del contrato Zod formal descrito en el plan §7.3 (Tarea 02.2, aún no
+ * implementada); hasta entonces este union local es la fuente de verdad
+ * para el código real de este módulo.
+ */
+export type CommercialSourceClass = "postgres_shopify" | "seed_demo";
+
+export type ProductoConFuente = { producto: Producto; fuente: CommercialSourceClass };
+
+/**
+ * Igual que `productosPorId`, pero conserva de qué fuente salió cada
+ * producto resuelto. Los llamadores que puedan producir una línea comercial
+ * (cotización, aprobación, generación) deben usar esta variante en vez de
+ * `productosPorId` para poder distinguir catálogo real de seed de
+ * demostración — ver `src/lib/generacion/provenance.ts`.
+ */
+export function productosPorIdConFuente(ids: string[]): ProductoConFuente[] {
+  const delCatalogoMock = seleccionarProductos(obtenerProductos(), ids);
+  const idsResueltos = new Set(delCatalogoMock.map((p) => p.id));
+  const idsRestantes = ids.filter((id) => !idsResueltos.has(id));
+
+  const deShopify = idsRestantes.length
+    ? variantesPorIds(idsRestantes).map(aProducto)
+    : [];
+  const fuentePorId = new Map<string, CommercialSourceClass>([
+    ...delCatalogoMock.map((p) => [p.id, "seed_demo" as const] as const),
+    ...deShopify.map((p) => [p.id, "postgres_shopify" as const] as const),
+  ]);
+  const porId = new Map([...delCatalogoMock, ...deShopify].map((p) => [p.id, p]));
+
+  return ids
+    .map((id) => porId.get(id))
+    .filter((p): p is Producto => Boolean(p))
+    .map((producto) => ({ producto, fuente: fuentePorId.get(producto.id)! }));
+}
+
+/**
+ * Resuelve ids tanto del catálogo curado a mano (tabla `productos`) como del
+ * catálogo real de Shopify (`shopify_variante`), en el orden en que llegaron
+ * — necesario porque el chat puede recomendar piezas de las dos fuentes en
+ * la misma conversación y la selección del cliente las mezcla sin distinguir
+ * de dónde salió cada una.
+ *
+ * Nota de procedencia: esta función NO distingue seed de catálogo real en su
+ * valor de retorno. Cualquier ruta que decida si un producto puede convertirse
+ * en línea comercial verificada debe usar `productosPorIdConFuente`.
+ */
+export function productosPorId(ids: string[]): Producto[] {
+  return productosPorIdConFuente(ids).map((item) => item.producto);
+}
+
+export function crearProducto(datos: Omit<Producto, "id">): Producto {
+  const producto: Producto = { ...datos, id: nuevoId() };
+  getDb()
+    .prepare(
+      `INSERT INTO productos (id, nombre, categoria, descripcion, precio, estilos, colores, emoji, tono, foto)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      producto.id,
+      producto.nombre,
+      producto.categoria,
+      producto.descripcion,
+      producto.precio,
+      JSON.stringify(producto.estilos),
+      JSON.stringify(producto.colores),
+      producto.emoji ?? null,
+      producto.tono ?? null,
+      producto.foto ?? null,
+    );
+  return producto;
+}
+
+export function actualizarProducto(
+  id: string,
+  cambios: Partial<Omit<Producto, "id">>,
+): Producto {
+  const db = getDb();
+  const fila = db.prepare("SELECT * FROM productos WHERE id = ?").get(id) as unknown as
+    | FilaProducto
+    | undefined;
+  if (!fila) throw new Error("Producto no encontrado.");
+
+  const previo = filaAProducto(fila);
+  if (cambios.foto && previo.foto && cambios.foto !== previo.foto) {
+    borrarImagen(previo.foto);
+  }
+
+  const actualizado: Producto = { ...previo, ...cambios, id };
+  db.prepare(
+    `UPDATE productos
+     SET nombre = ?, categoria = ?, descripcion = ?, precio = ?, estilos = ?, colores = ?, emoji = ?, tono = ?, foto = ?
+     WHERE id = ?`,
+  ).run(
+    actualizado.nombre,
+    actualizado.categoria,
+    actualizado.descripcion,
+    actualizado.precio,
+    JSON.stringify(actualizado.estilos),
+    JSON.stringify(actualizado.colores),
+    actualizado.emoji ?? null,
+    actualizado.tono ?? null,
+    actualizado.foto ?? null,
+    id,
+  );
+  return actualizado;
+}
+
+export function eliminarProducto(id: string): void {
+  const db = getDb();
+  const fila = db.prepare("SELECT foto FROM productos WHERE id = ?").get(id) as unknown as
+    | { foto: string | null }
+    | undefined;
+  // ON DELETE CASCADE limpia decoracion_elementos automáticamente.
+  db.prepare("DELETE FROM productos WHERE id = ?").run(id);
+  if (fila?.foto) borrarImagen(fila.foto);
+}
+
+export function eliminarTodosLosProductos(): void {
+  const db = getDb();
+  const filas = db
+    .prepare("SELECT foto FROM productos WHERE foto IS NOT NULL")
+    .all() as unknown as { foto: string }[];
+  // ON DELETE CASCADE limpia decoracion_elementos de todas las decoraciones.
+  db.prepare("DELETE FROM productos").run();
+  for (const fila of filas) borrarImagen(fila.foto);
+}

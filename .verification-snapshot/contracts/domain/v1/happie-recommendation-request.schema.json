@@ -1,0 +1,56 @@
+{
+  "$id": "happie-recommendation-request.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v1"
+    },
+    "tipoEvento": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "invitados": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 100000
+    },
+    "presupuesto": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "comida": {
+      "type": "boolean"
+    },
+    "bebida": {
+      "type": "boolean"
+    },
+    "decoracion": {
+      "type": "boolean"
+    },
+    "fotografia": {
+      "type": "boolean"
+    },
+    "preferencias": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "required": [
+    "tipoEvento",
+    "invitados",
+    "presupuesto"
+  ],
+  "additionalProperties": false
+}

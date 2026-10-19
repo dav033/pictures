@@ -1,0 +1,153 @@
+{
+ "resumen": "Montaje de fiesta con arcos de medio punto, paneles de lentejuelas, puertas blancas y guirnalda orgánica de globos en tonos rosados, lilas, dorados y borgoña al fondo, visto detrás de la mesa de invitados en primer plano.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 320,
+  "referencia": "puerta blanca de 205 cm"
+ },
+ "pisoY": 0.52,
+ "sala": {
+  "pared": "#d4c4cc",
+  "piso": "#c5b8b2"
+ },
+ "piezas": [
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.03,
+     "y": 0.26,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.11,
+     "y": 0.22,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.21,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.29,
+     "y": 0.21,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.39,
+     "y": 0.2,
+     "grosor": 0.09
+    },
+    {
+     "x": 0.49,
+     "y": 0.21,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.59,
+     "y": 0.23,
+     "grosor": 0.11
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 20,
+    "medianos": 55,
+    "chicos": 25,
+    "diametroGrande": 0.14,
+    "diametroMediano": 0.08,
+    "diametroChico": 0.04
+   },
+   "racimos": 0.7,
+   "colores": [
+    {
+     "nombre": "Fashion Rosado",
+     "hex": "#e8b2c6",
+     "peso": 35,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "Fashion Lila",
+     "hex": "#c6a2ca",
+     "peso": 25,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "Metal Dorado",
+     "hex": "#d4af37",
+     "peso": 20,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Fashion Merlot",
+     "hex": "#581825",
+     "peso": 20,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.39,
+   "yBase": 0.4,
+   "ancho": 0.11,
+   "alto": 0.22,
+   "colores": [
+    {
+     "nombre": "dorado rosa",
+     "hex": "#c88e9b",
+     "peso": 100,
+     "acabado": "brillante"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "arcos_chiara",
+   "x": 0.28,
+   "yBase": 0.48,
+   "ancho": 0.08,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#ece8e7",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.6,
+   "yBase": 0.46,
+   "ancho": 0.12,
+   "alto": 0.21,
+   "colores": [
+    {
+     "nombre": "rosado",
+     "hex": "#d9a5b3",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#cda34f",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "primer plano: mesa de invitados con vajilla, copas, servilletas y adornos dorados"
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "figura iluminada de mariposa al fondo"
+  }
+ ]
+}

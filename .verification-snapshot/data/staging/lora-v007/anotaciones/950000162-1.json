@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000162-1",
+  "image_sha256": "c35a28c2e4db79636ff1540bfd9243fa04e32e3511fedc5fa75f1fdfa8c548f7",
+  "idempotency_key": "3baf5853960483e7521a69120c04355362b1fc96fcb79a70641a6a82606eb8b7",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000162/foto-1.png",
+    "orden": "950000162"
+  },
+  "anotacion": {
+    "image_id": "950000162-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.sand",
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.solid.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.sand",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical balloon column with black, blue, brown, sand, and printed yellow balloons"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.sand",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.solid.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000162-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch matte Fashion sand modeling latex balloons, 5-inch matte Fashion round latex balloons in black and royal blue, 9-inch matte Fashion coffee brown round latex balloons, 12-inch round latex balloons with printed greeting lettering, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 56,
+    "caracteres": 390,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.sand",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.solid.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.sand",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:20:15.661Z",
+    "recompilado_en": "2026-09-03T14:45:24.892Z"
+  }
+}

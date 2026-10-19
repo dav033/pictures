@@ -1,0 +1,67 @@
+{
+ "caso": "oficial-techo_globos",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "8a920ff23a37ade180b28af4fa9705cbd9ebcb4c061f7d7a37931a1e7eacf5bf",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_TECHO_GLOBOS": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 16
+    }
+   ],
+   "unidades": 48,
+   "caja": [
+    -102,
+    295,
+    -75,
+    102,
+    320,
+    75
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 16
+   }
+  ],
+  "unidades": 48
+ },
+ "caja": [
+  -102,
+  295,
+  -75,
+  102,
+  320,
+  75
+ ]
+}

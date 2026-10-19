@@ -1,0 +1,395 @@
+{
+ "version": 1,
+ "descripcion": "Oro del catálogo de mobiliario y escenografía (REQ-013 fase 3, T18): 20 consultas en la voz del dueño sobre los repositorios mobiliario y escenografía, para medir su búsqueda con los tres repositorios visibles (scripts/taller/evaluar-rag-local.ts --oro=catalogo). Misma forma que el oro del taller (grado 2 = exacto, 1 = aceptable). Los ids son los ids locales de las fichas de data/catalogos/<repo>/fichas.jsonl (fichasDeRepositorio); los de consulta siguen a los del oro de reserva (Q61-Q80). Sin fotos: estos repositorios no tienen vectores de imagen.",
+ "grados": {
+  "1": "aceptable",
+  "2": "exacto"
+ },
+ "consultas": [
+  {
+   "id": "Q61",
+   "categoria": "mueble",
+   "texto": "sillas tiffany doradas",
+   "relevantes": [
+    {
+     "id": "silla_tiffany",
+     "grado": 2
+    },
+    {
+     "id": "sillas_param",
+     "grado": 1
+    },
+    {
+     "id": "mesa_redonda_sillas",
+     "grado": 1
+    },
+    {
+     "id": "mesa_redonda10_sillas",
+     "grado": 1
+    },
+    {
+     "id": "mesa_imperial_sillas",
+     "grado": 1
+    }
+   ],
+   "nota": "La silla suelta es la exacta; el generador y los conjuntos traen sillas Tiffany."
+  },
+  {
+   "id": "Q62",
+   "categoria": "mueble",
+   "texto": "mesa imperial para 10",
+   "relevantes": [
+    {
+     "id": "mesa_imperial_sillas",
+     "grado": 2
+    },
+    {
+     "id": "mesa_imperial",
+     "grado": 1
+    },
+    {
+     "id": "mesa_imperial_mantel",
+     "grado": 1
+    },
+    {
+     "id": "mesa_param",
+     "grado": 1
+    }
+   ],
+   "nota": "El conjunto de 10 sillas; la mesa sola y la mesa a medida sirven."
+  },
+  {
+   "id": "Q63",
+   "categoria": "fondo",
+   "texto": "panel redondo con aro dorado",
+   "relevantes": [
+    {
+     "id": "panel_redondo",
+     "grado": 2
+    },
+    {
+     "id": "aro_metalico",
+     "grado": 1
+    },
+    {
+     "id": "media_luna",
+     "grado": 1
+    }
+   ],
+   "nota": "El panel de la foto de «Happy Birthday»."
+  },
+  {
+   "id": "Q64",
+   "categoria": "decorado",
+   "texto": "base para el pastel",
+   "relevantes": [
+    {
+     "id": "base_pastel",
+     "grado": 2
+    },
+    {
+     "id": "pastel",
+     "grado": 1
+    },
+    {
+     "id": "pedestales",
+     "grado": 1
+    },
+    {
+     "id": "mesa_postres",
+     "grado": 1
+    }
+   ],
+   "nota": "La base de pastel; el pastel y los pedestales van con ella."
+  },
+  {
+   "id": "Q65",
+   "categoria": "decorado",
+   "texto": "cortina de flecos",
+   "relevantes": [
+    {
+     "id": "cortina_flecos",
+     "grado": 2
+    },
+    {
+     "id": "cortina_luces",
+     "grado": 1
+    }
+   ],
+   "nota": "Cortina de tiras de brillo; la de luces es otra cortina."
+  },
+  {
+   "id": "Q66",
+   "categoria": "mueble",
+   "texto": "mesa de postres con mantel",
+   "relevantes": [
+    {
+     "id": "mesa_postres_mantel",
+     "grado": 2
+    },
+    {
+     "id": "mesa_postres",
+     "grado": 2
+    },
+    {
+     "id": "mesa_mantel",
+     "grado": 1
+    }
+   ],
+   "nota": "Las dos mesas de postres; la mesa con mantel también sirve."
+  },
+  {
+   "id": "Q67",
+   "categoria": "decorado",
+   "texto": "letrero de neón con el nombre",
+   "relevantes": [
+    {
+     "id": "neon_cursiva",
+     "grado": 2
+    },
+    {
+     "id": "rotulo_acrilico",
+     "grado": 1
+    },
+    {
+     "id": "letrero",
+     "grado": 1
+    }
+   ],
+   "nota": "El neón en cursiva; los otros rótulos con texto son aceptables."
+  },
+  {
+   "id": "Q68",
+   "categoria": "decorado",
+   "texto": "nombre en acrílico dorado espejo",
+   "relevantes": [
+    {
+     "id": "rotulo_acrilico",
+     "grado": 2
+    },
+    {
+     "id": "neon_cursiva",
+     "grado": 1
+    }
+   ],
+   "nota": "El nombre de acrílico (acabado espejo)."
+  },
+  {
+   "id": "Q69",
+   "categoria": "mueble",
+   "texto": "sala lounge con sofá y sillones",
+   "relevantes": [
+    {
+     "id": "sala_lounge",
+     "grado": 2
+    },
+    {
+     "id": "sofa",
+     "grado": 1
+    },
+    {
+     "id": "sillon",
+     "grado": 1
+    },
+    {
+     "id": "love_seat",
+     "grado": 1
+    }
+   ],
+   "nota": "El conjunto lounge; sus muebles sueltos son aceptables."
+  },
+  {
+   "id": "Q70",
+   "categoria": "mueble",
+   "texto": "mesa de cóctel alta",
+   "relevantes": [
+    {
+     "id": "mesa_coctel",
+     "grado": 2
+    },
+    {
+     "id": "mesa_coctel_licra",
+     "grado": 2
+    },
+    {
+     "id": "taburete_alto",
+     "grado": 1
+    }
+   ],
+   "nota": "Las dos mesas de cóctel; el taburete alto las acompaña."
+  },
+  {
+   "id": "Q71",
+   "categoria": "decorado",
+   "texto": "arco metálico para globos",
+   "relevantes": [
+    {
+     "id": "arco_metalico",
+     "grado": 2
+    },
+    {
+     "id": "aro_metalico",
+     "grado": 1
+    },
+    {
+     "id": "aro_hexagonal",
+     "grado": 1
+    }
+   ],
+   "nota": "El arco de metal; los aros son parecidos."
+  },
+  {
+   "id": "Q72",
+   "categoria": "fondo",
+   "texto": "pared de lentejuelas doradas",
+   "relevantes": [
+    {
+     "id": "lentejuelas",
+     "grado": 2
+    },
+    {
+     "id": "cortina_flecos",
+     "grado": 1
+    }
+   ],
+   "nota": "El panel de shimmer dorado."
+  },
+  {
+   "id": "Q73",
+   "categoria": "mueble",
+   "texto": "mesa redonda con 8 sillas",
+   "relevantes": [
+    {
+     "id": "mesa_redonda_sillas",
+     "grado": 2
+    },
+    {
+     "id": "mesa_redonda10_sillas",
+     "grado": 1
+    },
+    {
+     "id": "mesa_redonda",
+     "grado": 1
+    },
+    {
+     "id": "mesa_redonda_mantel",
+     "grado": 1
+    }
+   ],
+   "nota": "El conjunto de 8; el de 10 y la mesa sola son aceptables."
+  },
+  {
+   "id": "Q74",
+   "categoria": "decorado",
+   "texto": "tapete redondo para el piso",
+   "relevantes": [
+    {
+     "id": "alfombra_redonda",
+     "grado": 2
+    },
+    {
+     "id": "tapete_redondo",
+     "grado": 2
+    }
+   ],
+   "nota": "La alfombra redonda y el tapete de las fotos."
+  },
+  {
+   "id": "Q75",
+   "categoria": "decorado",
+   "texto": "columna griega",
+   "relevantes": [
+    {
+     "id": "columna_griega",
+     "grado": 2
+    },
+    {
+     "id": "pedestales",
+     "grado": 1
+    }
+   ],
+   "nota": "La columna de yeso; los pedestales son parecidos."
+  },
+  {
+   "id": "Q76",
+   "categoria": "mueble",
+   "texto": "carrito de dulces",
+   "relevantes": [
+    {
+     "id": "carrito_dulces",
+     "grado": 2
+    },
+    {
+     "id": "mesa_postres",
+     "grado": 1
+    }
+   ],
+   "nota": "El carrito; la mesa de postres cumple la misma función."
+  },
+  {
+   "id": "Q77",
+   "categoria": "generador",
+   "texto": "mesa a medida en U para banquete",
+   "relevantes": [
+    {
+     "id": "mesa_param",
+     "grado": 2
+    },
+    {
+     "id": "mesa_imperial",
+     "grado": 1
+    }
+   ],
+   "nota": "Solo el generador arma el banquete en U."
+  },
+  {
+   "id": "Q78",
+   "categoria": "decorado",
+   "texto": "escalones para el montaje",
+   "relevantes": [
+    {
+     "id": "peldanos",
+     "grado": 2
+    },
+    {
+     "id": "escalera_decorativa",
+     "grado": 1
+    }
+   ],
+   "nota": "Los peldaños; la escalera decorativa es parecida."
+  },
+  {
+   "id": "Q79",
+   "categoria": "decorado",
+   "texto": "biombo de fondo",
+   "relevantes": [
+    {
+     "id": "biombo",
+     "grado": 2
+    },
+    {
+     "id": "marco_tela",
+     "grado": 1
+    }
+   ],
+   "nota": "El biombo; el marco con tela también es telón."
+  },
+  {
+   "id": "Q80",
+   "categoria": "generador",
+   "texto": "sillas ghost acrílicas",
+   "relevantes": [
+    {
+     "id": "sillas_param",
+     "grado": 2
+    },
+    {
+     "id": "silla_moderna",
+     "grado": 1
+    }
+   ],
+   "nota": "Solo el generador de sillas trae las ghost."
+  }
+ ],
+ "fotos": []
+}

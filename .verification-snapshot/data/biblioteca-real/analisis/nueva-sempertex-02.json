@@ -1,0 +1,549 @@
+{
+  "id": "nueva-sempertex-02",
+  "fuente": "sempertex-02.png",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-22-guirnalda-san-valentin.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "8644c0ce-c158-4cec-a12e-f2dc3bd3015b",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.7976
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "red metallic fringe curtain",
+          "category": "curtain",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Vertical red foil fringe strands hanging down towards the floor",
+          "reference_bbox": {
+            "x": 0.288,
+            "y": 0.421,
+            "width": 0.458,
+            "height": 0.5130000000000001
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic red"
+            ],
+            "measured_colors": [
+              {
+                "color": "rojo",
+                "share": 0.06
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "foil fringe",
+            "shape": "shape not determinable",
+            "composition": "100% metallic red foil fringe strands hanging down vertically from beneath the balloon garland"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Metallic foil fringe backdrop curtain beneath the balloon cloud structure",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "balloon cloud garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Horizontal cloud-shaped balloon arrangement with pink, red, white latex balloons and round foil printed LOVE balloons",
+          "reference_bbox": {
+            "x": 0.046,
+            "y": 0.088,
+            "width": 0.9089999999999999,
+            "height": 0.44900000000000007
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pink",
+              "pearl white",
+              "red",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.2781
+              },
+              {
+                "color": "rosado",
+                "share": 0.2696
+              },
+              {
+                "color": "rojo",
+                "share": 0.2251
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex and foil",
+            "shape": "medium dense asymmetrical garland, on the center, raised off the floor",
+            "composition": "40% pink latex round balloons on the outer clusters, 30% white latex round balloons in the center, 20% red round and heart latex balloons on the left, and 10% round foil LOVE balloons on top",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "rosado",
+                "rojo",
+                "blanco",
+                "rosado"
+              ],
+              "pesos": [
+                30,
+                20,
+                25,
+                25
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 52,
+              "exacto": false,
+              "estimado_total": 65,
+              "racimos": 14,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.45
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "recta",
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.045,
+              "desnivel_relativo": 0,
+              "racimos_visibles": 18,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "rosado",
+                "blanco",
+                "rojo"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "metalizado",
+                  "color": "blanco",
+                  "posicion": "centro"
+                },
+                {
+                  "clase": "metalizado",
+                  "color": "blanco",
+                  "posicion": "extremo_der"
+                }
+              ],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "806",
+                "familia": "silk",
+                "nombre": "Blanco Nácar",
+                "nombre_completo": "Silk Blanco Nácar",
+                "parte": 0.3414,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "011",
+                "familia": "fashion",
+                "nombre": "Rosa",
+                "nombre_completo": "Fashion Rosa",
+                "parte": 0.2196,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "915",
+                "familia": "reflex",
+                "nombre": "Cristal Rojo",
+                "nombre_completo": "Reflex Cristal Rojo",
+                "parte": 0.1761,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "515",
+                "familia": "metal",
+                "nombre": "Rojo",
+                "nombre_completo": "Metal Rojo",
+                "parte": 0.1021,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E02",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Organic balloon cloud cluster garland mounted on the wall",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Floating balloon cloud with red fringe curtain hanging below",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pink",
+          "red",
+          "white",
+          "metallic red"
+        ],
+        "priority": [
+          "pink",
+          "red",
+          "white",
+          "metallic red"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "1ed02cbe6346d03d3d0dec8e3403b233421ad71c0b328d863c17b756f84b50df",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 402,
+            "height": 504
+          },
+          "processed": {
+            "width": 402,
+            "height": 504
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 57150,
+            "deLaCaja": 83082
+          },
+          "colores": [
+            {
+              "hex": "#ccc7c7",
+              "parte": 0.3414,
+              "pixeles": 19510,
+              "cruce": {
+                "hex": "#ccc7c7",
+                "candidatas": [
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 4.8,
+                    "distancia": 2.5,
+                    "tono": 153.3,
+                    "razonCroma": 1.5
+                  },
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 12.6,
+                    "distancia": 10.3,
+                    "tono": 67.9,
+                    "razonCroma": 0.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#cb4a74",
+              "parte": 0.2196,
+              "pixeles": 12551,
+              "cruce": {
+                "hex": "#cb4a74",
+                "candidatas": [
+                  {
+                    "codigo": "011",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Fashion Rosa",
+                    "nombreEn": "matte pink",
+                    "pms": "204",
+                    "acabado": "matte",
+                    "hexGlobo": "#e04b87",
+                    "deltaE": 10.1,
+                    "distancia": 7,
+                    "tono": 5,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 20.2,
+                    "distancia": 14.7,
+                    "tono": 6,
+                    "razonCroma": 1.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#a92942",
+              "parte": 0.1761,
+              "pixeles": 10064,
+              "cruce": {
+                "hex": "#a92942",
+                "candidatas": [
+                  {
+                    "codigo": "915",
+                    "nombre": "Cristal Rojo",
+                    "nombreCompleto": "Reflex Cristal Rojo",
+                    "nombreEn": "chrome red",
+                    "pms": "10445",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a62d2f",
+                    "deltaE": 11.8,
+                    "distancia": 12.1,
+                    "tono": 11.9,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "515",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Metal Rojo",
+                    "nombreEn": "metallic red",
+                    "pms": "199",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#b21827",
+                    "deltaE": 17.8,
+                    "distancia": 12.2,
+                    "tono": 12.1,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "015",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Fashion Rojo",
+                    "nombreEn": "matte red",
+                    "pms": "185",
+                    "acabado": "matte",
+                    "hexGlobo": "#e01b2b",
+                    "deltaE": 34.1,
+                    "distancia": 19.1,
+                    "tono": 14.4,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#c78e97",
+              "parte": 0.1608,
+              "pixeles": 9189,
+              "cruce": {
+                "hex": "#c78e97",
+                "candidatas": [
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 20.3,
+                    "distancia": 12.2,
+                    "tono": 11.7,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "011",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Fashion Rosa",
+                    "nombreEn": "matte pink",
+                    "pms": "204",
+                    "acabado": "matte",
+                    "hexGlobo": "#e04b87",
+                    "deltaE": 41.1,
+                    "distancia": 19.4,
+                    "tono": 10.6,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ba0c12",
+              "parte": 0.1021,
+              "pixeles": 5836,
+              "cruce": {
+                "hex": "#ba0c12",
+                "candidatas": [
+                  {
+                    "codigo": "515",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Metal Rojo",
+                    "nombreEn": "metallic red",
+                    "pms": "199",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#b21827",
+                    "deltaE": 13,
+                    "distancia": 7.1,
+                    "tono": 6.7,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "015",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Fashion Rojo",
+                    "nombreEn": "matte red",
+                    "pms": "185",
+                    "acabado": "matte",
+                    "hexGlobo": "#e01b2b",
+                    "deltaE": 12.2,
+                    "distancia": 8.8,
+                    "tono": 4.4,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "915",
+                    "nombre": "Cristal Rojo",
+                    "nombreCompleto": "Reflex Cristal Rojo",
+                    "nombreEn": "chrome red",
+                    "pms": "10445",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a62d2f",
+                    "deltaE": 22.3,
+                    "distancia": 10.8,
+                    "tono": 6.8,
+                    "razonCroma": 1.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        }
+      ]
+    }
+  }
+}

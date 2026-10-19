@@ -1,0 +1,271 @@
+[
+ {
+  "id": "002",
+  "grupo": "g3.5",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v4/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 48,
+   "nota_min": 48,
+   "nota_max": 48,
+   "composicion": 7,
+   "geometria": 6,
+   "colores": 4,
+   "orden_color": 5,
+   "escala": 4,
+   "densidad": 4,
+   "orientacion": 8,
+   "topologia": 9,
+   "atrezo_inventado": [
+    "Panel lila redondeado",
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "Los globos son mucho más grandes y densos que en la referencia.",
+    "La paleta cambia de rosa pálido, blanco y plata a tonos durazno y cromo oscuro.",
+    "Las dos guirnaldas ocupan más espacio y tienen racimos más voluminosos.",
+    "El panel lila y el pedestal blanco no aparecen en la foto."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "g2.5",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/obediencia-g25/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 19,
+   "nota_min": 19,
+   "nota_max": 19,
+   "composicion": 2,
+   "geometria": 2,
+   "colores": 6,
+   "orden_color": 4,
+   "escala": 4,
+   "densidad": 3,
+   "orientacion": 5,
+   "topologia": 6,
+   "atrezo_inventado": [
+    "Panel circular lila",
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "Los dos arcos inclinados de la referencia se sustituyen por guirnaldas voluminosas que flanquean un panel circular.",
+    "Se añade un panel circular central que no aparece en la foto.",
+    "Los racimos son mucho más densos y grandes que los de la referencia.",
+    "La paleta cambia a rosa, blanco y cromo oscuro; en la referencia predominan globos rosa, blancos, transparentes y plateados.",
+    "Se añade un pedestal central."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "g5.0",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/obediencia-g50/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 48,
+   "nota_min": 48,
+   "nota_max": 48,
+   "composicion": 6,
+   "geometria": 6,
+   "colores": 5,
+   "orden_color": 4,
+   "escala": 4,
+   "densidad": 3,
+   "orientacion": 7,
+   "topologia": 8,
+   "atrezo_inventado": [
+    "Panel lila semicircular",
+    "Pedestal cilíndrico blanco con tarta"
+   ],
+   "defectos": [
+    "Los racimos son mucho más densos y voluminosos que los de la referencia.",
+    "Los globos plateados y rosa perlado están mezclados; la referencia concentra rosas arriba y blancos y plateados en los lados y zonas inferiores.",
+    "Las dos piezas ocupan más altura y anchura del encuadre.",
+    "Faltan los globos blancos y transparentes visibles en la referencia."
+   ]
+  }
+ },
+ {
+  "id": "001",
+  "grupo": "g3.5",
+  "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+  "img": "../validacion-fase4/medida-v2/caso-1/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 63,
+   "nota_min": 63,
+   "nota_max": 63,
+   "composicion": 5,
+   "geometria": 7,
+   "colores": 9,
+   "orden_color": 10,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 8,
+   "topologia": 10,
+   "atrezo_inventado": [
+    "mostrador de madera a la izquierda"
+   ],
+   "defectos": [
+    "La columna aparece centrada en vez de a la izquierda.",
+    "La columna es más alta y voluminosa respecto al encuadre.",
+    "Los globos son más grandes y regulares que en la referencia."
+   ]
+  }
+ },
+ {
+  "id": "001",
+  "grupo": "g2.5",
+  "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+  "img": "../validacion-fase4/obediencia-g25/caso-1/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 54,
+   "nota_min": 54,
+   "nota_max": 54,
+   "composicion": 3,
+   "geometria": 7,
+   "colores": 9,
+   "orden_color": 10,
+   "escala": 4,
+   "densidad": 6,
+   "orientacion": 7,
+   "topologia": 9,
+   "atrezo_inventado": [
+    "Mesas de madera",
+    "Copas",
+    "Soportes blancos bajo la columna"
+   ],
+   "defectos": [
+    "La columna está centrada en vez de situada a la izquierda.",
+    "La decoración generada ocupa mucho más espacio y los globos son mayores.",
+    "La columna generada es más recta y uniforme; la referencia se inclina ligeramente.",
+    "La referencia tiene una mezcla más irregular de globos grandes y pequeños."
+   ]
+  }
+ },
+ {
+  "id": "001",
+  "grupo": "g5.0",
+  "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+  "img": "../validacion-fase4/obediencia-g50/caso-1/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 55,
+   "nota_min": 55,
+   "nota_max": 55,
+   "composicion": 5,
+   "geometria": 6,
+   "colores": 9,
+   "orden_color": 10,
+   "escala": 4,
+   "densidad": 6,
+   "orientacion": 7,
+   "topologia": 10,
+   "atrezo_inventado": [
+    "Mostradores de madera a ambos lados"
+   ],
+   "defectos": [
+    "La columna generada es mucho más alta y ancha que la de referencia.",
+    "La columna está centrada en vez de situada a la izquierda.",
+    "La referencia tiene una columna inclinada y más estrecha; la generada forma una torre casi recta y voluminosa.",
+    "La distribución y el tamaño de los globos grandes difieren, con menos globos pequeños visibles."
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "g3.5",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/medida-v2-f7/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 48,
+   "nota_min": 48,
+   "nota_max": 48,
+   "composicion": 5,
+   "geometria": 6,
+   "colores": 5,
+   "orden_color": 6,
+   "escala": 7,
+   "densidad": 7,
+   "orientacion": 7,
+   "topologia": 5,
+   "atrezo_inventado": [
+    "Panel dorado brillante de fondo"
+   ],
+   "defectos": [
+    "La guirnalda de referencia rodea la parte superior y derecha de un panel; la generada forma un arco más compacto que cae solo por la derecha.",
+    "Los globos azul marino de la referencia aparecen azul metálico brillante en la imagen generada.",
+    "Faltan las flores y el follaje integrados en la guirnalda.",
+    "La imagen generada sustituye el fondo de lentejuelas por un panel dorado liso y brillante."
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "g2.5",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/obediencia-g25-f7/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 28,
+   "nota_min": 28,
+   "nota_max": 28,
+   "composicion": 3,
+   "geometria": 2,
+   "colores": 6,
+   "orden_color": 4,
+   "escala": 5,
+   "densidad": 6,
+   "orientacion": 3,
+   "topologia": 2,
+   "atrezo_inventado": [
+    "Panel dorado con purpurina",
+    "Mesa alta cubierta con tela azul marino",
+    "Globos de helio con cintas y peso dorado"
+   ],
+   "defectos": [
+    "La guirnalda principal de referencia forma una L invertida; la generada forma un arco alto por la izquierda y la parte superior.",
+    "La guirnalda cae por la derecha en la referencia, mientras la generada concentra su volumen a la izquierda.",
+    "Añade un racimo separado de globos de helio con cintas que no existe en la referencia.",
+    "Faltan los racimos de globos integrados en la decoración floral de la izquierda.",
+    "La paleta se acerca, pero la referencia incluye globos transparentes con confeti y más detalles azul marino entre los dorados."
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "g5.0",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/obediencia-g50-f7/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 30,
+   "nota_min": 30,
+   "nota_max": 30,
+   "composicion": 3,
+   "geometria": 2,
+   "colores": 5,
+   "orden_color": 4,
+   "escala": 6,
+   "densidad": 6,
+   "orientacion": 3,
+   "topologia": 2,
+   "atrezo_inventado": [
+    "Fondo dorado de tela brillante"
+   ],
+   "defectos": [
+    "La guirnalda rodea la parte superior y baja por la izquierda; la referencia la concentra arriba y a la derecha.",
+    "Añade un racimo separado a la derecha que no aparece en la referencia.",
+    "Los globos azules son metálicos claros, en vez de azul marino oscuro.",
+    "Falta la caída de globos grandes hasta el suelo por el lado derecho."
+   ]
+  }
+ }
+]

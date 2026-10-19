@@ -1,0 +1,370 @@
+{
+  "id": "nueva-sempertex-04",
+  "fuente": "sempertex-04.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-24-guirnalda-verde-salvia-flores.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "7629a2a8-d514-4992-829d-7067de81e650",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Floral Balloon Garland Installation",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A horizontal balloon garland composed of sage green latex balloons, hanging green vertical balloon trails, two orange flower balloon sculptures with pearl centers, and pearl gold balloon cluster accents.",
+          "reference_bbox": {
+            "x": 0.07,
+            "y": 0.218,
+            "width": 0.887,
+            "height": 0.608
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "sage green",
+              "orange",
+              "pearl champagne gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "champagne",
+                "share": 0.3274
+              },
+              {
+                "color": "naranja",
+                "share": 0.1313
+              },
+              {
+                "color": "verde",
+                "share": 0.0931
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "medium dense asymmetrical garland, spanning the full width, raised off the floor",
+            "composition": "65% sage green round balloons forming the horizontal base garland and hanging strands, 20% orange balloon flowers, and 15% pearl champagne gold cluster accents.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "verde",
+                "naranja",
+                "champagne"
+              ],
+              "pesos": [
+                65,
+                20,
+                15
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 85,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.45
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "recta",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": "abajo",
+              "flecha_relativa": 0.045,
+              "desnivel_relativo": 0,
+              "racimos_visibles": 25,
+              "colores_por_racimo": [
+                "verde",
+                "naranja",
+                "champagne"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "naranja",
+                  "posicion": "extremo_der"
+                },
+                {
+                  "clase": "latex",
+                  "color": "naranja",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "126",
+                "familia": "pastelDusk",
+                "nombre": "Té Verde",
+                "nombre_completo": "Pastel Dusk Té Verde",
+                "parte": 0.2095,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "061",
+                "familia": "fashion",
+                "nombre": "Naranja",
+                "nombre_completo": "Fashion Naranja",
+                "parte": 0.103,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main decorative element in the composition.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Floral balloon garland arrangement with orange flower accents and hanging balloon trails",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "sage green",
+          "bright orange",
+          "pearl champagne gold"
+        ],
+        "priority": [
+          "sage green",
+          "bright orange",
+          "pearl champagne gold"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "bdd26848167b7bfc3fdbaa60fe47c77ca93d83bfd772eee9efb7d8aa904e6344",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 1000,
+            "height": 1000
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 98058,
+            "deLaCaja": 141960
+          },
+          "colores": [
+            {
+              "hex": "#9ac49d",
+              "parte": 0.2095,
+              "pixeles": 20548,
+              "cruce": {
+                "hex": "#9ac49d",
+                "candidatas": [
+                  {
+                    "codigo": "126",
+                    "nombre": "Té Verde",
+                    "nombreCompleto": "Pastel Dusk Té Verde",
+                    "nombreEn": "dusty pastel sage green",
+                    "pms": "623",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#aad5ba",
+                    "deltaE": 9.2,
+                    "distancia": 13.9,
+                    "tono": 10.7,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "027",
+                    "nombre": "Eucalipto",
+                    "nombreCompleto": "Fashion Eucalipto",
+                    "nombreEn": "matte sage green",
+                    "pms": "5635",
+                    "acabado": "matte",
+                    "hexGlobo": "#95aa85",
+                    "deltaE": 11.1,
+                    "distancia": 18.7,
+                    "tono": 14.6,
+                    "razonCroma": 1.2
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#959d5f",
+              "parte": 0.1856,
+              "pixeles": 18203,
+              "cruce": {
+                "hex": "#959d5f",
+                "candidatas": [
+                  {
+                    "codigo": "027",
+                    "nombre": "Eucalipto",
+                    "nombreCompleto": "Fashion Eucalipto",
+                    "nombreEn": "matte sage green",
+                    "pms": "5635",
+                    "acabado": "matte",
+                    "hexGlobo": "#95aa85",
+                    "deltaE": 15.5,
+                    "distancia": 29.4,
+                    "tono": 18.2,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "126",
+                    "nombre": "Té Verde",
+                    "nombreCompleto": "Pastel Dusk Té Verde",
+                    "nombreEn": "dusty pastel sage green",
+                    "pms": "623",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#aad5ba",
+                    "deltaE": 30.3,
+                    "distancia": 63.3,
+                    "tono": 43.5,
+                    "razonCroma": 1.6
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#f05d07",
+              "parte": 0.103,
+              "pixeles": 10097,
+              "cruce": {
+                "hex": "#f05d07",
+                "candidatas": [
+                  {
+                    "codigo": "061",
+                    "nombre": "Naranja",
+                    "nombreCompleto": "Fashion Naranja",
+                    "nombreEn": "matte orange",
+                    "pms": "021",
+                    "acabado": "matte",
+                    "hexGlobo": "#e75d1d",
+                    "deltaE": 8,
+                    "distancia": 2.4,
+                    "tono": 1.7,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "261",
+                    "nombre": "Naranja",
+                    "nombreCompleto": "Neón Naranja",
+                    "nombreEn": "neon orange",
+                    "pms": "804",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#f09356",
+                    "deltaE": 33.2,
+                    "distancia": 20.9,
+                    "tono": 6.3,
+                    "razonCroma": 1.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Se dejó fuera un color que ocupaba menos del 6 % de la pieza (un reflejo, un borde o parte del fondo).",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+ "caso": "oficial-columna_asimetrica",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "4ae8baa1124c6a64b597315d3b5633a92f07f5c514e2cffde0e89cd96afef90a",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA_ASIMETRICA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 4
+    }
+   ],
+   "unidades": 42,
+   "caja": [
+    -39,
+    0,
+    -189,
+    39,
+    180,
+    -131
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 4
+   }
+  ],
+  "unidades": 42
+ },
+ "caja": [
+  -39,
+  0,
+  -189,
+  39,
+  180,
+  -131
+ ]
+}

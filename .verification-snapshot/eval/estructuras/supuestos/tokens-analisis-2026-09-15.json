@@ -1,0 +1,42 @@
+{
+  "version": "tokens-analisis-2026-09-15",
+  "modelo": "gemini-3.6-flash",
+  "origen": "ai_call_log (solo lectura, READ ONLY), flujo analisis_referencia, resultado ok, modelo gemini-3.6-flash, últimos 30 días; percentiles 50 y 95 por pase redondeados hacia arriba. Tráfico mezclado (producción, local y E2E sin marca: ver REVISION-HUMANA.md)",
+  "n_llamadas": 239,
+  "inventario": {
+    "p50": {
+      "entrada": 3347,
+      "salida": 1489,
+      "pensamiento": 0,
+      "cacheados": 0
+    },
+    "p95": {
+      "entrada": 3382,
+      "salida": 2560,
+      "pensamiento": 0,
+      "cacheados": 0
+    }
+  },
+  "auditoria": {
+    "p50": {
+      "entrada": 1928,
+      "salida": 29,
+      "pensamiento": 179,
+      "cacheados": 0
+    },
+    "p95": {
+      "entrada": 2746,
+      "salida": 651,
+      "pensamiento": 672,
+      "cacheados": 0
+    }
+  },
+  "reintentos": {
+    "analisis_referencia_inventario": 0,
+    "analisis_referencia_auditoria": 5
+  },
+  "ventana": {
+    "desde": "2026-09-09",
+    "hasta": "2026-09-15"
+  }
+}

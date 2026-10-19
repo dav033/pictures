@@ -1,0 +1,112 @@
+{
+  "id": "deco-real-25-guirnalda-dia-de-la-madre",
+  "titulo": "Guirnalda diagonal para el Día de la Madre",
+  "tematica": "Día de la Madre coral, vino y perla",
+  "eventos": [
+    "Día de la Madre"
+  ],
+  "edad": {
+    "min": 18,
+    "max": 90
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-25-guirnalda-dia-de-la-madre.jpg",
+      "fuente": "sempertex-05.png",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "guirnalda",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594308768039",
+      "sku": "B2B-20000826",
+      "cantidad": 18,
+      "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50 · R-12 · blanco perla",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+    },
+    {
+      "variantId": "46594359886119",
+      "sku": "B2B-20017232",
+      "cantidad": 23,
+      "nota": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50 · R-12 · coral",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+    },
+    {
+      "variantId": "49778969248039",
+      "sku": "B2B-20018727",
+      "cantidad": 23,
+      "nota": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido — R-12 / PAQUETE X 50 · R-12 · vino con «Feliz día Mamá»",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python; del surtido se usan los vino [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+    },
+    {
+      "variantId": "46594260926759",
+      "sku": "B2B-20012385",
+      "cantidad": 42,
+      "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-5 / PAQUETE X 50 · R-5 · rosado pastel",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos: 7 flores de 6 pétalos)"
+    },
+    {
+      "variantId": "46594437808423",
+      "sku": "B2B-20000447",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Merlot — R-5 / PAQUETE X 20 · R-5 · vino",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (centro de las 7 flores)"
+    },
+    {
+      "variantId": "46594283766055",
+      "sku": "B2B-20014179",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (espiral dorada: 5 tramos visibles de punta a punta)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Fija en la pared, en diagonal, una tira para guirnalda de unos 2,4 metros con ganchos o cinta de montaje."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos coral, los blancos perlados y los impresos «Feliz día Mamá» de 12 pulgadas; átalos de a dos y luego en grupos de cuatro, mezclando los colores."
+    },
+    {
+      "orden": 3,
+      "texto": "Sujeta los grupos a la tira formando una banda gruesa: pon el coral y los impresos hacia los bordes y deja los perlados por el centro."
+    },
+    {
+      "orden": 4,
+      "texto": "Haz siete flores: infla seis globos rosados pequeños de 5 pulgadas para los pétalos, únelos en círculo y pon al centro un globo vino pequeño."
+    },
+    {
+      "orden": 5,
+      "texto": "Pega las flores sobre los globos perlados, repartidas a lo largo de la guirnalda."
+    },
+    {
+      "orden": 6,
+      "texto": "Infla los globos para modelar dorados, enróllalos en espiral sobre la guirnalda de punta a punta y revisa que todo quede firme."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#ec7169",
+    "#af2027",
+    "#ecb2ae",
+    "#b4925b",
+    "#e1cfc5"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

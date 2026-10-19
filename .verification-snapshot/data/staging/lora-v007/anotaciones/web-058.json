@@ -1,0 +1,90 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-058",
+  "image_sha256": "7a9fdd549e3b441c19aec004204da0b80bab2d270bdf552d3589c97b399ea78d",
+  "idempotency_key": "56e83bc2cffa77a4c6edd051075e17b334e3e1a8126e9d730a37787088b4e9b8",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-058.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Columna-Huellita.png?v=1642707362",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-058",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.white",
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Vertical balloon column with blue, red, royal blue, and white modeling balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes cannot be distinguished."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.white",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-058",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion white modeling latex balloons and matte Fashion round latex balloons in blue, red and royal blue, set against white background and white floor.",
+    "palabras": 35,
+    "caracteres": 234,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.white",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:23:58.354Z"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-100",
+  "image_sha256": "5d77acdde8d02b1f3ac54a5f975bd4eacd453c16e31ced29b40a47e60bcb33cb",
+  "idempotency_key": "feae189d0750544dc3ff2799b20b352b5f3a82ace19daf92d8850d07f219fdcf",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-100.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Webinar_2_-_Temporada_de_sustos.png?v=1739827827",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-100",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white",
+          "balloon.modeling.latex.neon.green",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense rectangular balloon wall with black and white round balloons, green modeling-balloon accents, and violet balloon accents."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic green balloon garland with mixed diameters spanning the top of the wall."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon size codes cannot be determined from the image."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.neon.green",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-100",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from fluorescent Neon green modeling latex balloons, matte Fashion round latex balloons in black and white and high-shine Reflex violet round latex balloons, an organic balloon garland, anchored to the balloon wall, built from fluorescent Neon green round latex balloons and high-shine Reflex lime green round latex balloons, set against a white wall and a white floor.",
+    "palabras": 67,
+    "caracteres": 445,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.neon.green",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:44:15.461Z"
+  }
+}

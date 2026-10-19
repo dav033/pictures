@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-116",
+  "image_sha256": "3d5e8245c8c2a44169a9f2c0e0e27cd1f114538816148d878036fe8b207124bb",
+  "idempotency_key": "c8cbc851821ff92797123acec7ad6b8b4b132e9181c6458ccfada8a6d76a041d",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-116.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Corona_Navidad_Papa_Noel_5555b8ce-4bf0-434d-a5ce-3d493b30fc17.png?v=1670006898",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-116",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Closed three-dimensional lime-green balloon ring with a snowman, black hat, white body, and red balloon decorations."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "A separate lime-green Link-O-Loon product is not clearly distinguishable from the round lime-green balloons.",
+      "The red printed pattern is not clearly legible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.lime_green",
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-116",
+    "caption": "eventdecor_style_v3, an organic balloon arch, installed against the rear wall, built from matte Fashion round latex balloons in black and white, high-shine Reflex lime green round latex balloons and translucent Crystal red round latex balloons with a printed pattern, set against white background; floor not visible.",
+    "palabras": 46,
+    "caracteres": 316,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:20:07.187Z"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000072-1",
+  "image_sha256": "3e7ca33dffcd1176608b892ec1c826b344837e6b7f176301e7a19ee06e33cd8d",
+  "idempotency_key": "80b79aec444287bc9c625eeeddd63416b651b5c2fd0f9783c953724315c4ebdb",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000072/foto-1.jpg",
+    "orden": "950000072"
+  },
+  "anotacion": {
+    "image_id": "950000072-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.amethyst",
+          "balloon.modeling.latex.silk.arctic_blue",
+          "balloon.modeling.latex.silk.cream_pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.silk.amethyst",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.cream_pearl",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small twisted modeling-balloon sculpture: an amethyst dome top, a cream pearl coiled base, and an arctic blue ring-and-knot accent in front, all built from the same slim modeling balloon size."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Studio product shot with no scene context, so placement (sobre_mesa_principal) is a guess rather than an observed setting.",
+      "Structure type is ambiguous between kit and accesorio since it is a small standalone twisted piece, not shown installed in a venue."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.cream_pearl"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000072-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, placed on the main table, built from satin Silk modeling latex balloons in amethyst, arctic blue and cream pearl, all at a single 2-inch size, set against plain white studio background, no floor or wall visible.",
+    "palabras": 41,
+    "caracteres": 262,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.cream_pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.silk.amethyst",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.cream_pearl",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:10.412Z",
+    "recompilado_en": "2026-09-03T14:45:23.975Z"
+  }
+}

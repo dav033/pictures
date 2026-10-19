@@ -1,0 +1,170 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000095-1",
+  "image_sha256": "1a26149e951bc764dfa3ec57f03a8811c8ebc33ba564d7941e2cfd7984ea84ee",
+  "idempotency_key": "897a933d25b85d467026120eba71e8a287b9ca3e189962d76d07cffe0e8e60a4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000095/foto-1.jpg",
+    "orden": "950000095"
+  },
+  "anotacion": {
+    "image_id": "950000095-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white brick wall and a green turf floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a full backdrop wall densely covered in a pink-and-red balloon check pattern with small accent balls at the joints"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a pearlescent champagne balloon garland spiraling around a decorated Christmas tree, topped with a looped ribbon-balloon bow"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a round green balloon wreath mounted on the wall with a pink ribbon-balloon bow accent"
+      }
+    ],
+    "non_purchased_elements": [
+      "a decorated Christmas tree",
+      "two pedestal stands",
+      "a gold plate",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "unsure if the small red accent balls at the wall pattern joints are the same red concept or a different unlisted size",
+      "the tree garland balloons look large in the photo but are annotated as R-5 per the confirmed order, not by visual size"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.champagne"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000095-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in pink and red, all at a single 5-inch size, an organic balloon garland, standing to one side, built from high-shine Reflex champagne round latex balloons, all at a single 5-inch size, with an organic balloon garland, installed against the rear wall, built from matte Fashion clover green round latex balloons, all at a single 9-inch size, alongside a decorated Christmas tree, two pedestal stands, a gold plate and a printed sign, set against white brick wall and a green turf floor.",
+    "palabras": 98,
+    "caracteres": 601,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.champagne"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:10:34.225Z",
+    "recompilado_en": "2026-09-03T14:45:24.224Z"
+  }
+}

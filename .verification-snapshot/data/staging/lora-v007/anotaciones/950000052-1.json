@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000052-1",
+  "image_sha256": "272445a0e0bed04c7fdb2e951621982a4697cff49dee5f525a8e07a6ce15db96",
+  "idempotency_key": "a5c95f07dd5dc3485f1591f6ae86da7c64dff5312634de72becaede98ccf462b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000052/foto-1.png",
+    "orden": "950000052"
+  },
+  "anotacion": {
+    "image_id": "950000052-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.spring_pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.spring_pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical spiral column topped with a pink balloon mosaic heart, decorated with flower clusters of chrome gold, dusty rose, pale pink, and spring pink balloons, plus a second smaller mosaic heart lower on the column"
+      }
+    ],
+    "non_purchased_elements": [
+      "a spiral pole stand"
+    ],
+    "uncertainties": [
+      "Distinguishing pink, dusty_rose, and spring_pink round balloons from each other in the flower clusters is difficult at this resolution",
+      "Whether the mosaic hearts use dusty_rose or pink R-5 specifically could not be fully confirmed"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000052-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 5-inch matte Fashion round latex balloons in dusty rose and pink and satin Silk gold round latex balloons, 9-inch Pastel Matte pastel pink round latex balloons and satin Silk spring pink round latex balloons, mixed organically rather than graded, alongside a spiral pole stand, set against white studio background.",
+    "palabras": 59,
+    "caracteres": 391,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.spring_pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:07:58.937Z",
+    "recompilado_en": "2026-09-03T14:45:23.760Z"
+  }
+}

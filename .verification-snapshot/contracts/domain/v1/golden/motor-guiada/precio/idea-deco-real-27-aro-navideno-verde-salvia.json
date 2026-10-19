@@ -1,0 +1,17 @@
+{
+ "caso": "idea-deco-real-27-aro-navideno-verde-salvia",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "08cfd3ab125c99081dc213b60ee8103fcf452dc224f0794f2cdbb02cb8434dd1",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
+ "faltantes": [],
+ "reserva": {
+  "objetivo": 0,
+  "cubierta": 0,
+  "sinCubrir": 0
+ },
+ "pedido": []
+}

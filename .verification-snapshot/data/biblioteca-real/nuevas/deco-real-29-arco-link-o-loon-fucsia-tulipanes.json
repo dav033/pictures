@@ -1,0 +1,134 @@
+{
+  "id": "deco-real-29-arco-link-o-loon-fucsia-tulipanes",
+  "titulo": "Arco de eslabones fucsia con ramo de tulipanes",
+  "tematica": "Fucsia con flores amarillas",
+  "eventos": [
+    "Cumpleaños",
+    "Día de la Madre",
+    "Baby shower"
+  ],
+  "edad": {
+    "min": 0,
+    "max": 60
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-29-arco-link-o-loon-fucsia-tulipanes.jpg",
+      "fuente": "sempertex-09.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "arco",
+      "cantidad": 1
+    },
+    {
+      "estructura": "bouquet",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594234614055",
+      "sku": "B2B-20000729",
+      "cantidad": 30,
+      "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "30 de bases (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-09.plan.json]"
+    },
+    {
+      "variantId": "46594172027175",
+      "sku": "B2B-20001068",
+      "cantidad": 11,
+      "nota": "B2b Globo Latex Link-O-Loon® Fashion Fucsia — LOL 12 / PAQUETE X 20 · LOL12 · fucsia",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 11 eslabones contados en la foto (5 por lado y 1 arriba; el último de la derecha queda detrás de los tulipanes)"
+    },
+    {
+      "variantId": "46594234384679",
+      "sku": "B2B-20000443",
+      "cantidad": 24,
+      "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 50 · R-5 · fucsia",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: 2 globitos en cada una de las 10 uniones y en los 2 extremos"
+    },
+    {
+      "variantId": "47466217046311",
+      "sku": "B2B-20017804",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Tubito Pastel Dusk Crema — T160 / PAQUETE X 50 · T160 · crema",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: unas 110 perlas de 1 pulgada a lo largo del arco, unas 30 por tubito"
+    },
+    {
+      "variantId": "46594251620647",
+      "sku": "B2B-20012273",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-5 / PAQUETE X 20 · R-5 · amarillo pastel",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: 4 tríos en la base izquierda (3 a la vista y 1 atrás)"
+    },
+    {
+      "variantId": "46594294317351",
+      "sku": "B2B-20001210",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Tubito Fashion Amarillo — T260 / PAQUETE X 20 · T260 · amarillo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 6 tulipanes contados en la foto, 1 globo para modelar por flor"
+    },
+    {
+      "variantId": "46594301690151",
+      "sku": "B2B-20014543",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Tubito Fashion Eucalipto — T260 / PAQUETE X 20 · T260 · verde eucalipto",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: 1 globo para modelar por tallo con sus hojas"
+    },
+    {
+      "variantId": "47466192535847",
+      "sku": "B2B-20018054",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Tubito Pastel Mate Amarillo — T260 / PAQUETE X 20 · T260 · amarillo pastel",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto: 1 globo para modelar para el moño"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Arma las dos bases: infla 30 globos fucsia de 12 pulgadas, átalos de cuatro en cuatro y apila tres o cuatro pisos sobre un peso en cada lado."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los 11 globos eslabón fucsia del mismo tamaño y únelos uno detrás de otro para formar la cadena del arco."
+    },
+    {
+      "orden": 3,
+      "texto": "Sujeta cada punta de la cadena a una base y dale forma de arco. En cada unión entre eslabones ata dos globos fucsia de 5 pulgadas, uno a cada lado."
+    },
+    {
+      "orden": 4,
+      "texto": "Infla los globos para modelar crema delgados, retuércelos en bolitas pequeñas como un collar de perlas y pásalo por todo el arco, de una base a la otra."
+    },
+    {
+      "orden": 5,
+      "texto": "Decora la base izquierda con grupitos de tres globos amarillo pastel de 5 pulgadas."
+    },
+    {
+      "orden": 6,
+      "texto": "Con los globos para modelar haz seis tulipanes amarillos con sus tallos y hojas en verde eucalipto; átalos en ramo con un moño amarillo pastel y apóyalo en la base derecha. Revisa que el arco quede firme y parejo antes de recibir a tus invitados."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#f76d95",
+    "#e94870",
+    "#f6e5c8",
+    "#848d58",
+    "#f6e20c"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

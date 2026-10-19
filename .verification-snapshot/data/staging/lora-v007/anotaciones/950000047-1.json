@@ -1,0 +1,136 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000047-1",
+  "image_sha256": "962e84e626e0e78160a6346524cc9d75d5622af7e7a19b0d11b5073e1d66ac11",
+  "idempotency_key": "d7d20d9c3eae639662002b55ed50338caeb315d389c4959e7c389f145e29667f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000047/foto-1.jpg",
+    "orden": "950000047"
+  },
+  "anotacion": {
+    "image_id": "950000047-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large organic balloon garland with mixed round balloon sizes."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "curtain.fringe.metallized_foil.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "curtain.fringe.metallized_foil.pink",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Flat pink metallized foil fringe curtain hanging behind the balloon garland."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "accesorio",
+        "count": 2,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.pink.printed_text"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.foil.pink.printed_text",
+            "size_code": "16 IN"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two matching pink heart-shaped printed-text foil balloons flank the garland."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The sizes of the round balloons are not confirmed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pink.printed_text",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "Kit Diy Guirnalda Sparkling Pink"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000047-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, a decorated backdrop, behind the organic balloon garland, built from metallized foil fringe curtains in pink, with two matching decorative accessorys, one at each end of the organic balloon garland, built from Metallic pink heart-shaped foil balloons with printed lettering, all at a single 16-inch size, set against white wall and no visible floor.",
+    "palabras": 64,
+    "caracteres": 431,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.pink.printed_text",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.foil.pink.printed_text",
+        "size_code": "16 IN",
+        "inches": 16
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:58:06.404Z",
+    "recompilado_en": "2026-09-03T14:45:23.686Z"
+  }
+}

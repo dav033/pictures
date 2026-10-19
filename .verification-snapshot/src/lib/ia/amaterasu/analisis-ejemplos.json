@@ -1,0 +1,3793 @@
+{
+ "parser_version": "semantic-layers-v13-box-2d",
+ "variante": "v16",
+ "ejemplos": [
+  {
+   "id": "ejemplo-01",
+   "sha256": "c234cf1d7ea2b24cb7f8108506d4df25979648201074534bed2273eef113ad37",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Arched Backdrop Wall",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Large light pink arched wall structure directly behind the table setup.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0.018,
+        "width": 0.901,
+        "height": 0.7969999999999999
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light pink"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% pale pink painted wooden arched wall backdrop with central arched alcove."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Primary structural backdrop panel with central arch detail.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Left Balloon Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "Dense balloon garland cascading down the left side of the arched backdrop.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0.028,
+        "width": 0.365,
+        "height": 0.855
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light pink",
+         "chrome silver",
+         "light blue",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex, foil",
+        "shape": "tall dense asymmetrical column, on the left, slight top overhang, standing on the floor, mirroring Right Balloon Garland",
+        "composition": "45% light pink round balloons, 35% metallic silver balloons, 15% light blue balloons, and 5% clear orb balloons framing the left side."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon arch section on left side.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Right Balloon Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "Dense balloon arch framing top-right and right column of the arched backdrop.",
+       "reference_bbox": {
+        "x": 0.537,
+        "y": 0,
+        "width": 0.32099999999999995,
+        "height": 0.882
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light pink",
+         "light blue",
+         "chrome silver",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex, foil",
+        "shape": "tall dense asymmetrical column, on the right, slight top overhang, standing on the floor, mirroring Left Balloon Garland",
+        "composition": "40% light pink balloons, 30% light blue balloons, 25% metallic silver balloons, and 5% clear orb balloons."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "repetition_group": "REF_01_E03",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon arch section on right side.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "White Pleated Background Curtain",
+       "category": "curtain",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "White pleated vertical curtain running behind the backdrop panel wall.",
+       "reference_bbox": {
+        "x": 0.698,
+        "y": 0.03,
+        "width": 0.20200000000000007,
+        "height": 0.7919999999999999
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% white pleated vertical fabric drape in background."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Background curtain drape.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "White Central Round Pedestal Table",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.97,
+       "visible_evidence": "Round white wooden pedestal table in the center holding cake and sweets.",
+       "reference_bbox": {
+        "x": 0.305,
+        "y": 0.602,
+        "width": 0.322,
+        "height": 0.28300000000000003
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white painted cylindrical wooden pedestal table."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main dessert table display surface.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "Medium Acrylic Plinth",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "Transparent acrylic cylindrical pedestal on the right foreground.",
+       "reference_bbox": {
+        "x": 0.54,
+        "y": 0.731,
+        "width": 0.11399999999999999,
+        "height": 0.269
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "acrylic",
+        "shape": "shape not determinable",
+        "composition": "100% clear transparent acrylic plinth cylinder."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Side display plinth for desserts.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E07",
+       "source_image_id": "REF_01",
+       "name": "Tall Acrylic Plinth",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "Tall clear acrylic pedestal on the right side of dessert table.",
+       "reference_bbox": {
+        "x": 0.658,
+        "y": 0.728,
+        "width": 0.124,
+        "height": 0.272
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "acrylic",
+        "shape": "shape not determinable",
+        "composition": "100% clear transparent acrylic tall plinth cylinder."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Side display plinth for florals and treats.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E08",
+       "source_image_id": "REF_01",
+       "name": "White Wrought Iron Chair",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Vintage wireframe white chair set to the left of the central display.",
+       "reference_bbox": {
+        "x": 0.121,
+        "y": 0.522,
+        "width": 0.21600000000000003,
+        "height": 0.471
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "metal",
+        "shape": "shape not determinable",
+        "composition": "100% white painted wrought iron ornamental armchair."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Decorative chair prop on left foreground.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E09",
+       "source_image_id": "REF_01",
+       "name": "Floor Floral Box Arrangement",
+       "category": "floral",
+       "scene_role": "midground",
+       "detection_confidence": 0.91,
+       "visible_evidence": "Pink wooden box filled with pink roses and green eucalyptus on floor below table.",
+       "reference_bbox": {
+        "x": 0.335,
+        "y": 0.729,
+        "width": 0.179,
+        "height": 0.264
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "green",
+         "pink",
+         "light pink"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fresh flowers, wood",
+        "shape": "shape not determinable",
+        "composition": "70% green foliage eucalyptus leaves, 30% bright pink flowers in a light pink box."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Floor floral arrangement in wooden box.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E10",
+       "source_image_id": "REF_01",
+       "name": "Birthday Cake with 29 Topper",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "Two-tone pink and white birthday cake in center of main table with '29' cake topper.",
+       "reference_bbox": {
+        "x": 0.432,
+        "y": 0.5,
+        "width": 0.07200000000000001,
+        "height": 0.08599999999999997
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "white",
+         "silver"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "edible",
+        "shape": "shape not determinable",
+        "composition": "80% pink and white frosted cylindrical cake with pink floral accents and silver '29' topper."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central birthday cake focal point.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Arched pink backdrop wall flanked by asymmetrical pink, silver, light blue, and clear balloons with central dessert table display.",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "light pink",
+       "chrome silver",
+       "white",
+       "light blue",
+       "green"
+      ],
+      "priority": [
+       "light pink",
+       "chrome silver",
+       "white",
+       "light blue",
+       "green"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-01",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 1200,
+        "height": 800
+       },
+       "processed": {
+        "width": 1200,
+        "height": 800
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-02",
+   "sha256": "284e51d07ffb84969bfc5b8fd1efe2fc52b81760abb8d7f03cac581527a06e0c",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "White backdrop drapes",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "White sheer fabric drapes hung continuously across the back wall.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 0.7
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "sheer fabric",
+        "shape": "shape not determinable",
+        "composition": "100% white sheer layered curtains covering the entire rear wall background."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Visible background curtain backdrop behind decoration.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Pink and beige backdrop panels",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Flat rectangular painted backdrop panels positioned behind the table.",
+       "reference_bbox": {
+        "x": 0.165,
+        "y": 0.153,
+        "width": 0.503,
+        "height": 0.617
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "dusty pink",
+         "light pink",
+         "beige"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood/MDF",
+        "shape": "shape not determinable",
+        "composition": "Multi-tone pink, dusty rose, and beige rectangular backdrop panels joined together."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central backdrop panels forming the core structure for the balloons and signage.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Beige arch backdrop panel",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Arch-shaped freestanding panel on the right side.",
+       "reference_bbox": {
+        "x": 0.668,
+        "y": 0.2,
+        "width": 0.252,
+        "height": 0.34
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "beige",
+         "off-white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood/MDF",
+        "shape": "shape not determinable",
+        "composition": "100% off-white arch backdrop panel standing on the right side."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Right-side arch backdrop panel framing the balloon garland.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Organic balloon garland setup",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Large continuous organic balloon garland spanning across top, left, and right sides of the backdrop panels.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0.02,
+        "width": 0.96,
+        "height": 0.86
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light pink",
+         "dusty rose",
+         "chrome gold",
+         "beige",
+         "sand"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical garland, spanning the full width, curving toward the right, standing on the floor",
+        "composition": "40% light pink balloons on left, 30% dusty rose on top and right, 15% chrome gold in center cluster and bottom right, 15% beige/sand balloons on right arch frame."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "guirnalda",
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E04",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon garland framing the entire backdrop display.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Gold Princess decal signage",
+       "category": "signage",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.9,
+       "visible_evidence": "Gold script decal vinyl signage on the main pink panel reading 'Princess'.",
+       "reference_bbox": {
+        "x": 0.506,
+        "y": 0.218,
+        "width": 0.10399999999999998,
+        "height": 0.05400000000000002
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "chrome gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "vinyl",
+        "shape": "shape not determinable",
+        "composition": "100% gold script decal spelling 'Princess'."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Custom event signage decal on the backdrop panel.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "Large ONE marquee table base",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Large white 3D block letters spelling 'ONE' supporting a clear dessert table surface.",
+       "reference_bbox": {
+        "x": 0.16,
+        "y": 0.615,
+        "width": 0.6549999999999999,
+        "height": 0.37
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood/MDF",
+        "shape": "shape not determinable",
+        "composition": "100% white 3D block letters O, N, E supporting a clear glass or acrylic tabletop."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Key statement table base spelling 'ONE' for first birthday theme.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Pink and gold balloon garland mounted over arch panels with large ONE marquee letters as a dessert table base.",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "dusty pink",
+       "light pink",
+       "chrome gold",
+       "beige",
+       "white"
+      ],
+      "priority": [
+       "dusty pink",
+       "light pink",
+       "chrome gold",
+       "beige",
+       "white"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-02",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 1200,
+        "height": 800
+       },
+       "processed": {
+        "width": 1200,
+        "height": 800
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-03",
+   "sha256": "62e9afccf19be69bb7810d0eead18e1a1e18a49a11a9daf751e34d847c7f12db",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Arched Backdrop Panel with 'Oh Baby' Sign",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.98,
+       "visible_evidence": "White arched fabric backdrop panel displaying a gold/wood \"Oh Baby\" sign attached to the top left area.",
+       "reference_bbox": {
+        "x": 0.076,
+        "y": 0.093,
+        "width": 0.5970000000000001,
+        "height": 0.788
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "matte white",
+         "natural wood"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric_and_wood",
+        "shape": "shape not determinable",
+        "composition": "100% smooth white fabric covered arched backdrop panel, featuring a wooden cut-out sign."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central backdrop element providing structure for the decor setup.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Gold and White Balloon Half-Arch Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Organic balloon garland composed of various sized metallic gold and white balloons attached around the top and right edge of the white backdrop arch.",
+       "reference_bbox": {
+        "x": 0.432,
+        "y": 0,
+        "width": 0.5429999999999999,
+        "height": 0.787
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "chrome gold",
+         "matte white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the right, slight top overhang, standing on the floor",
+        "composition": "50% white matte balloons mixed in organic clusters with 50% metallic chrome gold balloons cascading along the right side of the arched panel."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Primary balloon decoration framing the backdrop frame.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Custom Gender Reveal Pedestal Table",
+       "category": "furniture",
+       "scene_role": "foreground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "White rectangular pedestal cabinet featuring the text \"HENRY OU Liz?\" on the front panel.",
+       "reference_bbox": {
+        "x": 0.198,
+        "y": 0.577,
+        "width": 0.6219999999999999,
+        "height": 0.42300000000000004
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "matte white",
+         "gold",
+         "brown"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white painted wood display counter with printed gold/brown text 'HENRY OU Liz?' and small teddy bear graphics."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central focal furniture piece holding desserts and floral accents.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Large Plush Teddy Bear",
+       "category": "lighting",
+       "scene_role": "lighting",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Large light brown plush teddy bear resting at the right base of the display table.",
+       "reference_bbox": {
+        "x": 0.725,
+        "y": 0.771,
+        "width": 0.275,
+        "height": 0.22899999999999998
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light brown",
+         "dark red"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plush",
+        "shape": "shape not determinable",
+        "composition": "100% plush brown stuffed teddy bear with black eyes and red stitched detail."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Key thematic prop matching the baby theme.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Baby's Breath Floral Vase Arrangement",
+       "category": "floral",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "Glass vase containing white gypsophila (baby's breath) flowers, tied with a ribbon bow on the left side of the table top.",
+       "reference_bbox": {
+        "x": 0.122,
+        "y": 0.329,
+        "width": 0.272,
+        "height": 0.325
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "matte white",
+         "green",
+         "tan",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fresh_flowers_and_glass",
+        "shape": "shape not determinable",
+        "composition": "80% white baby's breath flowers arranged loosely in a clear glass vase wrapped with a 20% tan burlap ribbon bow."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Decorative floral accent on table surface.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "3-Tier Dessert Stand",
+       "category": "tableware",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Three-tiered clear dessert stand containing small dome-covered sweet treats placed in the center of the table top.",
+       "reference_bbox": {
+        "x": 0.391,
+        "y": 0.438,
+        "width": 0.18099999999999994,
+        "height": 0.185
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "metallic silver",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "metal_and_acrylic",
+        "shape": "shape not determinable",
+        "composition": "100% 3-tier clear glass/acrylic and silver metallic dessert stand holding packaged treats."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Functional and decorative dessert server on table.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "White arch backdrop with gold 'Oh Baby' sign and organic balloon garland framing the right edge, set behind a dessert pedestal table.",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "matte white",
+       "chrome gold",
+       "light brown",
+       "natural wood"
+      ],
+      "priority": [
+       "matte white",
+       "chrome gold",
+       "light brown",
+       "natural wood"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-03",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 800,
+        "height": 1200
+       },
+       "processed": {
+        "width": 800,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-04",
+   "sha256": "637f326c1dee57bbbc58314d3b710e9dd4f34f7f7914dda671509dc087e25a8a",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Gold balloon column",
+       "category": "balloon_structure",
+       "scene_role": "foreground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Tall organic column of metallic reflective gold balloons standing on the floor on the left side of the scene.",
+       "reference_bbox": {
+        "x": 0.036,
+        "y": 0.201,
+        "width": 0.522,
+        "height": 0.665
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "chrome gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "chrome latex",
+        "shape": "tall dense asymmetrical column, on the left, no top overhang, standing on the floor",
+        "composition": "100% metallic chrome gold balloons ranging from large spherical orb balloons to small clustered accents stacked vertically."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E01",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Primary balloon feature in the composition.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Greenery hedge backdrop wall",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Dense green artificial leaf foliage backdrop wall behind the tables and adjacent to the balloon column.",
+       "reference_bbox": {
+        "x": 0.442,
+        "y": 0.28,
+        "width": 0.558,
+        "height": 0.574
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "green",
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "faux greenery",
+        "shape": "shape not determinable",
+        "composition": "100% green foliage panel with mixed faux leaves and small white flowers."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main backdrop panel providing texture and background.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Wooden cocktail table",
+       "category": "furniture",
+       "scene_role": "foreground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Tall wooden slatted cocktail high-top table in front of the greenery wall.",
+       "reference_bbox": {
+        "x": 0.551,
+        "y": 0.61,
+        "width": 0.367,
+        "height": 0.30300000000000005
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "warm wood"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% natural wood tall cocktail table with slatted pedestal base."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Key foreground furniture element defining the venue setup.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Second wooden cocktail table",
+       "category": "furniture",
+       "scene_role": "foreground",
+       "detection_confidence": 0.88,
+       "visible_evidence": "Partial view of a second wooden cocktail table on the right side.",
+       "reference_bbox": {
+        "x": 0.858,
+        "y": 0.648,
+        "width": 0.14200000000000002,
+        "height": 0.273
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "warm wood"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% natural wood tall cocktail table base visible on the right edge."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Supporting furniture element framing the right edge.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Floor floral cluster",
+       "category": "floral",
+       "scene_role": "foreground",
+       "detection_confidence": 0.85,
+       "visible_evidence": "Small floral and foliage arrangement set on the floor at the base of the wooden table.",
+       "reference_bbox": {
+        "x": 0.413,
+        "y": 0.798,
+        "width": 0.26000000000000006,
+        "height": 0.125
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "green",
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fresh/faux foliage and floral",
+        "shape": "shape not determinable",
+        "composition": "80% green leafy stems with 20% small white rose blossoms arranged around the table base."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Decorative floor floral accent accentuating the furniture base.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Tall metallic gold balloon column standing next to greenery wall and wooden cocktail tables",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "chrome gold",
+       "green",
+       "warm wood",
+       "white"
+      ],
+      "priority": [
+       "chrome gold",
+       "green",
+       "warm wood",
+       "white"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-04",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 800,
+        "height": 1200
+       },
+       "processed": {
+        "width": 800,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-05",
+   "sha256": "3bfdc51169e8fca1636b550242ee89a70728d0177431342dcb5745db02f94014",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Pink Arched Backdrop Panel",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Pink arched backdrop behind the cake and balloon garland.",
+       "reference_bbox": {
+        "x": 0.321,
+        "y": 0.364,
+        "width": 0.296,
+        "height": 0.406
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% solid pink arch panel standing in the center background."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central background structural piece.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Organic Balloon Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.97,
+       "visible_evidence": "Organic balloon garland cascading down the right side of the arch panel.",
+       "reference_bbox": {
+        "x": 0.431,
+        "y": 0.227,
+        "width": 0.34900000000000003,
+        "height": 0.493
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "coral orange",
+         "chrome silver",
+         "soft pink",
+         "matte white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the right, slight top overhang, standing on the floor",
+        "composition": "50% coral orange balloons along top and bottom, 25% metallic silver accent balloons sprinkled throughout, 15% pink balloons in mid-section, 10% white balloons near middle right."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Primary balloon garland framing backdrop.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Tall White Fluted Plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "Tall ribbed cylindrical pedestal holding the main birthday cake.",
+       "reference_bbox": {
+        "x": 0.379,
+        "y": 0.638,
+        "width": 0.21799999999999997,
+        "height": 0.259
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "light gray"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plaster",
+        "shape": "shape not determinable",
+        "composition": "100% fluted white ribbed cylindrical plinth holding the cake."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main cake pedestal.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Medium Fluted Plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "Shorter ribbed cylindrical pedestal on the right holding treats.",
+       "reference_bbox": {
+        "x": 0.584,
+        "y": 0.715,
+        "width": 0.241,
+        "height": 0.14300000000000002
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "light gray"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plaster",
+        "shape": "shape not determinable",
+        "composition": "100% fluted light gray/white ribbed cylindrical plinth."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Secondary dessert display stand.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Neon Number 20 Light",
+       "category": "lighting",
+       "scene_role": "lighting",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Large glowing white neon '20' sitting on the floor in front of the lower plinth.",
+       "reference_bbox": {
+        "x": 0.549,
+        "y": 0.772,
+        "width": 0.2849999999999999,
+        "height": 0.17199999999999993
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "glowing white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "neon",
+        "shape": "shape not determinable",
+        "composition": "100% white neon flex forming the digits '20'."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Key milestone age neon light feature.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "Happy Birthday Script Sign",
+       "category": "signage",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "White cursive \"Happy Birthday\" sign mounted on the pink backdrop.",
+       "reference_bbox": {
+        "x": 0.367,
+        "y": 0.372,
+        "width": 0.16300000000000003,
+        "height": 0.08800000000000002
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "acrylic",
+        "shape": "shape not determinable",
+        "composition": "100% white cursive script neon style lettering."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Backdrop birthday greeting text.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E07",
+       "source_image_id": "REF_01",
+       "name": "White and Peach Floral Arrangement",
+       "category": "floral",
+       "scene_role": "midground",
+       "detection_confidence": 0.91,
+       "visible_evidence": "Flower arrangement in orange vase sitting on transparent riser on the left.",
+       "reference_bbox": {
+        "x": 0.156,
+        "y": 0.653,
+        "width": 0.17400000000000002,
+        "height": 0.10899999999999999
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "peach orange",
+         "green"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fresh floral",
+        "shape": "shape not determinable",
+        "composition": "80% white roses and greenery, 20% peach orange roses in a orange vase."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Table side floral accent arrangement.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E08",
+       "source_image_id": "REF_01",
+       "name": "White Faux Fur Rug",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "White faux fur rug underneath the plinths on the floor.",
+       "reference_bbox": {
+        "x": 0.168,
+        "y": 0.815,
+        "width": 0.6749999999999999,
+        "height": 0.14300000000000002
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% white faux fur shag rug under the plinths."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Floor grounding texture element.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Pink arched backdrop with balloon garland framing the right side and cake plinth setup",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "pink",
+       "coral orange",
+       "white",
+       "chrome silver",
+       "natural wood"
+      ],
+      "priority": [
+       "pink",
+       "coral orange",
+       "white",
+       "chrome silver",
+       "natural wood"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-05",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 800,
+        "height": 1200
+       },
+       "processed": {
+        "width": 800,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-06",
+   "sha256": "6c2dc0e0a86222df08b8cc2cc02bf27c34086e80da6a3c4ecd9c0113986aa079",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Left Balloon Arch Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Dense organic garland composed of pink and blue latex balloons arching around the left arch panel.",
+       "reference_bbox": {
+        "x": 0.148,
+        "y": 0.653,
+        "width": 0.44599999999999995,
+        "height": 0.28200000000000003
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "light blue",
+         "blue"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the left, slight top overhang, standing on the floor, mirroring Right Balloon Arch Garland",
+        "composition": "50% pink round balloons and 50% light/medium blue round balloons clustered together over the left backdrop panel."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E01",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon arch garland framing the left side of the backdrop.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Right Balloon Arch Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Dense organic balloon garland composed of pink and blue balloons running down the right side.",
+       "reference_bbox": {
+        "x": 0.61,
+        "y": 0.696,
+        "width": 0.20499999999999996,
+        "height": 0.2390000000000001
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "light blue",
+         "blue"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the right, slight top overhang, standing on the floor, mirroring Left Balloon Arch Garland",
+        "composition": "50% bright pink round balloons and 50% light blue round balloons clustered together along the right backdrop panel."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon garland framing the right side of the backdrop.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Gender Reveal Arch Backdrop Panels",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Three arched panels in pink, lavender/purple, and dark blue with text 'Boy or Girl'.",
+       "reference_bbox": {
+        "x": 0.281,
+        "y": 0.736,
+        "width": 0.486,
+        "height": 0.19700000000000006
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 3,
+        "max": 3
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "purple",
+         "blue"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% arched wooden or MDF panels painted in pink, purple, and blue sections with 'Boy or Girl' text."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central backdrop panels for gender reveal setup.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Sequin Table Cover",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "A small pedestal/table covered with shimmering pink and teal sequin cloth.",
+       "reference_bbox": {
+        "x": 0.424,
+        "y": 0.85,
+        "width": 0.15899999999999997,
+        "height": 0.10699999999999998
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "teal",
+         "cyan"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "sequin fabric",
+        "shape": "shape not determinable",
+        "composition": "100% shiny sequined tablecloth split equally into pink and teal bright sequins."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central small table/pedestal covered in sequins.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Left Fluted Plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.9,
+       "visible_evidence": "White fluted cylindrical pedestal standing on the floor on the left side of table.",
+       "reference_bbox": {
+        "x": 0.34,
+        "y": 0.828,
+        "width": 0.05199999999999999,
+        "height": 0.1090000000000001
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "cardboard",
+        "shape": "shape not determinable",
+        "composition": "100% white fluted/ribbed cylindrical pedestal plinth."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Left side fluted plinth for displaying decor.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "Right Fluted Plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.9,
+       "visible_evidence": "White fluted cylindrical pedestal standing on the floor on the right side of table.",
+       "reference_bbox": {
+        "x": 0.601,
+        "y": 0.828,
+        "width": 0.052000000000000046,
+        "height": 0.1070000000000001
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "cardboard",
+        "shape": "shape not determinable",
+        "composition": "100% white fluted/ribbed cylindrical pedestal plinth."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Right side fluted plinth for displaying decor.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E07",
+       "source_image_id": "REF_01",
+       "name": "Baby Box Prop B",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Square transparent box with pink border containing small balloons and letter B.",
+       "reference_bbox": {
+        "x": 0.248,
+        "y": 0.922,
+        "width": 0.065,
+        "height": 0.04699999999999993
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blue",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plastic",
+        "shape": "shape not determinable",
+        "composition": "Clear transparent box framed in pink with pink and blue balloons inside."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Baby box prop on the ground.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E08",
+       "source_image_id": "REF_01",
+       "name": "Baby Box Prop A",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Square transparent box with pink border containing small balloons and letter A.",
+       "reference_bbox": {
+        "x": 0.395,
+        "y": 0.922,
+        "width": 0.063,
+        "height": 0.04699999999999993
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blue",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plastic",
+        "shape": "shape not determinable",
+        "composition": "Clear transparent box framed in pink with pink and blue balloons inside."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Baby box prop on the ground.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E09",
+       "source_image_id": "REF_01",
+       "name": "Baby Box Prop B Right",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Square transparent box with pink border containing small balloons and letter B.",
+       "reference_bbox": {
+        "x": 0.591,
+        "y": 0.921,
+        "width": 0.06700000000000006,
+        "height": 0.04699999999999993
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blue",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plastic",
+        "shape": "shape not determinable",
+        "composition": "Clear transparent box framed in pink with pink and blue balloons inside."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Baby box prop on the ground.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E10",
+       "source_image_id": "REF_01",
+       "name": "Baby Box Prop Y",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Square transparent box with pink border containing small balloons and letter Y.",
+       "reference_bbox": {
+        "x": 0.742,
+        "y": 0.92,
+        "width": 0.07099999999999995,
+        "height": 0.04499999999999993
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blue",
+         "clear"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "plastic",
+        "shape": "shape not determinable",
+        "composition": "Clear transparent box framed in pink with pink and blue balloons inside."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Baby box prop on the ground.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Gender reveal backdrop setup with blue and pink arch garlands framing arch panels",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "pink",
+       "light blue",
+       "purple",
+       "white",
+       "teal"
+      ],
+      "priority": [
+       "pink",
+       "light blue",
+       "purple",
+       "white",
+       "teal"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-06",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 800,
+        "height": 1200
+       },
+       "processed": {
+        "width": 800,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-07",
+   "sha256": "a6fe2be2b3a00bbbd9f2d1410d4571bbd01c99b53d152f4df656533ff7db4e60",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Balloon Arch Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Large dense organic balloon arch framing the top and sides of the backdrop setup.",
+       "reference_bbox": {
+        "x": 0.207,
+        "y": 0,
+        "width": 0.79,
+        "height": 0.816
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "burgundy",
+         "metallic silver",
+         "matte white",
+         "dusty rose"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex and foil",
+        "shape": "tall dense asymmetrical arch, spanning the full width, standing on the floor",
+        "composition": "40% burgundy/maroon matte round balloons, 30% silver metallic round balloons, 20% white matte round balloons, and 10% silver star foils distributed continuously across the top and sides."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "arco",
+        "placement": "arco_central",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E01",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main structural balloon garland framing the entire display.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "White Sheer Backdrop Curtain with Lights",
+       "category": "curtain",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Sheer white curtain draped vertically behind the table with fairy light strings embedded/behind it.",
+       "reference_bbox": {
+        "x": 0.312,
+        "y": 0.204,
+        "width": 0.558,
+        "height": 0.6000000000000001
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% sheer white fabric backdrop with integrated fairylights hanging vertically behind the dessert table."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Backdrop curtain providing visual background.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "White Dessert Table",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Rectangular white wooden table holding sweets, cakes, and decor.",
+       "reference_bbox": {
+        "x": 0.297,
+        "y": 0.566,
+        "width": 0.48900000000000005,
+        "height": 0.2430000000000001
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white wooden dessert table with turned legs."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main dessert display table.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Clear Confetti Bubble Balloon",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Clear transparent bubble balloon in foreground filled with shiny silver confetti.",
+       "reference_bbox": {
+        "x": 0.442,
+        "y": 0.518,
+        "width": 0.20900000000000002,
+        "height": 0.40900000000000003
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "clear",
+         "chrome silver"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "medium bouquet, on the center, raised off the floor",
+        "composition": "100% clear latex sphere balloon filled with silver glitter confetti and silver foil streamers attached."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "kit",
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "repetition_group": "REF_01_E04",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Foreground clear confetti orb balloon centerpiece.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "Princess Leia Standee Prop",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.9,
+       "visible_evidence": "Floor-standing cartoon Princess Leia character cutout on the right side.",
+       "reference_bbox": {
+        "x": 0.69,
+        "y": 0.665,
+        "width": 0.08900000000000008,
+        "height": 0.2759999999999999
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "brown"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "cardboard",
+        "shape": "shape not determinable",
+        "composition": "100% printed cardboard cutout of Princess Leia character in white robe."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Theme character cutout prop standing on the floor.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "Princess Leia Wall Cutout",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Character wall art mounted high center on the backdrop.",
+       "reference_bbox": {
+        "x": 0.53,
+        "y": 0.234,
+        "width": 0.124,
+        "height": 0.23899999999999996
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "brown"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "cardboard",
+        "shape": "shape not determinable",
+        "composition": "100% printed decorative cutout of Princess Leia mounted on backdrop wall."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Wall decor prop centered on backdrop.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E07",
+       "source_image_id": "REF_01",
+       "name": "Rose Gold Number 1 Foil Balloon",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Rose gold foil balloon in the shape of number 1 on the left side.",
+       "reference_bbox": {
+        "x": 0.229,
+        "y": 0.385,
+        "width": 0.07299999999999998,
+        "height": 0.19899999999999995
+       },
+       "depth_layer": 2,
+       "include_policy": "exclude",
+       "approved": false,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "metallic rose gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "foil",
+        "shape": "medium dense asymmetrical sculpture, on the left, raised off the floor",
+        "composition": "100% rose gold foil number '1' balloon."
+       },
+       "relationships": [
+        {
+         "type": "overlaps",
+         "target_element_id": "REF_01_E01"
+        }
+       ],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [
+        "Attached to REF_01_E01; quoted as part of that structure."
+       ],
+       "model_decision": {
+        "action": "omit",
+        "match_type": "none",
+        "reason": "Age milestone number balloon.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Organic balloon arch framing a white curtain backdrop with Princess Leia themed dessert table",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "burgundy",
+       "metallic silver",
+       "white",
+       "rose gold"
+      ],
+      "priority": [
+       "burgundy",
+       "metallic silver",
+       "white",
+       "rose gold"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-07",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 1200,
+        "height": 800
+       },
+       "processed": {
+        "width": 1200,
+        "height": 800
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-08",
+   "sha256": "f4d062d4d963e80482594d68037a171647e5606304fde4fe5324d341ac7aaa1d",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "floral architectural printed backdrop",
+       "category": "backdrop",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Large wall backdrop printed with pink classic garden architecture and florals",
+       "reference_bbox": {
+        "x": 0.185,
+        "y": 0.137,
+        "width": 0.554,
+        "height": 0.44499999999999995
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blush pink",
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% pink printed fabric architectural garden design with classic columns and floral motifs"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Printed floral architecture wall backdrop defining the rear boundary",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "left pink balloon column",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Tall organic balloon tower standing on the floor on the left side",
+       "reference_bbox": {
+        "x": 0.027,
+        "y": 0.047,
+        "width": 0.168,
+        "height": 0.577
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blush pink",
+         "chrome gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the left, no top overhang, standing on the floor, mirroring right pink balloon column",
+        "composition": "85% matte pink round balloons forming the organic tower structure, punctuated by 15% chrome gold metallic balloon accents distributed throughout"
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Tall left balloon column framing the main setup",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "right pink balloon column",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "Tall organic balloon tower standing on the floor on the right side",
+       "reference_bbox": {
+        "x": 0.732,
+        "y": 0.105,
+        "width": 0.135,
+        "height": 0.532
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pink",
+         "blush pink",
+         "chrome gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the right, no top overhang, standing on the floor, mirroring left pink balloon column",
+        "composition": "85% matte pink round balloons forming the organic tower structure with 15% chrome gold metallic balloon accents throughout"
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "repetition_group": "REF_01_E03",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Tall right balloon column framing the main setup",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "number 1 marquee mosaic frame",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Standing white mosaic frame in shape of number 1 filled with pink and gold balloons",
+       "reference_bbox": {
+        "x": 0.64,
+        "y": 0.367,
+        "width": 0.09099999999999997,
+        "height": 0.22199999999999998
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "pink",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood/acrylic",
+        "shape": "shape not determinable",
+        "composition": "90% white illuminated marquee number frame filled with 10% pink and gold small organic balloons"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Large number 1 marquee prop with balloons inside",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E05",
+       "source_image_id": "REF_01",
+       "name": "center cylindrical cake plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "White round plinth cylinder in center with gold butterflies holding cake",
+       "reference_bbox": {
+        "x": 0.422,
+        "y": 0.472,
+        "width": 0.08800000000000002,
+        "height": 0.15200000000000002
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white cylindrical pedestal decorated with applied gold butterfly decals"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Central cake pedestal plinth",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E06",
+       "source_image_id": "REF_01",
+       "name": "left tall cylindrical plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.9,
+       "visible_evidence": "Tall white cylindrical plinth on the left side of dessert area",
+       "reference_bbox": {
+        "x": 0.225,
+        "y": 0.435,
+        "width": 0.05699999999999997,
+        "height": 0.15099999999999997
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white cylindrical plinth pedestal"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Left pedestal plinth",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E07",
+       "source_image_id": "REF_01",
+       "name": "left short cylindrical plinth",
+       "category": "other",
+       "scene_role": "midground",
+       "detection_confidence": 0.9,
+       "visible_evidence": "Short white cylindrical plinth with gold butterflies",
+       "reference_bbox": {
+        "x": 0.26,
+        "y": 0.496,
+        "width": 0.05299999999999999,
+        "height": 0.09699999999999998
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "wood",
+        "shape": "shape not determinable",
+        "composition": "100% white cylindrical plinth pedestal decorated with gold butterfly decals"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Left short pedestal plinth",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E08",
+       "source_image_id": "REF_01",
+       "name": "main dessert table with tulle skirt",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Long table draped in fluffy white tulle with gold butterflies in background",
+       "reference_bbox": {
+        "x": 0.284,
+        "y": 0.462,
+        "width": 0.36400000000000005,
+        "height": 0.12099999999999994
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "tulle/fabric",
+        "shape": "shape not determinable",
+        "composition": "100% white gathered tulle table skirt adorned with scattered gold butterfly cutouts"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main dessert buffet table with tulle skirt",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E09",
+       "source_image_id": "REF_01",
+       "name": "foreground guest round table",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Round dining table in foreground draped in pleated blush pink tablecloth with table settings",
+       "reference_bbox": {
+        "x": 0.402,
+        "y": 0.602,
+        "width": 0.35,
+        "height": 0.393
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "blush pink",
+         "pink",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% blush pink pleated fabric tablecloth topped with formal place settings and center mirror vase"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Foreground guest dining table setup",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E10",
+       "source_image_id": "REF_01",
+       "name": "wavy ceiling fabric drapes",
+       "category": "curtain",
+       "scene_role": "backdrop",
+       "detection_confidence": 0.88,
+       "visible_evidence": "White undulating fabric strip ceiling drapes across top of room",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 0.23
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "white",
+         "off-white"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "100% white suspended fabric ceiling waves covering the ceiling overhead"
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Decorative wavy fabric ceiling drape installation",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Pink and gold floral theme with balloon columns flanking a decorated dessert table backdrop",
+      "density": "dense",
+      "symmetry": "symmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "pink",
+       "blush pink",
+       "white",
+       "chrome gold"
+      ],
+      "priority": [
+       "pink",
+       "blush pink",
+       "white",
+       "chrome gold"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-08",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 1200,
+        "height": 800
+       },
+       "processed": {
+        "width": 1200,
+        "height": 800
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-09",
+   "sha256": "852fc949499bacf8d61b28720f883e62083fbece3ff40408d2235cab77d8daff",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "Left Organic Balloon Column",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.95,
+       "visible_evidence": "Tall dense balloon column structure with mixed pastel and chrome gold balloons and monster eye stickers on left side.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 0.53,
+        "height": 1
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "pastel green",
+         "peach",
+         "chrome gold",
+         "light blue"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical column, on the left, no top overhang, standing on the floor",
+        "composition": "40% pastel green round balloons, 30% peach round balloons, 15% metallic gold round balloons, 15% light blue round balloons arranged in a tall vertical organic column with monster eyes cutouts attached."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "columna",
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E01",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Primary vertical organic balloon decor on left.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E02",
+       "source_image_id": "REF_01",
+       "name": "Hoop Balloon Garland",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.92,
+       "visible_evidence": "Circular hoop frame decorated with pastel balloons and fringe tassels on the right.",
+       "reference_bbox": {
+        "x": 0.46,
+        "y": 0,
+        "width": 0.54,
+        "height": 0.473
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "light blue",
+         "peach",
+         "pastel green",
+         "chrome gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "medium asymmetrical circular hoop, on the right, raised off the floor",
+        "composition": "50% light blue round balloons, 30% peach round balloons, 20% pastel green round balloons clustered around a circular hoop frame with tassels attached."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "arco",
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "repetition_group": "REF_01_E02",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Hoop balloon decor on upper right.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E03",
+       "source_image_id": "REF_01",
+       "name": "Gold Foil Number 2 Sign",
+       "category": "signage",
+       "scene_role": "midground",
+       "detection_confidence": 0.96,
+       "visible_evidence": "Gold textured wrapped foil number 2 suspended on the wall between balloon structures.",
+       "reference_bbox": {
+        "x": 0.38,
+        "y": 0,
+        "width": 0.14100000000000001,
+        "height": 0.188
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "metallic gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "foil",
+        "shape": "shape not determinable",
+        "composition": "100% gold foil wrapped number 2 shape hanging on wall."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Focal birthday age number sign on backdrop.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      },
+      {
+       "element_id": "REF_01_E04",
+       "source_image_id": "REF_01",
+       "name": "Decorated Dessert Table",
+       "category": "furniture",
+       "scene_role": "midground",
+       "detection_confidence": 0.94,
+       "visible_evidence": "Small table draped with mint star fabric tablecloth and blue/white/gold tassels around the bottom edge.",
+       "reference_bbox": {
+        "x": 0.446,
+        "y": 0.473,
+        "width": 0.526,
+        "height": 0.522
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "mint green",
+         "blue",
+         "white",
+         "gold"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "fabric",
+        "shape": "shape not determinable",
+        "composition": "Mint green star-pattern tablecloth over small rectangular table adorned with fringe tassel garland around table skirt."
+       },
+       "relationships": [],
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Treat table with decorative tablecloth and tassel garland.",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "Left organic balloon column garland with monster eyes, gold number 2 and hoop garland frame with tassels",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "pastel green",
+       "peach",
+       "light blue",
+       "chrome gold",
+       "mint green"
+      ],
+      "priority": [
+       "pastel green",
+       "peach",
+       "light blue",
+       "chrome gold",
+       "mint green"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-09",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 900,
+        "height": 1200
+       },
+       "processed": {
+        "width": 900,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "ejemplo-10",
+   "sha256": "bc503cfa122bc73c8fad031293cc3a630730331c84fe42d39033e1e1989ac4e3",
+   "resultado": {
+    "blueprint": {
+     "schema_version": "2.0",
+     "source_images": [
+      {
+       "image_id": "REF_01",
+       "approved_roles": [
+        "composition_reference",
+        "element_reference",
+        "palette_reference"
+       ]
+      }
+     ],
+     "elements": [
+      {
+       "element_id": "REF_01_E01",
+       "source_image_id": "REF_01",
+       "name": "balloon ceiling installation with ribbons",
+       "category": "balloon_structure",
+       "scene_role": "midground",
+       "detection_confidence": 0.98,
+       "visible_evidence": "A large, dense ceiling/hanging installation of round balloons in shades of yellow, orange, peach, and teal, with long trailing vertical ribbons hanging down.",
+       "reference_bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+       },
+       "depth_layer": 2,
+       "include_policy": "include",
+       "approved": true,
+       "source_type": "reference_only",
+       "quantity": {
+        "mode": "exact",
+        "min": 1,
+        "max": 1
+       },
+       "appearance": {
+        "observed_colors": [
+         "yellow",
+         "orange",
+         "peach",
+         "teal green",
+         "clear orange"
+        ],
+        "resolved_colors": [],
+        "color_policy": "adapt_to_event_palette",
+        "material": "latex",
+        "shape": "tall dense asymmetrical ceiling installation, spanning the full width, raised off the floor",
+        "composition": "45% yellow, 35% orange, 10% peach/pastel pink, and 10% teal green balloons tightly clustered with trailing orange ribbons."
+       },
+       "relationships": [],
+       "visual_semantics": {
+        "structure_type": "guirnalda",
+        "placement": "techo",
+        "design_role": "focal",
+        "repetition_group": "REF_01_E01",
+        "density": "lujosa"
+       },
+       "quantity_semantics": "physical_instances",
+       "uncertainties": [],
+       "model_decision": {
+        "action": "include",
+        "match_type": "none",
+        "reason": "Main balloon ceiling installation with ribbons",
+        "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+       }
+      }
+     ],
+     "composition": {
+      "focal_point": "large central clear orange balloon surrounding colorful balloon ceiling/hanging installation with trailing ribbons",
+      "density": "dense",
+      "symmetry": "asymmetric",
+      "negative_space": [
+       "areas not occupied by approved elements"
+      ]
+     },
+     "palette": {
+      "observed": [
+       "yellow",
+       "orange",
+       "peach",
+       "teal green"
+      ],
+      "priority": [
+       "yellow",
+       "orange",
+       "peach",
+       "teal green"
+      ]
+     },
+     "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+     "passes": [
+      "inventory"
+     ],
+     "cached": false,
+     "cache_key": "analisis-fijo:ejemplo-10",
+     "system_prompt_hash": "e119092d54cba2ecae62fe39c277f7352ddf57102a58262ff7da957cf166fe34",
+     "requires_review": false,
+     "unresolved_count": 0,
+     "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+     "image_dimensions": [
+      {
+       "image_id": "REF_01",
+       "original": {
+        "width": 800,
+        "height": 1200
+       },
+       "processed": {
+        "width": 800,
+        "height": 1200
+       }
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

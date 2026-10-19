@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-092",
+  "image_sha256": "b3da66fbba9407f272af9c353c823ebd5b32ec32e18a5a0c23e90c06333a79d1",
+  "idempotency_key": "4ba6bbe26ba77b4e060aebfffa3418e25fdb8868916719588489c7764f72504e",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-092.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Happy_Halloween.png?v=1665529133",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-092",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and a light floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense black-and-grey balloon wall forms the main backdrop."
+      },
+      {
+        "structure_id": "structure_2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure_1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Matching balloon bouquets flank the backdrop on both sides."
+      },
+      {
+        "structure_id": "structure_3",
+        "structure_type": "guirnalda",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure_1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Low organic balloon garlands frame the backdrop along the floor."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed sign",
+      "Halloween balloon figures",
+      "wrapped gift boxes"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-092",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in black and grey, two matching balloon bouquets, one at each end of the balloon wall, built from matte Fashion black round latex balloons and Pastel Matte round latex balloons in green and yellow, two matching organic balloon garlands, one at each end of the balloon wall, built from Pastel Matte round latex balloons in green and yellow, alongside a printed sign, Halloween balloon figures and wrapped gift boxes, set against off-white brick wall and a light floor.",
+    "palabras": 94,
+    "caracteres": 583,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:25:30.339Z"
+  }
+}

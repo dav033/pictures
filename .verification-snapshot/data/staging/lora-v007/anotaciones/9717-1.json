@@ -1,0 +1,89 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9717-1",
+  "image_sha256": "3f2994ff4ed4eea9eb351ef79a0ec37b9500fa8e6bc2af69b1e1e0396a5ae5cb",
+  "idempotency_key": "7116e2ecef7ce485d2fe6daad48b7ebbf5154dd40fc952bbcfc64fa72081df38",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9717/foto-1.jpg",
+    "orden": "9717"
+  },
+  "anotacion": {
+    "image_id": "9717-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a brown brick wall and no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "banner.pennant_garland.metallized_foil.printed_halloween_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "banner.pennant_garland.metallized_foil.printed_halloween_lettering",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Banderines metalizados colgados en una línea sobre la pared."
+      }
+    ],
+    "non_purchased_elements": [
+      "a haunted house cutout",
+      "paper bats"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "banner.pennant_garland.metallized_foil.printed_halloween_lettering"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "DECORACION IMPRESA HALLOWEEN CASTILLO"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "9717-1",
+    "caption": "eventdecor_style_v3, a decorative accessory, installed against the rear wall, built from metallized foil pennant garlands with printed Halloween lettering, alongside a haunted house cutout and paper bats, set against a brown brick wall and no floor visible.",
+    "palabras": 37,
+    "caracteres": 257,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "banner.pennant_garland.metallized_foil.printed_halloween_lettering"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:26:38.091Z",
+    "recompilado_en": "2026-09-03T14:45:25.344Z"
+  }
+}

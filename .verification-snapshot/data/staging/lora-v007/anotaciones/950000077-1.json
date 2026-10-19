@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000077-1",
+  "image_sha256": "5112fdb7113715d5903a644b003f0a221577affd0e47d614550c44377c534873",
+  "idempotency_key": "931470e6a1a3444694cb79b0a789f97d3c349b32ba41b7521a85fb7a963866d4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000077/foto-1.jpg",
+    "orden": "950000077"
+  },
+  "anotacion": {
+    "image_id": "950000077-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a white wall and no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.imperial_red",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Columna vertical de globos redondos en tonos crema, rosa, coral y rojos."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "No se ve el piso ni la base de la columna."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000077-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 9-inch matte Fashion round latex balloons in coral and imperial red, muted Pastel Dusk cream round latex balloons and Pastel Matte pastel pink round latex balloons, 5-inch matte Fashion red round latex balloons, mixed organically rather than graded, set against a white wall and no visible floor.",
+    "palabras": 57,
+    "caracteres": 373,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:01:48.899Z",
+    "recompilado_en": "2026-09-03T14:45:24.048Z"
+  }
+}

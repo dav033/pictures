@@ -1,0 +1,54 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9722-1",
+  "image_sha256": "5c99c6c08e9e6e4b7235d67e4789e41216501993372087ea1b6c7accaa315beb",
+  "idempotency_key": "ea14d5617d95b3bc96a6b4864167bff7903551787568ceb048387f088cd2de33",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9722/foto-1.jpg",
+    "orden": "9722"
+  },
+  "anotacion": {
+    "image_id": "9722-1",
+    "usable": false,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "lush greenery and a wooden deck with light tiled flooring",
+      "symmetry": "asymmetric"
+    },
+    "structures": [],
+    "non_purchased_elements": [
+      "plastic chairs",
+      "dining tables",
+      "printed tablecloths",
+      "wooden decking"
+    ],
+    "uncertainties": [
+      "No balloon decoration or eligible structure is visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "PAQUETE X 1"
+    ],
+    "sin_resolver": [
+      "MANTEL REDONDO POLIESTER TELARAÑA"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "reason": "no_usable"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:31:08.468Z"
+  }
+}

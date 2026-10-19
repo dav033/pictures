@@ -1,0 +1,107 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-015",
+  "image_sha256": "e2dac28dbb68845753c5cef3755e95d09b6f58c797dfe8ce4978872fc8d5082e",
+  "idempotency_key": "40115408a5f525295f815d15eafee4d9e887a26a1f12995c46a31f3712ed66e6",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-015.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Corazon_Feliz_dia_c981b4c6-3c27-46c1-a155-c3b2e5fb9677.jpg?v=1755272818",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-015",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white backdrop, floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional heart-shaped balloon frame enclosing the central sign."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "banner.sign.unspecified_material.printed_greeting_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Printed greeting sign visible within the balloon frame."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.silk.amethyst",
+      "banner.sign.unspecified_material.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-015",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in pink and purple orchid and satin Silk amethyst round latex balloons, a decorative accessory, anchored to the organic balloon arch, built from decorative signs with printed greeting lettering, set against plain white backdrop, floor not visible.",
+    "palabras": 55,
+    "caracteres": 373,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.silk.amethyst",
+      "banner.sign.unspecified_material.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:20:26.671Z"
+  }
+}

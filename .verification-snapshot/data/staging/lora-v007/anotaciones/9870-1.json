@@ -1,0 +1,107 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9870-1",
+  "image_sha256": "0cc056279b931ab630270c983d26c40aa93b9f5748eda36690aa1f9ec46f4173",
+  "idempotency_key": "1acb827bb3825ea66cef9c6c6e1a7ae04ed14d4b707c92449fd900cbeb6d1c20",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9870/foto-1.jpg",
+    "orden": "9870"
+  },
+  "anotacion": {
+    "image_id": "9870-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors",
+          "balloon.round.latex.pastel_matte.green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.green",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic balloon garland spans the upper wall and descends along the left side."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed backdrop",
+      "a lion cutout",
+      "a number marquee",
+      "a cake display"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.pastel_matte.green"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "9870-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from Pastel Matte green round latex balloons and round latex balloons in assorted colors, solid Fashion finish, all at a single 12-inch size, alongside a printed backdrop, a lion cutout, a number marquee and a cake display, set against off-white walls and a light wood floor.",
+    "palabras": 57,
+    "caracteres": 363,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.pastel_matte.green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:32:40.487Z",
+    "recompilado_en": "2026-09-03T14:45:25.385Z"
+  }
+}

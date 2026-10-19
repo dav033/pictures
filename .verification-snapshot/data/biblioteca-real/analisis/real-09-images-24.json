@@ -1,0 +1,557 @@
+{
+  "id": "real-09-images-24",
+  "fuente": "images (24).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-09-images-24.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "17d62708-7762-437b-bc48-4ba66842e967",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.5611
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Pink Fringe Backdrop Curtain",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Vertical light pink fringe/streamers hanging from top garland down to lower wall level.",
+          "reference_bbox": {
+            "x": 0.038,
+            "y": 0.349,
+            "width": 0.7999999999999999,
+            "height": 0.42400000000000004
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl light pink"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.6788
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fringe streamer / paper / foil",
+            "shape": "shape not determinable",
+            "composition": "100% light pink fringe streamer backdrop hung vertically."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Essential backdrop component of the birthday setup.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "Organic Top Balloon Garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.97,
+          "visible_evidence": "Continuous horizontal organic balloon garland running across the top wall area with gold mini-cluster accents.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.2,
+            "width": 1,
+            "height": 0.303
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl soft pink",
+              "matte dark pink",
+              "matte dark red",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.4951
+              },
+              {
+                "color": "dorado",
+                "share": 0.1573
+              },
+              {
+                "color": "rojo",
+                "share": 0.0813
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "short dense asymmetrical garland, spanning the full width, raised off the floor",
+            "composition": "50% light pink and dark pink round balloons, 30% red latex balloons, 20% chrome gold metallic accent balloon clusters scattered along the top.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "rosado",
+                "rojo"
+              ],
+              "pesos": [
+                60,
+                40
+              ],
+              "motas": [
+                "dorado"
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 35,
+              "exacto": false,
+              "estimado_total": 45,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.25
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.65
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "curva",
+              "puntos_de_anclaje": 3,
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.111,
+              "desnivel_relativo": -0.334,
+              "racimos_visibles": 18,
+              "colores_por_racimo": [
+                "rosado",
+                "rojo",
+                "dorado"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "cada_n"
+                }
+              ],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "009",
+                "familia": "fashion",
+                "nombre": "Rosado",
+                "nombre_completo": "Fashion Rosado",
+                "parte": 0.2969,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.239,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "609",
+                "familia": "pastelMate",
+                "nombre": "Rosado",
+                "nombre_completo": "Pastel Mate Rosado",
+                "parte": 0.1818,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "016",
+                "familia": "fashion",
+                "nombre": "Rojo Imperial",
+                "nombre_completo": "Fashion Rojo Imperial",
+                "parte": 0.1569,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "010",
+                "familia": "fashion",
+                "nombre": "Palo de Rosa",
+                "nombre_completo": "Fashion Palo de Rosa",
+                "parte": 0.1254,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E02",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main horizontal balloon garland structure framing the top.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "Gold Foil 'HAPPY BIRTHDAY' Balloon Banner",
+          "category": "signage",
+          "scene_role": "midground",
+          "detection_confidence": 0.99,
+          "visible_evidence": "Foil balloon letters spelling 'HAPPY BIRTHDAY' layered over the pink fringe curtain.",
+          "reference_bbox": {
+            "x": 0.053,
+            "y": 0.419,
+            "width": 0.725,
+            "height": 0.179
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "dorado",
+                "share": 0.2061
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "foil",
+            "shape": "shape not determinable",
+            "composition": "100% chrome gold foil letter balloons spelling HAPPY BIRTHDAY."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Focal birthday greeting text banner element.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Pink streamer curtain backdrop topped with a pink, red, and chrome gold organic balloon garland and golden foil 'HAPPY BIRTHDAY' letters.",
+        "density": "moderate",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pearl light pink",
+          "chrome gold",
+          "matte dark red",
+          "natural wood brown"
+        ],
+        "priority": [
+          "pearl light pink",
+          "chrome gold",
+          "matte dark red",
+          "natural wood brown"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "65f327c7f7a916a1261dcdf8c26e57ced96aeb0c50e18cb53eefd1e75a28d01d",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 335,
+            "height": 597
+          },
+          "processed": {
+            "width": 335,
+            "height": 597
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 31009,
+            "deLaCaja": 44772
+          },
+          "colores": [
+            {
+              "hex": "#eec9da",
+              "parte": 0.2969,
+              "pixeles": 9207,
+              "cruce": {
+                "hex": "#eec9da",
+                "candidatas": [
+                  {
+                    "codigo": "009",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Fashion Rosado",
+                    "nombreEn": "matte light pink",
+                    "pms": "189",
+                    "acabado": "matte",
+                    "hexGlobo": "#f2b6c8",
+                    "deltaE": 10.2,
+                    "distancia": 13.6,
+                    "tono": 11.3,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "409",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Satín Rosado",
+                    "nombreEn": "satin light pink",
+                    "pms": "230",
+                    "acabado": "satin",
+                    "hexGlobo": "#eea5be",
+                    "deltaE": 17.4,
+                    "distancia": 13.8,
+                    "tono": 9.2,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "809",
+                    "nombre": "Rosa Primaveral",
+                    "nombreCompleto": "Silk Rosa Primaveral",
+                    "nombreEn": "pearlescent blush pink",
+                    "pms": "10412",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#e8a9b8",
+                    "deltaE": 14.1,
+                    "distancia": 20.6,
+                    "tono": 16.1,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#a68835",
+              "parte": 0.239,
+              "pixeles": 7412,
+              "cruce": {
+                "hex": "#a68835",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 9.7,
+                    "distancia": 3.3,
+                    "tono": 2.4,
+                    "razonCroma": 1.2
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d0bab2",
+              "parte": 0.1818,
+              "pixeles": 5637,
+              "cruce": {
+                "hex": "#d0bab2",
+                "candidatas": [
+                  {
+                    "codigo": "609",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Pastel Mate Rosado",
+                    "nombreEn": "pastel light pink",
+                    "pms": "677",
+                    "acabado": "matte",
+                    "hexGlobo": "#e6cfd6",
+                    "deltaE": 11.3,
+                    "distancia": 4.3,
+                    "tono": 50.1,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#943724",
+              "parte": 0.1569,
+              "pixeles": 4866,
+              "cruce": {
+                "hex": "#943724",
+                "candidatas": [
+                  {
+                    "codigo": "016",
+                    "nombre": "Rojo Imperial",
+                    "nombreCompleto": "Fashion Rojo Imperial",
+                    "nombreEn": "dark red",
+                    "pms": "200",
+                    "acabado": "matte",
+                    "hexGlobo": "#820101",
+                    "deltaE": 16,
+                    "distancia": 6.6,
+                    "tono": 1.5,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#c5817e",
+              "parte": 0.1254,
+              "pixeles": 3887,
+              "cruce": {
+                "hex": "#c5817e",
+                "candidatas": [
+                  {
+                    "codigo": "010",
+                    "nombre": "Palo de Rosa",
+                    "nombreCompleto": "Fashion Palo de Rosa",
+                    "nombreEn": "matte blush pink",
+                    "pms": "500",
+                    "acabado": "matte",
+                    "hexGlobo": "#d8a1a3",
+                    "deltaE": 13,
+                    "distancia": 14.5,
+                    "tono": 7.2,
+                    "razonCroma": 1.3
+                  },
+                  {
+                    "codigo": "909",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Reflex Rosado",
+                    "nombreEn": "chrome light pink",
+                    "pms": "10420",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a06973",
+                    "deltaE": 13.9,
+                    "distancia": 22.4,
+                    "tono": 17.2,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "012",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Fashion Fucsia",
+                    "nombreEn": "matte hot pink",
+                    "pms": "205",
+                    "acabado": "matte",
+                    "hexGlobo": "#e44a80",
+                    "deltaE": 38.9,
+                    "distancia": 26.8,
+                    "tono": 22.5,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1341 @@
+{
+  "$comentario": "Correcciones de la auditoría de fotos (2026-10-06) a las decoraciones deco-real-01..20. Las lee scripts/biblioteca/construir-biblioteca-real.ts: cada pieza dice qué estructura es, qué tamaños se ven en la foto (pista de tamaños para Python), su remate o sus capas si es una columna, y los productos Sempertex de cada color con las tallas que muestra la foto. Python (plan.py) sigue siendo el único dueño de las cantidades; «extras» son accesorios que Python no modela, contados a mano en la foto y dichos como tales.",
+  "real-01-305": {
+    "auditoria": "Correcta: arco clásico de 38 racimos de 4, todos de 12 pulgadas, blanco y negro estándar.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "arco",
+        "tamanos": "un_solo_tamano",
+        "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
+        "materiales": [
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "real-02-34722b3ec9978bfe7439a121c16a1db7": {
+    "auditoria": "Cuerpo del arco en 12 pulgadas correcto; faltaban los ~18 acentos de 5 pulgadas con cara (calavera, lima y calabaza) y sus adornos negros, que se cuentan en la foto.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "arco",
+        "tamanos": "un_solo_tamano",
+        "porque": "Cuerpo del arco naranja y negro en racimos de 12 pulgadas; los acentos de 5 pulgadas con cara van aparte.",
+        "materiales": [
+          {
+            "product_id": "8634238599463",
+            "color": "naranja",
+            "participacion": 0.53,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.47,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594221146407",
+        "cantidad": 6,
+        "color": "blanco",
+        "detalle": "estimado a partir de la foto: unos 6 acentos blancos de 5 pulgadas con calavera dibujada a mano"
+      },
+      {
+        "variant_id": "46594213118247",
+        "cantidad": 7,
+        "color": "verde lima",
+        "detalle": "estimado a partir de la foto: unos 7 acentos verde lima de 5 pulgadas con cara dibujada a mano"
+      },
+      {
+        "variant_id": "46594228486439",
+        "cantidad": 5,
+        "color": "naranja",
+        "detalle": "estimado a partir de la foto: unos 5 acentos naranjas de 5 pulgadas con cara de calabaza dibujada a mano"
+      },
+      {
+        "variant_id": "46594300936487",
+        "cantidad": 8,
+        "color": "negro",
+        "detalle": "estimado a partir de la foto: adornos negros torcidos sobre los 18 acentos (2 o 3 adornos por globo para modelar)"
+      }
+    ]
+  },
+  "real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1": {
+    "auditoria": "El semiarco lleva chicos de 5 pulgadas; el azul dominante es azul bebé pastel y el azul rey es cromado; el centro de mesa es azul perlado con un azul cromado (sin azul marino) y el bouquet de helio no lleva blancos.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico en L de azul bebé, azul rey cromado, plata y globitos blancos.",
+        "materiales": [
+          {
+            "product_id": "8634259374375",
+            "color": "azul bebé",
+            "participacion": 0.45
+          },
+          {
+            "product_id": "8634249543975",
+            "color": "azul rey cromado",
+            "participacion": 0.3
+          },
+          {
+            "product_id": "8634257211687",
+            "color": "plateado",
+            "participacion": 0.1
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.1
+          },
+          {
+            "product_id": "8634239385895",
+            "color": "azul cielo",
+            "participacion": 0.05
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "bouquet",
+        "tamanos": "un_solo_tamano",
+        "porque": "Bouquet de helio de 6 globos azules y plata atados a una pesa.",
+        "materiales": [
+          {
+            "product_id": "8634259374375",
+            "color": "azul bebé",
+            "participacion": 0.35,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634249543975",
+            "color": "azul rey cromado",
+            "participacion": 0.3,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634257211687",
+            "color": "plateado",
+            "participacion": 0.2,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634239385895",
+            "color": "azul cielo",
+            "participacion": 0.15,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E03",
+        "estructura_oficial": "centro_mesa",
+        "tamanos": "un_solo_tamano",
+        "porque": "Centro de mesa de 4 azules perlados y 1 azul cromado.",
+        "materiales": [
+          {
+            "product_id": "8634277200167",
+            "color": "azul perlado",
+            "participacion": 0.8,
+            "variantes": [
+              "46594307293479"
+            ]
+          },
+          {
+            "product_id": "8634249543975",
+            "color": "azul rey cromado",
+            "participacion": 0.2,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "real-04-71mp5umakml-ac-uf894-1000-ql80": {
+    "auditoria": "Semiarco orgánico de 5, 12 y 18 pulgadas: verde metalizado, verde lima cromado, azul marino, azul cromado y dorado cromado; no lleva el azul cielo ni el turquesa estándar.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "medidas": {
+          "ancho_m": 2.2,
+          "alto_m": 2.6
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico selvático con globos de varios tamaños y follaje.",
+        "materiales": [
+          {
+            "product_id": "8634246201639",
+            "color": "verde metal",
+            "participacion": 0.3
+          },
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.25
+          },
+          {
+            "product_id": "8634249543975",
+            "color": "azul cromado",
+            "participacion": 0.15
+          },
+          {
+            "product_id": "8634272022823",
+            "color": "verde lima cromado",
+            "participacion": 0.15
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.15
+          }
+        ]
+      }
+    ]
+  },
+  "real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec": {
+    "auditoria": "Semiarco orgánico con chicos de 5 pulgadas, un oro rosa gigante en la base y rosados de 18; faltaban el rosa bebé de la punta, la frambuesa (no rojo) y los impresos «Feliz Día Mami».",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "medidas": {
+          "ancho_m": 2.2,
+          "alto_m": 2.6
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico oro rosa, arena, palo de rosa, frambuesa y rosa bebé con impresos de mamá.",
+        "materiales": [
+          {
+            "product_id": "8634249838887",
+            "color": "oro rosa",
+            "participacion": 0.3,
+            "tamanos": [
+              5,
+              12,
+              18,
+              24
+            ]
+          },
+          {
+            "product_id": "8634238927143",
+            "color": "arena",
+            "participacion": 0.18,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634239844647",
+            "color": "rosa bebé",
+            "participacion": 0.17,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634230309159",
+            "color": "rojo frambuesa",
+            "participacion": 0.16,
+            "tamanos": [
+              5,
+              9,
+              12
+            ]
+          },
+          {
+            "product_id": "8634233585959",
+            "color": "palo de rosa",
+            "participacion": 0.13,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594263843111",
+        "cantidad": 7,
+        "color": "rosa con «Feliz día Mami»",
+        "detalle": "estimado a partir de la foto: unos 7 globos impresos «Feliz Día Mami» con flores blancas repartidos por el semiarco"
+      }
+    ]
+  },
+  "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-": {
+    "auditoria": "Columna por bandas de 4: rojo, azul rey, verde, naranja, amarillo, verde, verde, amarillo, rojo, azul rey y celeste arriba; hay dos azules distintos.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "columna",
+        "tamanos": "un_solo_tamano",
+        "porque": "Columna arcoíris de 11 anillos de un color cada uno; el último, celeste, corona la columna.",
+        "materiales": [
+          {
+            "product_id": "8634233618727",
+            "color": "verde",
+            "participacion": 0.27,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634239942951",
+            "color": "rojo",
+            "participacion": 0.18,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634239320359",
+            "color": "azul rey",
+            "participacion": 0.18,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634239287591",
+            "color": "amarillo",
+            "participacion": 0.18,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634238599463",
+            "color": "naranja",
+            "participacion": 0.09,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634233979175",
+            "color": "azul celeste",
+            "participacion": 0.09,
+            "tamanos": [
+              12
+            ]
+          }
+        ],
+        "capas": [
+          {
+            "tamano": 12,
+            "materiales": [
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              2,
+              2,
+              2,
+              2
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              4,
+              4,
+              4,
+              4
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              3,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "veces": 2
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              3,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              2,
+              2,
+              2,
+              2
+            ]
+          },
+          {
+            "tamano": 12,
+            "materiales": [
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        ]
+      }
+    ],
+    "supuestos": [
+      "La cinta dorada en espiral no es un globo y no tiene producto en el catálogo de globos."
+    ]
+  },
+  "real-07-eb12910e210c94b6184d025127acce95": {
+    "auditoria": "Dos columnas orgánicas con un rosado gigante al pie de cada una y racimos de 5 pulgadas; el rosado es rosa bebé y el malva es lavanda apagado (no orquídea).",
+    "piezas": [
+      {
+        "elemento": "REF_01_E03",
+        "estructura_oficial": "columna_asimetrica",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Columna orgánica izquierda rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+        "materiales": [
+          {
+            "product_id": "8634239844647",
+            "color": "rosa bebé",
+            "participacion": 0.4,
+            "tamanos": [
+              5,
+              9,
+              12,
+              24
+            ]
+          },
+          {
+            "product_id": "8634309804327",
+            "color": "lavanda",
+            "participacion": 0.35,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.25,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E04",
+        "estructura_oficial": "columna_asimetrica",
+        "ubicacion": "lateral_derecho",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Columna orgánica derecha rosa bebé, lavanda y dorado, con un rosado gigante al pie.",
+        "materiales": [
+          {
+            "product_id": "8634239844647",
+            "color": "rosa bebé",
+            "participacion": 0.4,
+            "tamanos": [
+              5,
+              9,
+              12,
+              24
+            ]
+          },
+          {
+            "product_id": "8634309804327",
+            "color": "lavanda",
+            "participacion": 0.35,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.25,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "real-08-images-23": {
+    "auditoria": "Cada columna remata con un globo negro gigante (unas 2,9 veces el diámetro de los del cuerpo: un R-36 a media inflada) que no llegaba a Python; cuerpo de 11 capas de 4 en espiral negro y dorado perlado (Metal, no cromado).",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "tamanos": "un_solo_tamano",
+        "porque": "Columna izquierda de 11 capas en espiral negro y dorado, coronada con un globo negro gigante.",
+        "materiales": [
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.5,
+            "tamanos": [
+              12,
+              36
+            ]
+          },
+          {
+            "product_id": "8634250199335",
+            "color": "dorado",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          }
+        ],
+        "capas": [
+          {
+            "tamano": 12,
+            "materiales": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "veces": 11,
+            "girar": 1
+          }
+        ],
+        "remate": {
+          "tipo": "globo",
+          "material": 0,
+          "tamano": 36
+        }
+      },
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "columna",
+        "ubicacion": "lateral_derecho",
+        "tamanos": "un_solo_tamano",
+        "porque": "Columna derecha igual a la izquierda: 11 capas en espiral negro y dorado y globo negro gigante arriba.",
+        "materiales": [
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.5,
+            "tamanos": [
+              12,
+              36
+            ]
+          },
+          {
+            "product_id": "8634250199335",
+            "color": "dorado",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          }
+        ],
+        "capas": [
+          {
+            "tamano": 12,
+            "materiales": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "veces": 11,
+            "girar": 1
+          }
+        ],
+        "remate": {
+          "tipo": "globo",
+          "material": 0,
+          "tamano": 36
+        }
+      }
+    ]
+  },
+  "real-09-images-24": {
+    "auditoria": "Racimos dorados con globitos de 5 pulgadas; los rosas son chicle, blush y coral apagado (no rojo puro). Flecos y letras metalizadas no son látex.",
+    "tamanos_foto": [
+      5,
+      12
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "guirnalda",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda orgánica rosa chicle, blush y coral con racimos dorados de globitos.",
+        "materiales": [
+          {
+            "product_id": "8634310426919",
+            "color": "coral",
+            "participacion": 0.3
+          },
+          {
+            "product_id": "8634239844647",
+            "color": "rosa chicle",
+            "participacion": 0.25
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.25
+          },
+          {
+            "product_id": "10139567980839",
+            "color": "rosa blush",
+            "participacion": 0.2
+          }
+        ]
+      }
+    ]
+  },
+  "real-10-images-25": {
+    "auditoria": "Semiarco de 5, 12 y 18 pulgadas: azul pastel (los grandes), blanco perlado, plata cromada, azul y azul marino, con algunos transparentes rellenos de confeti; detrás, cortina metálica plateada.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico azul pastel, blanco perlado, plata y azul marino con transparentes de confeti.",
+        "materiales": [
+          {
+            "product_id": "8634259374375",
+            "color": "azul pastel",
+            "participacion": 0.35
+          },
+          {
+            "product_id": "8634277921063",
+            "color": "blanco perla",
+            "participacion": 0.25
+          },
+          {
+            "product_id": "8634257211687",
+            "color": "plateado",
+            "participacion": 0.15
+          },
+          {
+            "product_id": "8634239385895",
+            "color": "azul",
+            "participacion": 0.1
+          },
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.1
+          },
+          {
+            "product_id": "8634277003559",
+            "color": "transparente con confeti",
+            "participacion": 0.05
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594103247143",
+        "cantidad": 1,
+        "color": "celeste y plateado",
+        "detalle": "estimado a partir de la foto: un paquete de confeti para rellenar los ~4 globos transparentes"
+      },
+      {
+        "variant_id": "46594157117735",
+        "cantidad": 1,
+        "color": "plateado",
+        "detalle": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
+      }
+    ]
+  },
+  "real-11-images-26": {
+    "auditoria": "Es una guirnalda en L (no un arco): rosa chicle, lila, aguamarina pastel (no turquesa profundo), violeta, blanco y 1-2 dorados, con algunos chicos.",
+    "tamanos_foto": [
+      5,
+      12
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "guirnalda",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda orgánica pastel en L sobre la pared.",
+        "materiales": [
+          {
+            "product_id": "8634239844647",
+            "color": "rosa chicle",
+            "participacion": 0.32
+          },
+          {
+            "product_id": "8634233094439",
+            "color": "turquesa aguamarina",
+            "participacion": 0.23
+          },
+          {
+            "product_id": "8634232996135",
+            "color": "lila",
+            "participacion": 0.22
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.13
+          },
+          {
+            "product_id": "8634239353127",
+            "color": "violeta",
+            "participacion": 0.08
+          },
+          {
+            "product_id": "8634250199335",
+            "color": "dorado",
+            "participacion": 0.02
+          }
+        ]
+      }
+    ]
+  },
+  "real-12-images-27": {
+    "auditoria": "Faltaba el racimo orgánico aparte en el piso (izquierda); hay muchos de 5, 12 y 18 pulgadas; el morado es cromado y el lila es pastel mate.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "semiarco",
+        "medidas": {
+          "ancho_m": 2,
+          "alto_m": 2.6
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico lila pastel, morado cromado y plata sobre el panel.",
+        "materiales": [
+          {
+            "product_id": "8634258424103",
+            "color": "lila pastel",
+            "participacion": 0.4
+          },
+          {
+            "product_id": "8634269008167",
+            "color": "morado cromado",
+            "participacion": 0.35
+          },
+          {
+            "product_id": "8634257211687",
+            "color": "plateado",
+            "participacion": 0.25
+          }
+        ]
+      },
+      {
+        "elemento": null,
+        "estructura_oficial": "columna_asimetrica",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.6,
+          "alto_m": 1
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Racimo orgánico bajo en el piso, a la izquierda del panel (el análisis lo había juntado con el semiarco).",
+        "materiales": [
+          {
+            "product_id": "8634269008167",
+            "color": "morado cromado",
+            "participacion": 0.4
+          },
+          {
+            "product_id": "8634258424103",
+            "color": "lila pastel",
+            "participacion": 0.3
+          },
+          {
+            "product_id": "8634257211687",
+            "color": "plateado",
+            "participacion": 0.3
+          }
+        ]
+      }
+    ]
+  },
+  "real-13-images-28": {
+    "auditoria": "La «pieza bouquet» eran los números metalizados «15» (no látex): fuera. El semiarco mezcla 5, 12 y 18 pulgadas en oro rosa cromado y blanco perla.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "medidas": {
+          "ancho_m": 2.2,
+          "alto_m": 2.6
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico oro rosa cromado y blanco perla.",
+        "materiales": [
+          {
+            "product_id": "8634249838887",
+            "color": "oro rosa",
+            "participacion": 0.6
+          },
+          {
+            "product_id": "8634277921063",
+            "color": "blanco perla",
+            "participacion": 0.4
+          }
+        ]
+      }
+    ],
+    "descartar": [
+      {
+        "elemento": "REF_01_E02",
+        "motivo": "Son los números metalizados «1» y «5» (~40 pulgadas), no un bouquet de látex; el número es la edad del festejo y no entra en la idea."
+      }
+    ]
+  },
+  "real-14-images-29": {
+    "auditoria": "Correcta: arco clásico blanco y negro de unas 38 capas de 4, un solo tamaño.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "arco",
+        "tamanos": "un_solo_tamano",
+        "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
+        "materiales": [
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "real-15-images-30": {
+    "auditoria": "Los «blancos» son crema; hay chicos rojos y dorados y cremas de 18; el grupo de la derecha es una guirnalda corta de piso, no un bouquet.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico crema, dorado cromado y rojo.",
+        "materiales": [
+          {
+            "product_id": "8634306593063",
+            "color": "crema",
+            "participacion": 0.4
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.35
+          },
+          {
+            "product_id": "8634239942951",
+            "color": "rojo",
+            "participacion": 0.25
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E07",
+        "estructura_oficial": "guirnalda",
+        "ubicacion": "lateral_derecho",
+        "medidas": {
+          "largo_m": 0.8
+        },
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda corta de piso roja y crema a la derecha del panel.",
+        "materiales": [
+          {
+            "product_id": "8634239942951",
+            "color": "rojo",
+            "participacion": 0.7
+          },
+          {
+            "product_id": "8634306593063",
+            "color": "crema",
+            "participacion": 0.3
+          }
+        ]
+      }
+    ]
+  },
+  "real-16-images-31": {
+    "auditoria": "No hay plata: lo plateado son transparentes con confeti; tamaños de 5, 12 y 18; faltaban las estrellas metalizadas azul rey y la cortina plateada.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "guirnalda",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda orgánica azul marino y azul cromado con transparentes de confeti.",
+        "materiales": [
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.55
+          },
+          {
+            "product_id": "8634249543975",
+            "color": "azul cromado",
+            "participacion": 0.33
+          },
+          {
+            "product_id": "8634277003559",
+            "color": "transparente con confeti",
+            "participacion": 0.12
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E05",
+        "estructura_oficial": "bouquet",
+        "tamanos": "un_solo_tamano",
+        "porque": "Racimo de piso izquierdo azul cromado y azul marino, coronado por una estrella metalizada.",
+        "materiales": [
+          {
+            "product_id": "8634249543975",
+            "color": "azul cromado",
+            "participacion": 0.6,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.4,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      },
+      {
+        "elemento": "REF_01_E06",
+        "estructura_oficial": "bouquet",
+        "tamanos": "un_solo_tamano",
+        "porque": "Racimo de piso derecho azul cromado y azul marino con un transparente de confeti.",
+        "materiales": [
+          {
+            "product_id": "8634249543975",
+            "color": "azul cromado",
+            "participacion": 0.5,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.4,
+            "tamanos": [
+              12
+            ]
+          },
+          {
+            "product_id": "8634277003559",
+            "color": "transparente con confeti",
+            "participacion": 0.1,
+            "tamanos": [
+              12
+            ]
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594103247143",
+        "cantidad": 1,
+        "color": "celeste y plateado",
+        "detalle": "estimado a partir de la foto: un paquete de confeti para rellenar los ~6 globos transparentes"
+      },
+      {
+        "variant_id": "51128000086311",
+        "cantidad": 2,
+        "color": "azul rey",
+        "detalle": "estimado a partir de la foto: 2 estrellas metalizadas azul rey sobre los racimos"
+      },
+      {
+        "variant_id": "46594157117735",
+        "cantidad": 1,
+        "color": "plateado",
+        "detalle": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
+      }
+    ],
+    "supuestos": [
+      "Los 2 corazones metalizados azul rey de la foto no tienen equivalente de ese color en el catálogo (solo azul pastel) y no se incluyen; las letras plateadas tampoco tienen equivalente."
+    ]
+  },
+  "real-17-img-2939-1-600x600": {
+    "auditoria": "Faltaban los dos remates gigantes (uno oro rosa y uno dorado), los chicos de 5 y los amarillos de 9; el amarillo es pastel mate y no hay champaña en la foto.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "medidas": {
+          "ancho_m": 2.2,
+          "alto_m": 2.6
+        },
+        "densidad": "lujosa",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico oro rosa, dorado, rosa y amarillo pastel con dos globos gigantes.",
+        "materiales": [
+          {
+            "product_id": "8634249838887",
+            "color": "oro rosa",
+            "participacion": 0.3,
+            "tamanos": [
+              5,
+              12,
+              18,
+              24
+            ]
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.3,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18,
+              24
+            ]
+          },
+          {
+            "product_id": "8634249937191",
+            "color": "amarillo pastel",
+            "participacion": 0.2,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634239844647",
+            "color": "rosa",
+            "participacion": 0.2,
+            "tamanos": [
+              5,
+              9,
+              12,
+              18
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "real-18-sddefault": {
+    "auditoria": "Faltaban los transparentes con estrellas blancas (los más grandes); el rosado es rosa bebé pastel mate; hay de 18 pulgadas; detrás, cortinas metálicas rosadas y doradas.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "guirnalda",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda orgánica rosa pastel con transparentes de estrellas, dorados y blancos.",
+        "materiales": [
+          {
+            "product_id": "8634253967655",
+            "color": "rosa pastel",
+            "participacion": 0.45
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.13
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.12
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594301526311",
+        "cantidad": 6,
+        "color": "transparente con estrellas blancas",
+        "detalle": "estimado a partir de la foto: unos 6 globos transparentes con estrellas blancas, los más grandes de la guirnalda (el de 24 pulgadas no está disponible)"
+      },
+      {
+        "variant_id": "46594192015655",
+        "cantidad": 1,
+        "color": "rosado",
+        "detalle": "estimado a partir de la foto: la cortina metálica rosada que cuelga bajo la guirnalda (no es globo)"
+      },
+      {
+        "variant_id": "46594160001319",
+        "cantidad": 1,
+        "color": "dorado",
+        "detalle": "estimado a partir de la foto: la cortina metálica dorada que cuelga bajo la guirnalda (no es globo)"
+      }
+    ]
+  },
+  "real-19-semiarco-organico-combinaciones-con-reflex-26bbc": {
+    "auditoria": "Hay 2 dorados gigantes, rosados de 18 y unos 25 dorados de 5; los «oro rosa» son rojo cereza cromado, el rosado es chicle y faltaban ~7 transparentes con confeti.",
+    "piezas": [
+      {
+        "elemento": "REF_01_E01",
+        "estructura_oficial": "guirnalda",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Guirnalda diagonal rosa chicle, fucsia, rojo cereza cromado y dorado con transparentes de confeti.",
+        "materiales": [
+          {
+            "product_id": "8634255638823",
+            "color": "dorado cromado",
+            "participacion": 0.3,
+            "tamanos": [
+              5,
+              12,
+              24
+            ]
+          },
+          {
+            "product_id": "8634239844647",
+            "color": "rosa chicle",
+            "participacion": 0.25,
+            "tamanos": [
+              5,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634239451431",
+            "color": "fucsia",
+            "participacion": 0.18,
+            "tamanos": [
+              5,
+              12,
+              18
+            ]
+          },
+          {
+            "product_id": "8634258161959",
+            "color": "rojo cereza cromado",
+            "participacion": 0.15,
+            "tamanos": [
+              5,
+              12,
+              18
+            ]
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "46594209415463",
+        "cantidad": 7,
+        "color": "transparente con confeti",
+        "detalle": "estimado a partir de la foto: unos 7 globos transparentes con confeti; el catálogo no tiene confeti rosado y va el impreso de confeti pastel, lo más parecido"
+      }
+    ]
+  },
+  "real-20-semiarcoilusionazul-1200x1200": {
+    "auditoria": "El azul medio es látex estándar (no cromado); faltaban el azul pastel, las 3 estrellas metalizadas celestes y el fondo plateado; hay globos de 18.",
+    "tamanos_foto": [
+      5,
+      12,
+      18
+    ],
+    "piezas": [
+      {
+        "elemento": "REF_01_E02",
+        "estructura_oficial": "semiarco",
+        "tamanos": "chicos_con_pocos_grandes",
+        "porque": "Semiarco orgánico azul marino, azul y azul pastel.",
+        "materiales": [
+          {
+            "product_id": "8869949341991",
+            "color": "azul marino",
+            "participacion": 0.45
+          },
+          {
+            "product_id": "8634239385895",
+            "color": "azul",
+            "participacion": 0.33
+          },
+          {
+            "product_id": "8634259374375",
+            "color": "azul pastel",
+            "participacion": 0.22
+          }
+        ]
+      }
+    ],
+    "extras": [
+      {
+        "variant_id": "49858791178535",
+        "cantidad": 3,
+        "color": "azul celeste",
+        "detalle": "estimado a partir de la foto: 3 estrellas metalizadas celestes entre los globos"
+      },
+      {
+        "variant_id": "46594157117735",
+        "cantidad": 1,
+        "color": "plateado",
+        "detalle": "estimado a partir de la foto: la pared de lentejuelas plateada no está en el catálogo; la cortina metálica plateada es lo más parecido (no es globo)"
+      }
+    ]
+  }
+}

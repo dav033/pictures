@@ -1,0 +1,27 @@
+{
+ "caso": "oficial-figura",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.6"
+ },
+ "especHash": "8822c27921819c43846f305792f509815a6560643347a214b4d128297733a05f",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_01_FIGURA",
+   "motivo": "No hay un constructor genérico de figuras: solo existen las digitalizadas una a una."
+  }
+ ],
+ "piezas": {},
+ "total": {
+  "lineas": [],
+  "unidades": 0
+ },
+ "caja": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

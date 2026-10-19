@@ -1,0 +1,214 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000016-1",
+  "image_sha256": "863bbf9933aa5f53cdd1bcbd629a698777c9aef8108e99367447e166ce17fe1d",
+  "idempotency_key": "c83482d4e709664b9fc851fd990ac8607e8c821533c6d49dbf4b92092767ba4e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000016/foto-1.png",
+    "orden": "950000016"
+  },
+  "anotacion": {
+    "image_id": "950000016-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain light-colored background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "dense uniform panel of lavender chrome-finish round balloons filling the center background"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.caribbean_blue",
+          "balloon.round.foil.unspecified.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "turquoise balloon cluster rising along the left side from the floor to the top corner, with two round foil pearl-trimmed birthday balloons attached"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.foil.unspecified.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "magenta balloon cluster rising along the right side from the floor to the top corner, with two round foil pearl-trimmed birthday balloons attached"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.aurora_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.aurora_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "band of green balloons running along the base behind the two side tables"
+      }
+    ],
+    "non_purchased_elements": [
+      "a drip cake",
+      "colorful side tables",
+      "patterned paper plates",
+      "party cups and napkins"
+    ],
+    "uncertainties": [
+      "Exact size of the central wall balloons could not be confirmed",
+      "Whether the round foil balloons are the English or Spanish variant is not distinguishable from the concept list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000016-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from high-shine Reflex violet round latex balloons, all at a single 5-inch size, an asymmetrical balloon half-arch, standing to one side, built from 18-inch round foil balloons with printed birthday lettering, 5-inch matte Fashion caribbean blue round latex balloons, mixed organically rather than graded, an asymmetrical balloon half-arch, standing to one side, built from 18-inch round foil balloons with printed birthday lettering, 12-inch matte Fashion purple orchid round latex balloons, mixed organically rather than graded, with an organic balloon garland, grounded across the front, built from high-shine Reflex aurora green round latex balloons, all at a single 5-inch size, alongside a drip cake, colorful side tables, patterned paper plates and party cups and napkins, set against a plain light-colored background.",
+    "palabras": 130,
+    "caracteres": 901,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:26.280Z",
+    "recompilado_en": "2026-09-03T14:45:23.357Z"
+  }
+}

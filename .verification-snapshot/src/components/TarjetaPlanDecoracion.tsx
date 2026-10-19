@@ -1,0 +1,1591 @@
+"use client";
+
+/* Catalog images come from runtime URLs and already carry explicit dimensions. */
+/* eslint-disable @next/next/no-img-element */
+
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
+import { ArrowLeftRight, Check, ChevronDown, Info, Plus, Search } from "lucide-react";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
+import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
+import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
+import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { identificarEstructuraOficial, OFICIALES_SIN_MOTOR } from "@/lib/plan/estructuras-oficiales";
+import { OFICIALES_CON_DIBUJO_ESQUEMATICO } from "@/lib/plan/dibujo-estructura";
+import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import {
+  coloresCliente,
+  compararLineasPorTamanoCliente,
+  contar,
+  describirEstructuraCliente,
+  escenografiaCliente,
+  cuentaEnGlobos,
+  faltantesCliente,
+  medidasCortasCliente,
+  nombreConCantidadCliente,
+  paquetesCliente,
+  piezasVistasEnReferencia,
+  productoCliente,
+  productoConTamanoCliente,
+  pulgadasCliente,
+  pulgadasConCentimetrosCliente,
+  lineaQuitable,
+  resumenPlanCliente,
+  supuestoCliente,
+  sustitucionesCliente,
+  tamanosCliente,
+  ubicacionCortaCliente,
+} from "@/lib/plan/presentacion-cliente";
+import { elementosMaterializados } from "@/lib/ia/referencia/reference-structure";
+import { DetalleEstructura } from "@/components/plan/DetalleEstructura";
+import { DialogoCotizacion, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
+import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
+import { ChipEstructura, ENTRADA_CASCADA, TarjetaPiezaFoto, TarjetaProducto, type PiezaPropuestaVista, type ProductoPropuestaVista } from "@/components/plan/PiezasPropuesta";
+import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
+import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
+import { GlobosCelebracion } from "@/components/propuesta/GlobosCelebracion";
+import { AjustesPropuesta, type AjustePropuesta } from "@/components/plan/AjustesPropuesta";
+import { ModalAjustarPropuesta, type AperturaAjuste } from "@/components/plan/ajuste/ModalAjustarPropuesta";
+import type { ModoAjuste } from "@/components/plan/ajuste/ajuste-propuesta";
+import { precalentarExplorador } from "@/components/plan/ajuste/cliente-explorador";
+import { PanelEspacio } from "@/components/referencia/PanelEspacio";
+import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
+import { EditorPatron } from "@/components/plan/patron/EditorPatron";
+import { DialogoHojaArmado } from "@/components/plan/patron/HojaArmado";
+import { leyendaPatron } from "@/components/plan/patron/leyenda";
+import { peticionVistaPieza } from "@/components/plan/patron/peticion-pieza";
+import { admitePatron } from "@/components/plan/patron/modos";
+import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
+import { FalloPlanPatron, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
+import { EditorBouquet } from "@/components/plan/bouquet/EditorBouquet";
+import { DialogoHojaArmadoBouquet } from "@/components/plan/bouquet/HojaArmadoBouquet";
+import { leyendaBouquet } from "@/components/plan/bouquet/leyenda-bouquet";
+import type { ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
+import { FalloPlanArmado, pedirPlanEditarArmado } from "@/lib/plan/peticion-armado";
+import { EditorGuirnalda } from "@/components/plan/guirnalda/EditorGuirnalda";
+import { DialogoHojaArmadoGuirnalda } from "@/components/plan/guirnalda/HojaArmadoGuirnalda";
+import { leyendaGuirnalda } from "@/components/plan/guirnalda/leyenda-guirnalda";
+import { patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
+import type { ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
+import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
+import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
+import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
+import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
+import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
+import { crearColaAjustes, crearPendientesAjustes, type TramoAjustes } from "@/components/plan/cola-ajustes";
+import type { ResumenAutoguardado } from "@/components/plan/autoguardado";
+
+const RESPALDO_RECOMENDACIONES = "No pudimos cargar opciones parecidas. Intenta de nuevo o busca en todo el catálogo.";
+
+const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+type LineaCatalogoSeleccionada = {
+  linea: PlanResuelto["estructuras"][number]["lineas"][number];
+  estructuraId: string;
+  estructura: string;
+};
+
+type Props = {
+  plan: PlanResuelto;
+  onAprobar?: () => void;
+  aprobado?: boolean;
+  generando?: boolean;
+  onPlanActualizado?: (plan: PlanResuelto, cotizacion?: Cotizacion) => void;
+  /** Modo dev (B2): muestra niveles de coincidencia y ajustes declarados. */
+  modoDev?: boolean;
+  /** Referencia analizada del turno que produjo el plan: recortes por pieza y ambientación que no se cotiza. */
+  referenceBlueprint?: ReferenceBlueprintV2;
+  /** Fotos de referencia del turno que produjo el plan (`REF_01`, `REF_02`… por orden). */
+  imagenesReferencia?: { id?: string; base64: string; mime: string }[];
+  /** Foto del espacio del turno, para el panel de espacio. */
+  fotoEspacio?: { base64: string; mime: string };
+  /** Si llega, "Ver cotización" lo llama en vez de abrir el diálogo propio de la tarjeta. */
+  onVerCotizacion?: () => void;
+  /**
+   * `element_id`s de la escenografía que el cliente apagó: no se dibujan en la
+   * imagen. Nunca afecta al plan, a los materiales ni a `plan_hash` — la
+   * escenografía no se vende, no se cotiza y no se compra.
+   */
+  escenografiaApagada?: readonly string[];
+  /** Enciende o apaga un chip de escenografía (todos sus elementos a la vez). */
+  onEscenografiaToggle?: (elementIds: readonly string[], visible: boolean) => void;
+  /**
+   * Le pide al asistente un ajuste en el chat. Con él, una aprobación
+   * bloqueada (presupuesto o piezas sin globos) ofrece el arreglo al lado del
+   * botón en vez de dejarlo gris sin explicación.
+   */
+  onPedirAjuste?: (mensaje: string) => void;
+  /** El precio al cliente del decorador, al principio de la propuesta (`CotizacionProfesional`). */
+  precioCliente?: ReactNode;
+};
+
+const CASCADA: Variants = {
+  oculto: { opacity: 0, y: 18, scale: 0.985, filter: "blur(6px)" },
+  visible: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1], staggerChildren: 0.12, delayChildren: 0.15 } },
+};
+
+const LISTA_CASCADA: Variants = {
+  oculto: {},
+  visible: { transition: { staggerChildren: 0.14 } },
+};
+
+function mayusculaInicial(texto: string): string {
+  return texto ? `${texto.charAt(0).toUpperCase()}${texto.slice(1)}` : texto;
+}
+
+function unirTamanos(pulgadas: number[]): string {
+  const unicos = [...new Set(pulgadas)].sort((a, b) => a - b);
+  if (!unicos.length) return "";
+  return `${unicos.length === 1 ? unicos[0] : `${unicos.slice(0, -1).join(", ")} y ${unicos.at(-1)}`} pulgadas`;
+}
+
+type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidata };
+
+/** A way back from an edit (or a pattern editor session): its "Deshacer" and what the notice says after it. */
+type VueltaAtras = { tramo: TramoAjustes<PlanResuelto>; texto: string };
+/** One pattern editor session: its saves are undone together, and Python's sentences about them are told once, at the end. */
+type SesionPatron = { estructuraId: string; tramo: TramoAjustes<PlanResuelto>; avisos: string[] };
+/** One bouquet assembly editor session (ADR-0030), same contract as the pattern one. */
+type SesionArmado = SesionPatron;
+
+function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
+  const vistas = new Set<string>();
+  return items.filter((item) => {
+    const key = clave(item);
+    if (vistas.has(key)) return false;
+    vistas.add(key);
+    return true;
+  });
+}
+
+/**
+ * Lines of a structure as the customer sees them: one per product + size +
+ * color. The same balloon can arrive as two package variants (x12 and x50,
+ * D3); materials are declared per product, so editing or removing the
+ * representative line acts on the whole material.
+ */
+function lineasVisiblesPorVariante(lineas: PlanResuelto["estructuras"][number]["lineas"]): PlanResuelto["estructuras"][number]["lineas"] {
+  const agrupadas = new Map<string, PlanResuelto["estructuras"][number]["lineas"][number]>();
+  for (const linea of lineas) {
+    const clave = `${linea.product_id}|${linea.tamano_codigo ?? linea.diam_pulg ?? ""}|${linea.color ?? ""}`;
+    const anterior = agrupadas.get(clave);
+    if (!anterior) {
+      agrupadas.set(clave, { ...linea });
+      continue;
+    }
+    agrupadas.set(clave, {
+      ...anterior,
+      unidades: anterior.unidades + linea.unidades,
+      imagen: anterior.imagen ?? linea.imagen,
+      sustitucion: anterior.sustitucion ?? linea.sustitucion,
+    });
+  }
+  // Same order as the quote card and dialog: color, product, smallest size first.
+  return [...agrupadas.values()].sort(compararLineasPorTamanoCliente);
+}
+
+function mismaMedida(linea: LineaCatalogoSeleccionada["linea"], variante: VarianteCandidata): boolean {
+  if (linea.tamano_codigo && variante.codigoTamano) return linea.tamano_codigo === variante.codigoTamano;
+  if (linea.diam_pulg != null && variante.diamPulg != null) return linea.diam_pulg === variante.diamPulg;
+  return true;
+}
+
+function cercaniaCromatica(linea: LineaCatalogoSeleccionada["linea"], variante: VarianteCandidata): number {
+  return puntuacionCromatica(linea.color ? [linea.color] : [], variante.colores);
+}
+
+function opcionesCatalogo(candidatos: ProductoCandidato[], linea: LineaCatalogoSeleccionada["linea"], soloRecomendadas: boolean): OpcionCatalogo[] {
+  const opciones = candidatos.flatMap((candidato) => candidato.variantes.map((variante) => ({ candidato, variante })));
+  const filtradas = opciones.filter(({ variante }) => {
+    if (variante.variantId === linea.variant_id || !variante.disponible) return false;
+    return !soloRecomendadas || mismaMedida(linea, variante);
+  });
+  const vistas = new Set<string>();
+  return filtradas
+    .sort((a, b) => {
+      const familiaA = a.candidato.productId === linea.product_id ? 1 : 0;
+      const familiaB = b.candidato.productId === linea.product_id ? 1 : 0;
+      return cercaniaCromatica(linea, a.variante) - cercaniaCromatica(linea, b.variante)
+        || familiaB - familiaA
+        || a.candidato.titulo.localeCompare(b.candidato.titulo);
+    })
+    .filter(({ variante }) => {
+      if (vistas.has(variante.variantId)) return false;
+      vistas.add(variante.variantId);
+      return true;
+    })
+    .slice(0, 10);
+}
+
+function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, activeVariantId }: {
+  opciones: OpcionCatalogo[];
+  guardando: boolean;
+  onCambiar: (opcion: OpcionCatalogo) => void;
+  ariaLabel: string;
+  listId?: string;
+  activeVariantId?: string;
+}) {
+  return (
+    <ul id={listId} role={listId ? "listbox" : undefined} className="space-y-1.5" aria-label={ariaLabel}>
+      {opciones.map(({ candidato, variante }) => (
+        <li key={variante.variantId} className="flex items-center gap-2 rounded-md border border-borde bg-superficie p-2">
+          {candidato.imagen ? (
+            <img src={candidato.imagen} alt="" width={40} height={40} loading="lazy" className="size-10 shrink-0 rounded-md object-cover" />
+          ) : <span aria-hidden className="size-10 shrink-0 rounded-md bg-superficie-2" />}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</span>
+            <span className="block truncate text-[11px] text-texto-suave">{variante.codigoTamano ? pulgadasCliente(variante.codigoTamano) : "Tamaño no especificado"} · {variante.colores.join(", ") || "Color de catálogo"} · {pesos.format(variante.precio)}</span>
+          </span>
+          <button id={listId ? `opcion-intercambio-${variante.variantId}` : undefined} type="button" role={listId ? "option" : undefined} aria-selected={listId ? activeVariantId === variante.variantId : undefined} disabled={guardando} onClick={() => onCambiar({ candidato, variante })} className={`ui-pressable shrink-0 rounded-md bg-acento px-2.5 py-1.5 text-[11px] font-semibold text-sobre-acento disabled:opacity-50 ${activeVariantId === variante.variantId ? "ring-2 ring-acento ring-offset-1" : ""}`}>
+            {guardando ? "Cambiando…" : "Cambiar"}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste, precioCliente }: Props) {
+  const [celebracion, setCelebracion] = useState(0);
+  // Feedback after an edit: what changed, the new total and a way back while it is still the last change.
+  // `avisos`: Python's own sentences about the edit (/api/plan-editar), verbatim.
+  const [avisoEdicion, setAvisoEdicion] = useState<{ id: number; texto: string; deshacer?: VueltaAtras; avisos?: readonly string[] } | null>(null);
+  // An edit resets the approval; the customer is told instead of finding a button that changed.
+  const [editadoTrasAprobar, setEditadoTrasAprobar] = useState(false);
+  const secuenciaAvisoRef = useRef(0);
+  const reducir = useReducedMotion();
+  const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
+  const [cotizacionAbierta, setCotizacionAbierta] = useState(false);
+  const detalleRef = useRef<HTMLDivElement | null>(null);
+  const [imagenesCatalogo, setImagenesCatalogo] = useState<Record<string, string>>({});
+  const [imagenesAusentes, setImagenesAusentes] = useState<Record<string, true>>({});
+  const [seleccionCatalogo, setSeleccionCatalogo] = useState<LineaCatalogoSeleccionada | null>(null);
+  const [intercambioAbierto, setIntercambioAbierto] = useState(false);
+  const [recomendaciones, setRecomendaciones] = useState<ProductoCandidato[]>([]);
+  const [resultadosCatalogo, setResultadosCatalogo] = useState<ProductoCandidato[]>([]);
+  const [consultaCatalogo, setConsultaCatalogo] = useState("");
+  const [buscandoCatalogo, setBuscandoCatalogo] = useState(false);
+  // "Ajusta la propuesta" (modal) keeps its own open state and everything the customer picks inside it, so opening it
+  // does not repaint this (large) card: it hands us the function that opens it.
+  const abrirAjusteRef = useRef<((apertura: AperturaAjuste) => void) | null>(null);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
+  const [opcionBusquedaActiva, setOpcionBusquedaActiva] = useState(-1);
+  // Color pattern editor and assembly sheet (ADR-0028), one structure at a time.
+  // The session's saves share one "Deshacer", back to the plan before the first of them.
+  const [patronEditando, setPatronEditando] = useState<SesionPatron | null>(null);
+  // The session's last change did not make it into the plan: why, and (for a failure, not a rejection) a retry with it.
+  const [falloPatron, setFalloPatron] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
+  const patronesRechazadosRef = useRef(new WeakSet<PatronColor>());
+  // Bouquet assembly editor and sheet (ADR-0030), one bouquet at a time; same session contract as the pattern editor.
+  const [armadoEditando, setArmadoEditando] = useState<SesionArmado | null>(null);
+  const [falloArmado, setFalloArmado] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
+  const armadosRechazadosRef = useRef(new WeakSet<ArmadoBouquetV1>());
+  const [hojaArmadoBouquet, setHojaArmadoBouquet] = useState<string | null>(null);
+  // Garland assembly editor and its single (pattern + assembly) sheet (ADR-0032, E6); same session contract.
+  const [guirnaldaEditando, setGuirnaldaEditando] = useState<SesionArmado | null>(null);
+  const [falloGuirnalda, setFalloGuirnalda] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
+  const guirnaldasRechazadasRef = useRef(new WeakSet<ArmadoGuirnaldaV1>());
+  const [hojaGuirnalda, setHojaGuirnalda] = useState<string | null>(null);
+  // Every edit of the proposal runs one at a time on the plan the previous one
+  // signed: the controls save on their own, faster than the prop comes back.
+  const [ajustesEnCurso, setAjustesEnCurso] = useState(0);
+  const [cola] = useState(() => crearColaAjustes(plan, setAjustesEnCurso));
+  // Slider changes still waiting for their pause (not in the queue yet) or saving.
+  const [cambiosSinGuardar, setCambiosSinGuardar] = useState(0);
+  const [pendientes] = useState(() => crearPendientesAjustes(setCambiosSinGuardar));
+  const guardandoAjustes = ajustesEnCurso > 0 || cambiosSinGuardar > 0;
+  const [hojaArmado, setHojaArmado] = useState<string | null>(null);
+  // The colors slider's live drawing per structure (ADR-0028 §13), outside the card's state: each Python
+  // response repaints only the pattern block and the summary strip of that piece, not the whole card.
+  const [vistasEnVivo] = useState(() => crearVistasEnVivo<PatronColorResuelto>());
+  const disparadorModalRef = useRef<HTMLButtonElement | null>(null);
+  const volverDetalleRef = useRef<HTMLButtonElement | null>(null);
+  const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
+  const peticionCatalogoRef = useRef<AbortController | null>(null);
+  const secuenciaCatalogoRef = useRef(0);
+  const editorDisponible = Boolean(onPlanActualizado);
+  const editorId = `editor-plan-${plan.plan.plan_id}`;
+  const supuestos = [...new Set(plan.plan.supuestos)];
+  const sustituciones = unicosPor(plan.sustituciones, (item) => `${item.estructura_id}|${item.pedido}|${item.entregado}|${item.motivo}`);
+  const sinCobertura = unicosPor(plan.sin_cobertura, (item) => `${item.estructura_id}|${item.product_id}|${item.tamano}`);
+  const variantIdsSinImagen = [...new Set(plan.estructuras.flatMap((estructura) => estructura.lineas).filter((linea) => !linea.imagen && !imagenesCatalogo[linea.variant_id]).map((linea) => linea.variant_id))].sort();
+  const solicitudImagenes = variantIdsSinImagen.map((variantId) => `variant_id=${encodeURIComponent(variantId)}`).join("&");
+  const compraSeleccionada = seleccionCatalogo ? gruposCotizacionPlan(plan.compras).find((grupo) => grupo.items.some((compra) => compra.variant_id === seleccionCatalogo.linea.variant_id)) : undefined;
+  const imagenSeleccionada = seleccionCatalogo ? seleccionCatalogo.linea.imagen ?? imagenesCatalogo[seleccionCatalogo.linea.variant_id] : undefined;
+  const acabados = [...new Set(plan.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.acabado).filter((acabado): acabado is string => Boolean(acabado))))];
+  // Presentation for the end customer: names, locations and colors derive from
+  // the official structure catalog and the resolved plan, never from free text.
+  const declaradasPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
+  // Only applied patterns describe the plan; a suggestion lives in the editor until it is applied.
+  const patronesAplicados = new Map((plan.patrones_color ?? []).filter((patron) => patron.aplicado).map((patron) => [patron.estructura_id, patron]));
+  // Bouquet assemblies as Python resolved them (ADR-0030), one per bouquet that has one.
+  const armadosPorEstructura = new Map((plan.armados_bouquet ?? []).map((armado) => [armado.estructura_id, armado]));
+  // Garland assemblies as Python resolved them (ADR-0032); a garland without one shows exactly as before.
+  const armadosGuirnaldaPorEstructura = new Map((plan.armados_guirnalda ?? []).map((armado) => [armado.estructura_id, armado]));
+  const vistasEstructura = plan.estructuras.map((estructura) => {
+    const declarada = declaradasPorId.get(estructura.estructura_id);
+    const oficial = identificarEstructuraOficial({ tipo: estructura.tipo, densidad: declarada?.densidad, ubicacion: estructura.ubicacion, nombre: estructura.nombre, estructura_oficial: declarada?.estructura_oficial });
+    const paraDescribir = { oficialId: oficial?.id, nombre: estructura.nombre, ubicacion: estructura.ubicacion, repeticiones: estructura.repeticiones };
+    const patron = patronesAplicados.get(estructura.estructura_id);
+    const armado = armadosPorEstructura.get(estructura.estructura_id);
+    const armadoGuirnalda = armadosGuirnaldaPorEstructura.get(estructura.estructura_id);
+    // Numbered legend of the pattern: material index + 1, in `materiales` order,
+    // each number with the color Python gave it (what is bought after a replacement).
+    const leyenda = leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo);
+    // Una pieza que ningún motor arma no lleva armado de motor, aunque el plan traiga uno viejo: su
+    // `tipoBase` es `arco` o `guirnalda` y los motores miran el tipo, no la estructura oficial. Desde el
+    // 2026-10-04 la receta ya no se lo pone (`plan.OFICIALES_SIN_MOTOR`), y aquí se ignora el que quedara
+    // guardado para que la tarjeta no monte el bloque de un arco sobre un aro circular.
+    const sinMotor = oficial !== undefined && OFICIALES_SIN_MOTOR.has(oficial.id);
+    return {
+      estructura,
+      declarada,
+      oficial,
+      paraDescribir,
+      descripcion: describirEstructuraCliente(paraDescribir, "definido"),
+      colores: coloresCliente(estructura.lineas),
+      leyenda,
+      patron,
+      admitePatron: Boolean(declarada && admitePatron(estructura.tipo, declarada.materiales.length)),
+      // A bouquet (official structure) can carry an assembly; its numbered legend uses the codes Python gave.
+      esBouquet: oficial?.id === "bouquet",
+      armado,
+      leyendaArmado: armado ? leyendaBouquet(armado, estructura.lineas) : [],
+      armadoGuirnalda,
+      leyendaGuirnalda: armadoGuirnalda ? leyendaGuirnalda(armadoGuirnalda, estructura.lineas) : [],
+      // What the pattern's drawings show: with a garland assembly, the clusters that are really built
+      // (`armados_guirnalda[].racimos`), not the full pattern grid (E5 `filas_de_racimos`).
+      patronDibujo: patron && armadoGuirnalda ? patronSobreArmado(patron, armadoGuirnalda) : patron,
+      /**
+       * El armado del arco que trae la pieza (ADR-0034). Con él, el bloque del arco toma el sitio del
+       * dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       */
+      armadoArco: sinMotor ? undefined : declarada?.armado_arco,
+      /**
+       * El armado del arco orgánico del motor (ADR-0034, `armado_arco_organico`; no el de patrones). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       * Si la pieza trae también el clásico, manda el clásico (es el que ya existía) y este no se dibuja. **Un
+       * medio arco entra por aquí**, con `forma.corte` menor que 1.
+       */
+      armadoArcoOrganico: sinMotor || declarada?.armado_arco ? undefined : declarada?.armado_arco_organico,
+      /**
+       * El armado de la columna que trae la pieza (ADR-0034, ADR-0035 paso 3). Igual que el del arco: con él, el
+       * bloque de la columna toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide.
+       */
+      armadoColumna: sinMotor ? undefined : declarada?.armado_columna,
+      /**
+       * El armado de la columna orgánica del motor (ADR-0034, `armado_columna_organica`; no el de anillos). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia. Si la
+       * pieza trae también el clásico, manda el clásico (es el que ya existía) y este no se dibuja.
+       */
+      armadoColumnaOrganica: sinMotor || declarada?.armado_columna ? undefined : declarada?.armado_columna_organica,
+      /**
+       * El armado de la guirnalda del motor (ADR-0034, `armado_guirnalda_organica`; no el de ADR-0032). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       */
+      armadoGuirnaldaOrganica: sinMotor ? undefined : declarada?.armado_guirnalda_organica,
+      /**
+       * El dibujo esquemático de una pieza que ningún motor arma: la pared, el aro circular, el techo de
+       * globos y el centro de mesa. Es de solo lectura —no calcula cantidades, así que no hay nada que
+       * guardar— y el dibujo lo hace Python, que decide cuál de los cuatro le toca
+       * (`app/dibujo_estructura.py`). La mezcla de tamaños es la que ya resolvió el plan.
+       */
+      dibujoEsquematico: declarada !== undefined && oficial !== undefined && OFICIALES_CON_DIBUJO_ESQUEMATICO.has(oficial.id)
+        ? { plan: plan.plan, estructuraId: estructura.estructura_id, declarada, mezclaReal: estructura.mezcla_real }
+        : undefined,
+      /**
+       * Un tono `#rrggbb` por material, en el orden de `materiales`, ya resuelto por el catálogo: el
+       * motor pinta con ellos. Nunca cuenta con ellos — el conteo y la compra van por índice.
+       */
+      tonos: leyenda.map((color) => color.hex),
+    };
+  });
+  const nombrePiezaPlan = (estructuraId: string): string => {
+    const vista = vistasEstructura.find((item) => item.estructura.estructura_id === estructuraId);
+    return vista ? vista.oficial?.nombre ?? productoCliente(vista.estructura.nombre) : estructuraId;
+  };
+  /** The host piece's name of a garland that goes over another one. */
+  const anfitrionaDe = (armado: { armado: ArmadoGuirnaldaV1 } | undefined): string | undefined =>
+    armado?.armado.soporte === "sobre_estructura" && armado.armado.estructura_id ? nombrePiezaPlan(armado.armado.estructura_id) : undefined;
+  const descripcionesPorId = new Map(vistasEstructura.map((vista) => [vista.estructura.estructura_id, vista.descripcion]));
+  const vistaEditorPatron = patronEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === patronEditando.estructuraId) : undefined;
+  const vistaHojaArmado = hojaArmado ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmado) : undefined;
+  const vistaEditorArmado = armadoEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === armadoEditando.estructuraId) : undefined;
+  const vistaHojaArmadoBouquet = hojaArmadoBouquet ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmadoBouquet) : undefined;
+  const vistaEditorGuirnalda = guirnaldaEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === guirnaldaEditando.estructuraId) : undefined;
+  const vistaHojaGuirnalda = hojaGuirnalda ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaGuirnalda) : undefined;
+  const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
+  const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
+  const soloGlobos = plan.estructuras.every(cuentaEnGlobos);
+  // Escenografía: lo que se conserva de la foto del cliente. Entra en la
+  // imagen, el cliente la enciende o la apaga, y nunca se cotiza — no toca el
+  // plan, los materiales ni `plan_hash`.
+  const escenografia = referenceBlueprint
+    ? escenografiaCliente(referenceBlueprint, elementosMaterializados(referenceBlueprint, plan.plan.estructuras))
+    : [];
+  // El chip se apaga entero: sus elementos entran y salen juntos.
+  const escenografiaApagadaSet = new Set(escenografiaApagada);
+  const chipEncendido = (chip: { elementIds: string[]; visiblePorDefecto: boolean }) =>
+    chip.visiblePorDefecto && chip.elementIds.every((id) => !escenografiaApagadaSet.has(id));
+  const textosSustitucion = sustitucionesCliente(sustituciones.filter((item) => !esSustitucionDeColor(item)), descripcionesPorId);
+  const textosColorReferencia = sustitucionesCliente(sustituciones.filter(esSustitucionDeColor), descripcionesPorId);
+  const textosFaltantes = faltantesCliente(sinCobertura, descripcionesPorId);
+  const opcionesRecomendadas = seleccionCatalogo ? opcionesCatalogo(recomendaciones, seleccionCatalogo.linea, true) : [];
+  const opcionesBusqueda = seleccionCatalogo ? opcionesCatalogo(resultadosCatalogo, seleccionCatalogo.linea, false) : [];
+  const idDetalle = `${editorId}-detalle`;
+  // Data URLs of the turn's photos, built once per attachment set.
+  const urlsReferencia = useMemo(() => new Map((imagenesReferencia ?? []).map((imagen) => [imagen, urlImagen(imagen)])), [imagenesReferencia]);
+  const elementosReferencia = new Map((referenceBlueprint?.elements ?? []).map((elemento) => [elemento.element_id, elemento]));
+  // Consumo imputado por estructura, tal como lo firma Python. Antes se repartia aqui el
+  // paquete entre estructuras, que era la misma formula mantenida en dos idiomas.
+  const consumoPorEstructura = new Map(plan.costes_por_estructura.map((coste) => [coste.estructura_id, coste.consumo_cop]));
+  const imagenLinea = (variantId: string, propia?: string | null): string | undefined => propia ?? imagenesCatalogo[variantId];
+
+  function recorteDe(declarada: (typeof vistasEstructura)[number]["declarada"]) {
+    const elemento = declarada?.referencia_element_id ? elementosReferencia.get(declarada.referencia_element_id) : undefined;
+    if (!elemento) return null;
+    const imagen = imagenDeReferencia(imagenesReferencia, elemento.source_image_id);
+    const src = imagen ? urlsReferencia.get(imagen) : undefined;
+    return src ? { src, caja: elemento.reference_bbox } : null;
+  }
+
+  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores, leyenda, patronDibujo: patron }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
+    const recorte = recorteDe(declarada);
+    const ubicacionCorta = mayusculaInicial(ubicacionCortaCliente(estructura.ubicacion, estructura.repeticiones));
+    return {
+      id: estructura.estructura_id,
+      numero: indice + 1,
+      oficialId: oficial?.id,
+      espejo: estructura.ubicacion === "lateral_derecho",
+      titulo: oficial ? nombreConCantidadCliente(paraDescribir) : productoCliente(estructura.nombre),
+      subtitulo: [ubicacionCorta, medidasCortasCliente(estructura.tipo, declarada?.medidas)].filter(Boolean).join(" · "),
+      globos: estructura.total_unidades,
+      // A bouquet or kit made of balloons says "globos"; only real pieces say "piezas".
+      unidad: cuentaEnGlobos(estructura) ? "globos" : "piezas",
+      colores,
+      recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
+      recorteCrudo: recorte,
+      // While the colors slider of a confetti moves, its strip shows Python's live drawing (`enVivo`).
+      patron: patron ? { resuelto: patron, leyenda, enVivo: editorDisponible ? vistasEnVivo : undefined } : undefined,
+    };
+  });
+  const conFotos = piezas.some((pieza) => pieza.recorte);
+  const piezasEnFoto = referenceBlueprint ? piezasVistasEnReferencia(referenceBlueprint) : [];
+  const idsMaterializados = new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)));
+  // Only pieces a plan structure really links to count; with none linked the card falls back to product photos.
+  const piezasIncluidas = piezasEnFoto.filter((pieza) => idsMaterializados.has(pieza.elementId)).length;
+  const miniaturaReferencia = imagenesReferencia?.[0] ? urlsReferencia.get(imagenesReferencia[0]) : undefined;
+  const productos: ProductoPropuestaVista[] = (() => {
+    const grupos = new Map<string, ProductoPropuestaVista & { pulgadas: number[] }>();
+    for (const compra of plan.compras) {
+      const clave = `${compra.product_id}|${compra.color ?? ""}`;
+      const previo = grupos.get(clave);
+      const pulgadas = compra.diam_pulg != null ? [compra.diam_pulg] : [];
+      if (previo) {
+        previo.unidades += compra.design_quantity;
+        previo.pulgadas.push(...pulgadas);
+        previo.imagen ??= imagenLinea(compra.variant_id, compra.imagen);
+        continue;
+      }
+      const nombre = productoCliente(compra.titulo);
+      grupos.set(clave, { clave, nombre, alt: nombre, imagen: imagenLinea(compra.variant_id, compra.imagen), unidades: compra.design_quantity, tamanos: "", pulgadas });
+    }
+    return [...grupos.values()]
+      .map(({ pulgadas, ...producto }) => ({ ...producto, tamanos: unirTamanos(pulgadas) }))
+      .sort((a, b) => b.unidades - a.unidades);
+  })();
+  const tramosPlan = tramosPorTamano(Object.entries(plan.totales.globos_por_tamano).map(([codigo, unidades]) => ({ pulgadas: Number(/(\d+(?:[.,]\d+)?)/.exec(codigo)?.[1]?.replace(",", ".") ?? Number.NaN) || null, unidades })));
+  const textoTamanosPlan = tamanosCliente(tramosPlan.map((tramo) => ({ diam_pulg: tramo.pulgadas })));
+  const techo = plan.comercial.techo_cop;
+  const estadoPresupuesto = plan.comercial.estado === "PRESUPUESTO_EXCEDIDO"
+    ? `se pasa de tu presupuesto por ${pesos.format(plan.comercial.delta_cop)}`
+    : plan.comercial.estado === "APROBACION_REQUERIDA"
+      ? "revisión pendiente"
+      : techo != null ? "dentro de tu presupuesto" : null;
+  // While an edit is still saving (or a slider waits for its pause), approving would sign the plan it is about to replace.
+  const aprobarDeshabilitado = aprobado || generando || guardandoAjustes || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
+  // After an edit on an approved proposal the image is stale: approving again regenerates it (never on its own).
+  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : editadoTrasAprobar ? "Regenerar visual" : "Aprobar y ver cómo queda";
+  const ajustes: AjustePropuesta[] = [
+    ...textosFaltantes.map((texto): AjustePropuesta => ({ tipo: "faltante", texto })),
+    ...textosColorReferencia.map((texto): AjustePropuesta => ({ tipo: "color", texto })),
+    ...textosSustitucion.map((texto): AjustePropuesta => ({ tipo: "tamano", texto })),
+    ...supuestos.map((supuesto): AjustePropuesta => ({ tipo: "supuesto", texto: supuestoCliente(supuesto) })),
+  ];
+  // Why the approval is blocked, with the fix one tap away.
+  const bloqueo = aprobado || generando
+    ? null
+    : plan.comercial.estado === "PRESUPUESTO_EXCEDIDO"
+      ? { motivo: `Se pasa de tu presupuesto por ${pesos.format(plan.comercial.delta_cop)}.`, accion: "Ajustar al presupuesto", mensaje: "Ajusta la propuesta para que quepa en mi presupuesto." }
+      : plan.sin_cobertura.length > 0
+        ? { motivo: "A algunas piezas les faltan globos disponibles.", accion: "Buscar alternativas", mensaje: "Busca alternativas disponibles para las piezas a las que les faltan globos." }
+        : null;
+  const coloresCelebracion = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.fondo)))];
+  function aprobarConCelebracion(): void {
+    if (!onAprobar) return;
+    setCelebracion((valor) => valor + 1);
+    onAprobar();
+  }
+
+  function abrirPieza(estructuraId: string): void {
+    setDetalleAbierto(true);
+    setEstructuraAbierta(estructuraId);
+    requestAnimationFrame(() => detalleRef.current?.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "nearest" }));
+  }
+
+  function verCotizacion(): void {
+    if (onVerCotizacion) onVerCotizacion();
+    else setCotizacionAbierta(true);
+  }
+
+  /** Opens "Ajusta la propuesta" (a modal) on a piece, and on a balloon of it when the customer chose "Modificar". */
+  function abrirEditor(modo: ModoAjuste, estructuraId: string, objetivo?: PlanResuelto["estructuras"][number]["lineas"][number]) {
+    setErrorEdicion(null);
+    setDetalleAbierto(true);
+    abrirAjusteRef.current?.({ modo, estructuraId, objetivoVariantId: objetivo?.variant_id ?? null });
+  }
+
+  /** Shape and size of the line a search would replace, so the server only offers compatible balloons. */
+  function lineaObjetivoDe(variantId: string | null | undefined): { forma: string | null; diam_pulg: number | null } | undefined {
+    if (!variantId) return undefined;
+    const linea = plan.estructuras.flatMap((estructura) => estructura.lineas).find((item) => item.variant_id === variantId);
+    return linea ? { forma: linea.forma ?? null, diam_pulg: linea.diam_pulg ?? null } : undefined;
+  }
+
+  function navegarOpcionesBusqueda(evento: React.KeyboardEvent<HTMLInputElement>): void {
+    if (evento.key === "ArrowDown" && opcionesBusqueda.length > 0) {
+      evento.preventDefault();
+      setOpcionBusquedaActiva((indice) => Math.min(indice + 1, opcionesBusqueda.length - 1));
+      return;
+    }
+    if (evento.key === "ArrowUp" && opcionesBusqueda.length > 0) {
+      evento.preventDefault();
+      setOpcionBusquedaActiva((indice) => Math.max(indice - 1, 0));
+      return;
+    }
+    if (evento.key === "Enter" && opcionBusquedaActiva >= 0 && opcionesBusqueda[opcionBusquedaActiva]) {
+      evento.preventDefault();
+      void reemplazarDesdeCatalogo(opcionesBusqueda[opcionBusquedaActiva]!);
+      return;
+    }
+    if (evento.key === "Escape") {
+      evento.preventDefault();
+      if (consultaCatalogo) {
+        setConsultaCatalogo("");
+        setResultadosCatalogo([]);
+        setOpcionBusquedaActiva(-1);
+      } else {
+        setIntercambioAbierto(false);
+      }
+    }
+  }
+
+  /** Publishes a plan the server signed; the next edit starts from it even before React paints it. */
+  function publicarPlan(nuevo: PlanResuelto, cotizacion?: Cotizacion): void {
+    cola.fijar(nuevo);
+    onPlanActualizado?.(nuevo, cotizacion);
+  }
+
+  /**
+   * The notice's "Deshacer" is offered only while its edit is still the last
+   * thing that changed the plan and nothing else is on its way: going back
+   * to the plan before it would silently drop any later edit.
+   */
+  function puedeDeshacer(vuelta: VueltaAtras): boolean {
+    return !guardandoAjustes && vuelta.tramo.deshacible();
+  }
+
+  /** "Deshacer": back to the plan the server had signed before the edit (it still carries its approval token). */
+  function deshacer({ tramo, texto }: VueltaAtras): void {
+    setErrorEdicion(null);
+    void tramo.deshacer((anterior) => {
+      publicarPlan(anterior);
+      setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Total: ${pesos.format(anterior.totales.total_cop)}.` });
+    }).then((deshecho) => {
+      // Something else changed the plan in the meantime (the chat, another card): it stays as it is.
+      if (!deshecho) {
+        setAvisoEdicion(null);
+        setErrorEdicion("No lo deshice: la propuesta cambió después de ese ajuste.");
+      }
+    });
+  }
+
+  /** A new plan from an edit; `texto: null` publishes it without the per-edit notice. `avisos`: Python's sentences, shown with it. */
+  function planEditado(nuevo: PlanResuelto, cotizacion: Cotizacion | undefined, texto: string | null, deshacer?: VueltaAtras, avisos: readonly string[] = []): void {
+    if (!onPlanActualizado) return;
+    if (aprobado) setEditadoTrasAprobar(true);
+    publicarPlan(nuevo, cotizacion);
+    if (texto !== null) setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Nuevo total: ${pesos.format(nuevo.totales.total_cop)}.`, deshacer, avisos });
+  }
+
+  /**
+   * The card's direct controls (color split, size balance, color pattern)
+   * save on their own: each edit waits for the previous one and starts from
+   * the plan it signed (`cola`), with the new total and a way back to the plan
+   * before it. Resolves the reason shown to the customer, or `null` when the
+   * edit is in the plan. `enDialogo` leaves the error to the control that
+   * asked; `aviso: false` skips the per-edit notice (the pattern editor gives
+   * one for its whole session); `pedir` swaps the request (the pattern one
+   * reads Python's rejection); `tramo` joins the edit to others undone
+   * together (the pattern editor session); `alAvisar` receives Python's
+   * sentences about the edit when the notice is someone else's.
+   */
+  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string, opciones: { enDialogo?: boolean; aviso?: boolean; pedir?: typeof pedirPlanEditar; tramo?: TramoAjustes<PlanResuelto>; alAvisar?: (avisos: readonly string[]) => void } = {}): Promise<string | null> {
+    if (!onPlanActualizado) return "Esta propuesta ya no se puede editar.";
+    const pedir = opciones.pedir ?? pedirPlanEditar;
+    const tramo = opciones.tramo ?? cola.tramo();
+    if (!opciones.enDialogo) setErrorEdicion(null);
+    try {
+      await tramo.encolar(async (base) => {
+        const datos = await pedir({ modo: "aplicar", base, edicion }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar la pieza."));
+        const avisos = avisosDeEdicion(datos);
+        opciones.alAvisar?.(avisos);
+        planEditado(datos.plan, datos.cotizacion, opciones.aviso === false ? null : texto, { tramo, texto: "Volví a como estaba." }, avisos);
+        return datos.plan;
+      });
+      return null;
+    } catch (error) {
+      const mensaje = mensajeFalloPlanEditar(error, "No se pudo actualizar la pieza.");
+      if (!opciones.enDialogo) setErrorEdicion(mensaje);
+      return mensaje;
+    }
+  }
+
+  /** One autosave of the pattern editor. A rejected pattern comes back with Python's own sentence ("Negro no aparece…"). */
+  function guardarPatron(sesion: SesionPatron, patron: PatronColor | null): Promise<string | null> {
+    const pedir: typeof pedirPlanEditar = (cuerpo, respaldo, opciones) => pedirPlanEditarPatron(cuerpo, respaldo, opciones).catch((error: unknown) => {
+      // Python rejected this very pattern: retrying it would get the same answer.
+      if (patron && error instanceof FalloPlanPatron && error.patronInvalido) patronesRechazadosRef.current.add(patron);
+      throw error;
+    });
+    return aplicarAjusteDirecto(
+      { accion: "patron", estructura_id: sesion.estructuraId, patron_color: patron },
+      "",
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
+    );
+  }
+
+  function abrirEditorPatron(estructuraId: string): void {
+    setFalloPatron(null);
+    setPatronEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
+  }
+
+  /**
+   * The editor closes at once; what it still had to save finishes in the
+   * background. Then ONE notice for the whole session, with a "Deshacer" back
+   * to the plan before it (while nothing else changed the plan in between),
+   * and the reason if the last change did not make it into the plan, with a
+   * retry of that change when it failed on the way (not when Python rejected it).
+   */
+  function cerrarEditorPatron(fin: Promise<ResumenAutoguardado<PatronColor | null>>): void {
+    const sesion = patronEditando;
+    setPatronEditando(null);
+    if (!sesion) return;
+    void fin.then((resumen) => avisarSesionPatron(sesion, resumen));
+  }
+
+  function avisarSesionPatron(sesion: SesionPatron, { guardados, error, sinGuardar }: ResumenAutoguardado<PatronColor | null>): void {
+    if (guardados > 0) {
+      setAvisoEdicion({
+        id: ++secuenciaAvisoRef.current,
+        texto: `Patrón actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
+        deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
+      });
+    }
+    const reintentable = sinGuardar && !(sinGuardar.valor && patronesRechazadosRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
+    setFalloPatron(error ? { mensaje: `El último cambio del patrón no se guardó: ${error}`, reintentar: reintentable ? () => reintentarPatron(sesion, reintentable.valor) : null } : null);
+  }
+
+  function reintentarPatron(sesion: SesionPatron, patron: PatronColor | null): void {
+    setFalloPatron(null);
+    void guardarPatron(sesion, patron).then((error) => avisarSesionPatron(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: patron } : null }));
+  }
+
+  /** One autosave of the bouquet assembly editor (ADR-0030). A rejected assembly comes back with Python's own sentence. */
+  function guardarArmado(sesion: SesionArmado, armado: ArmadoBouquetV1 | null): Promise<string | null> {
+    const pedir: typeof pedirPlanEditar = (cuerpo, respaldo, opciones) => pedirPlanEditarArmado(cuerpo, respaldo, opciones).catch((error: unknown) => {
+      // Python rejected this very assembly: retrying it would get the same answer.
+      if (armado && error instanceof FalloPlanArmado && error.armadoInvalido) armadosRechazadosRef.current.add(armado);
+      throw error;
+    });
+    return aplicarAjusteDirecto(
+      { accion: "armado", estructura_id: sesion.estructuraId, armado_bouquet: armado },
+      "",
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
+    );
+  }
+
+  function abrirEditorArmado(estructuraId: string): void {
+    setFalloArmado(null);
+    setArmadoEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
+  }
+
+  /** Like the pattern editor: closes at once, then ONE notice for the whole session with a "Deshacer". */
+  function cerrarEditorArmado(fin: Promise<ResumenAutoguardado<ArmadoBouquetV1 | null>>): void {
+    const sesion = armadoEditando;
+    setArmadoEditando(null);
+    if (!sesion) return;
+    void fin.then((resumen) => avisarSesionArmado(sesion, resumen));
+  }
+
+  function avisarSesionArmado(sesion: SesionArmado, { guardados, error, sinGuardar }: ResumenAutoguardado<ArmadoBouquetV1 | null>): void {
+    if (guardados > 0) {
+      setAvisoEdicion({
+        id: ++secuenciaAvisoRef.current,
+        texto: `Armado actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
+        deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
+      });
+    }
+    const reintentable = sinGuardar && !(sinGuardar.valor && armadosRechazadosRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
+    setFalloArmado(error ? { mensaje: `El último cambio del armado no se guardó: ${error}`, reintentar: reintentable ? () => reintentarArmado(sesion, reintentable.valor) : null } : null);
+  }
+
+  function reintentarArmado(sesion: SesionArmado, armado: ArmadoBouquetV1 | null): void {
+    setFalloArmado(null);
+    void guardarArmado(sesion, armado).then((error) => avisarSesionArmado(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
+  }
+
+  /** One autosave of the garland assembly editor (ADR-0032, action `armado_guirnalda`). A rejection comes back with Python's sentence. */
+  function guardarGuirnalda(sesion: SesionArmado, armado: ArmadoGuirnaldaV1 | null): Promise<string | null> {
+    const pedir: typeof pedirPlanEditar = (cuerpo, respaldo, opciones) => pedirPlanEditarArmado(cuerpo, respaldo, opciones).catch((error: unknown) => {
+      // Python rejected this very assembly: retrying it would get the same answer.
+      if (armado && error instanceof FalloPlanArmado && error.armadoInvalido) guirnaldasRechazadasRef.current.add(armado);
+      throw error;
+    });
+    return aplicarAjusteDirecto(
+      { accion: "armado_guirnalda", estructura_id: sesion.estructuraId, armado_guirnalda: armado },
+      "",
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
+    );
+  }
+
+  /**
+   * "Guardar arco" of the arch editor (ADR-0035, step 1): writes the assembly the decorator drafted into the
+   * proposal with the `armado_arco` edit, through the same queue and signature as every other edit, so the plan
+   * is resolved and signed again (new `plan_hash`, new total) and the notice offers "Deshacer". The editor stays
+   * open on a failure, with Python's own sentence for a rejected assembly.
+   */
+  function guardarArco(estructuraId: string, armado: ArmadoArcoV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_arco", estructura_id: estructuraId, armado_arco: armado },
+      "Arco guardado: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar columna" del editor de columnas (ADR-0035, paso 3): escribe el armado que el decorador dibujó en la
+   * propuesta con la edición `armado_columna`, por la misma cola y la misma firma que cualquier otra edición, así que
+   * el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el aviso ofrece «Deshacer». El editor
+   * sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarColumna(estructuraId: string, armado: ArmadoColumnaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_columna", estructura_id: estructuraId, armado_columna: armado },
+      "Columna guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar columna" del editor de columnas orgánicas (ADR-0035, paso 3): escribe el armado que el decorador dibujó
+   * en la propuesta con la edición `armado_columna_organica`, por la misma cola y la misma firma que cualquier otra
+   * edición, así que el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el aviso ofrece
+   * «Deshacer». El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarColumnaOrganica(estructuraId: string, armado: ArmadoColumnaOrganicaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_columna_organica", estructura_id: estructuraId, armado_columna_organica: armado },
+      "Columna guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar guirnalda" del editor de guirnaldas del motor (ADR-0035, paso 3): escribe el armado que el decorador
+   * dibujó en la propuesta con la edición `armado_guirnalda_organica`, por la misma cola y la misma firma que
+   * cualquier otra edición, así que el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el
+   * aviso ofrece «Deshacer». El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  /**
+   * «Guardar arco» / «Guardar semiarco» del editor del arco orgánico: escribe el armado con la edición
+   * `armado_arco_organico`, por la misma cola y la misma firma que cualquier otra edición (nuevo `plan_hash`, nuevo
+   * total, «Deshacer»). El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarArcoOrganico(estructuraId: string, armado: ArmadoArcoOrganicoV1, pieza: "Arco" | "Semiarco"): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_arco_organico", estructura_id: estructuraId, armado_arco_organico: armado },
+      `${pieza} guardado: la propuesta cambió de firma, así que es otra decoración.`,
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  function guardarGuirnaldaOrganica(estructuraId: string, armado: ArmadoGuirnaldaOrganicaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_guirnalda_organica", estructura_id: estructuraId, armado_guirnalda_organica: armado },
+      "Guirnalda guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  function abrirEditorGuirnalda(estructuraId: string): void {
+    setFalloGuirnalda(null);
+    setGuirnaldaEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
+  }
+
+  /** Like the other editors: closes at once, then ONE notice for the whole session with a "Deshacer". */
+  function cerrarEditorGuirnalda(fin: Promise<ResumenAutoguardado<ArmadoGuirnaldaV1 | null>>): void {
+    const sesion = guirnaldaEditando;
+    setGuirnaldaEditando(null);
+    if (!sesion) return;
+    void fin.then((resumen) => avisarSesionGuirnalda(sesion, resumen));
+  }
+
+  function avisarSesionGuirnalda(sesion: SesionArmado, { guardados, error, sinGuardar }: ResumenAutoguardado<ArmadoGuirnaldaV1 | null>): void {
+    if (guardados > 0) {
+      setAvisoEdicion({
+        id: ++secuenciaAvisoRef.current,
+        texto: `Armado de la guirnalda actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
+        deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
+      });
+    }
+    const reintentable = sinGuardar && !(sinGuardar.valor && guirnaldasRechazadasRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
+    setFalloGuirnalda(error ? { mensaje: `El último cambio del armado no se guardó: ${error}`, reintentar: reintentable ? () => reintentarGuirnalda(sesion, reintentable.valor) : null } : null);
+  }
+
+  function reintentarGuirnalda(sesion: SesionArmado, armado: ArmadoGuirnaldaV1 | null): void {
+    setFalloGuirnalda(null);
+    void guardarGuirnalda(sesion, armado).then((error) => avisarSesionGuirnalda(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
+  }
+
+  async function reemplazarDesdeCatalogo(opcion: OpcionCatalogo) {
+    if (!onPlanActualizado || !seleccionCatalogo || guardandoEdicion) return;
+    setGuardandoEdicion(true);
+    setErrorEdicion(null);
+    try {
+      await cola.encolar(async (base) => {
+        const datos = await pedirPlanEditar({ modo: "aplicar", base, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } } }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
+        planEditado(datos.plan, datos.cotizacion, "Listo, cambié el globo.", undefined, avisosDeEdicion(datos));
+        return datos.plan;
+      });
+       setIntercambioAbierto(false);
+       setSeleccionCatalogo(null);
+       requestAnimationFrame(() => disparadorModalRef.current?.focus());
+    } catch (error) {
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo cambiar la pieza."));
+    } finally {
+      setGuardandoEdicion(false);
+    }
+  }
+
+  async function quitarVariante(estructuraId: string, linea: PlanResuelto["estructuras"][number]["lineas"][number]) {
+    if (!onPlanActualizado || guardandoEdicion) return;
+    // No browser dialog: the removal happens and can be undone for a few
+    // seconds by restoring the plan the server had already signed.
+    const nombre = productoCliente(linea.titulo);
+    const pieza = descripcionesPorId.get(estructuraId) ?? "la decoración";
+    setGuardandoEdicion(true);
+    setErrorEdicion(null);
+    const tramo = cola.tramo();
+    try {
+      await tramo.encolar(async (anterior) => {
+        const datos = await pedirPlanEditar({ modo: "aplicar", base: anterior, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
+        planEditado(datos.plan, datos.cotizacion, `Quité ${nombre} de ${pieza}.`, { tramo, texto: `Volví a poner ${nombre}.` }, avisosDeEdicion(datos));
+        return datos.plan;
+      });
+    } catch (error) {
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo quitar la pieza."));
+    } finally {
+      setGuardandoEdicion(false);
+    }
+  }
+
+  async function abrirIntercambio() {
+    if (!seleccionCatalogo || buscandoCatalogo) return;
+    peticionCatalogoRef.current?.abort();
+    const controlador = new AbortController();
+    peticionCatalogoRef.current = controlador;
+    const secuencia = ++secuenciaCatalogoRef.current;
+    setIntercambioAbierto(true);
+    setResultadosCatalogo([]);
+    setConsultaCatalogo("");
+    setOpcionBusquedaActiva(-1);
+    setBuscandoCatalogo(true);
+    setErrorEdicion(null);
+    try {
+      const datos = await pedirPlanEditar({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, approval_token: plan.approval_token }, RESPALDO_RECOMENDACIONES, { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
+      if (secuencia !== secuenciaCatalogoRef.current) return;
+      setRecomendaciones(datos.candidatos ?? []);
+    } catch (error) {
+      if (esCancelacion(error)) return;
+      setErrorEdicion(mensajeFalloPlanEditar(error, RESPALDO_RECOMENDACIONES));
+    } finally {
+      if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
+    }
+  }
+
+  async function buscarCatalogoPorTexto(consultaCruda: string) {
+    const consulta = consultaCruda.trim();
+    if (consulta.length < 2) return;
+    peticionCatalogoRef.current?.abort();
+    const controlador = new AbortController();
+    peticionCatalogoRef.current = controlador;
+    const secuencia = ++secuenciaCatalogoRef.current;
+    setBuscandoCatalogo(true);
+    setErrorEdicion(null);
+    try {
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, ...(lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) ? { linea_objetivo: lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) } : {}) }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
+      if (secuencia !== secuenciaCatalogoRef.current) return;
+      setResultadosCatalogo(datos.candidatos ?? []);
+    } catch (error) {
+      if (esCancelacion(error)) return;
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo buscar en el catálogo."));
+    } finally {
+      if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
+    }
+  }
+
+  async function buscarEnCatalogo(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    await buscarCatalogoPorTexto(consultaCatalogo);
+  }
+
+  useEffect(() => {
+    if (!intercambioAbierto || consultaCatalogo.trim().length < 2) return;
+    const temporizador = window.setTimeout(() => void buscarCatalogoPorTexto(consultaCatalogo), 280);
+    return () => {
+      window.clearTimeout(temporizador);
+      peticionCatalogoRef.current?.abort();
+    };
+    // The search function reads only current local state; changing it on every
+    // render would restart the debounce.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- timer uses current state without restarting on every render.
+  }, [consultaCatalogo, intercambioAbierto]);
+
+  useEffect(() => {
+    if (!intercambioAbierto) peticionCatalogoRef.current?.abort();
+  }, [intercambioAbierto]);
+
+  useEffect(() => {
+    if (!solicitudImagenes) return;
+    const idsSolicitados = new URLSearchParams(solicitudImagenes).getAll("variant_id");
+    const controlador = new AbortController();
+    fetch(`/api/catalogo/imagenes?${solicitudImagenes}`, { signal: controlador.signal })
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : Promise.reject(new Error("No se pudieron cargar las fotos del catálogo."))))
+      .then((datos: { imagenes?: Record<string, string> }) => {
+        const imagenes = datos.imagenes ?? {};
+        setImagenesCatalogo((previas) => ({ ...previas, ...imagenes }));
+        setImagenesAusentes((previas) => ({ ...previas, ...Object.fromEntries(idsSolicitados.filter((variantId) => !imagenes[variantId]).map((variantId) => [variantId, true] as const)) }));
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setImagenesAusentes((previas) => ({ ...previas, ...Object.fromEntries(idsSolicitados.map((variantId) => [variantId, true] as const)) }));
+      });
+    return () => controlador.abort();
+  }, [solicitudImagenes]);
+
+  // A plan that arrives from outside (the chat built another one) is the base of the next edit.
+  useEffect(() => {
+    cola.sincronizar(plan);
+  }, [cola, plan]);
+
+  // The edit notice (and its "Deshacer") stays a few seconds, then gets out of the way; longer with Python's sentences to read.
+  useEffect(() => {
+    if (!avisoEdicion) return;
+    const fin = window.setTimeout(() => setAvisoEdicion((actual) => (actual?.id === avisoEdicion.id ? null : actual)), avisoEdicion.avisos?.length ? 12000 : 6000);
+    return () => window.clearTimeout(fin);
+  }, [avisoEdicion]);
+
+  // Approved again: the "your proposal changed" notice has done its job.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberado: el aviso depende de un cambio de la prop `aprobado`.
+    if (aprobado) setEditadoTrasAprobar(false);
+  }, [aprobado]);
+
+  useEffect(() => {
+    if (!intercambioAbierto) return;
+    requestAnimationFrame(() => volverDetalleRef.current?.focus() ?? busquedaCatalogoRef.current?.focus());
+  }, [intercambioAbierto]);
+
+  /** The explorer's colors and first page start loading when the customer reaches for "Ajustar plan". */
+  const precalentarAjuste = () => precalentarExplorador(plan.approval_token);
+  const botonAjustar = editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded="false" aria-controls={editorId} onPointerEnter={precalentarAjuste} onFocus={precalentarAjuste} onTouchStart={precalentarAjuste} onClick={() => abrirEditor("agregar", plan.plan.estructuras[0]?.estructura_id ?? "")} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-borde px-2.5 py-1 text-xs font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>;
+
+  return (
+    <motion.section
+      data-testid="plan-desglose"
+      aria-label={`Tu propuesta: ${plan.plan.concepto.titulo}`}
+      variants={CASCADA}
+      initial={reducir ? false : "oculto"}
+      animate="visible"
+      className="@container mt-3 w-full overflow-hidden rounded-[20px] border border-borde-suave bg-superficie text-texto shadow-[0_1px_2px_var(--sombra),0_18px_40px_var(--sombra)]"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 pt-4 @xl:px-5.5 @xl:pt-4.5">
+        <div className="min-w-0 flex-1 basis-60">
+          <motion.p variants={ENTRADA_CASCADA} className="text-xs font-medium text-acento">Tu propuesta</motion.p>
+          <motion.h3 variants={ENTRADA_CASCADA} className="mt-0.5 text-lg font-semibold leading-snug tracking-tight text-texto @xl:text-xl">{plan.plan.concepto.titulo}</motion.h3>
+          {resumenPlan && <motion.p variants={ENTRADA_CASCADA} data-testid="plan-resumen" className="mt-1 text-sm text-texto-suave">{resumenPlan}</motion.p>}
+          {plan.event_label && <p data-testid="plan-event-label" className="mt-1 text-xs text-texto-suave">Evento: <span className="font-medium text-texto">{plan.event_label}</span></p>}
+          {modoDev && plan.event_match_levels && plan.event_match_levels.length > 0 && (
+            <div data-testid="plan-match-levels" className="mt-1 flex flex-wrap gap-1.5" aria-label="Niveles de coincidencia del catálogo">
+              {plan.event_match_levels.map((level) => (
+                <span key={level} className="rounded-full border border-borde px-1.5 py-0.5 text-[10px] font-medium text-texto-suave">
+                  {level === "exact_event" ? "Evento exacto" : level === "thematic" ? "Temático" : "Adaptable"}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {referenceBlueprint && miniaturaReferencia && piezasIncluidas > 0 && (
+          <motion.div variants={ENTRADA_CASCADA} className="flex items-center gap-2.5 rounded-2xl bg-superficie-suave py-1.5 pl-1.5 pr-3 ring-1 ring-borde-suave ring-inset">
+            <img src={miniaturaReferencia} alt="Tu foto de referencia" width={52} height={36} className="h-9 w-13 rounded-[10px] object-cover" />
+            <span>
+              <span className="block text-xs font-semibold text-texto">Basada en tu foto</span>
+              <span className="block text-xs text-texto-suave">{piezasIncluidas} de {contar(piezasEnFoto.length, "pieza incluida", "piezas incluidas")}</span>
+            </span>
+          </motion.div>
+        )}
+      </div>
+      {precioCliente && <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">{precioCliente}</motion.div>}
+      {/* The concept description is free model text and may name pieces the plan does not have; the summary above is derived from the real structures. */}
+      {modoDev && <p className="px-4 pt-2 text-xs text-texto-suave @xl:px-5.5">{plan.plan.concepto.descripcion}</p>}
+
+      {fotoEspacio && <div className="px-4 pt-4 @xl:px-5.5"><PanelEspacio foto={fotoEspacio} espacio={plan.plan.espacio} /></div>}
+
+      <motion.ul
+        variants={LISTA_CASCADA}
+        aria-label="Piezas de la propuesta"
+        className={conFotos
+          ? "grid grid-cols-2 gap-2.5 px-4 pt-4 @xl:gap-3 @xl:px-5.5"
+          : "grid grid-cols-1 gap-2.5 px-4 pt-4 @md:grid-cols-2 @2xl:grid-cols-3 @xl:px-5.5"}
+      >
+        {piezas.map((pieza, indice) => conFotos
+          ? <TarjetaPiezaFoto key={pieza.id} pieza={pieza} retraso={reducir ? 0 : 0.45 + indice * 0.2} controles={idDetalle} onAbrir={() => abrirPieza(pieza.id)} />
+          : <ChipEstructura key={pieza.id} pieza={pieza} controles={idDetalle} onAbrir={() => abrirPieza(pieza.id)} />)}
+      </motion.ul>
+
+      {!conFotos && productos.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">
+          <p className="text-[13px] font-semibold text-texto">Globos que usaré</p>
+          <motion.ul variants={LISTA_CASCADA} className="mt-2.5 grid grid-cols-1 gap-2.5 @md:grid-cols-2 @2xl:grid-cols-3" aria-label="Productos del catálogo que usa la propuesta">
+            {productos.slice(0, 6).map((producto, indice) => <TarjetaProducto key={producto.clave} producto={producto} indice={indice} />)}
+          </motion.ul>
+          {productos.length > 6 && <p className="mt-2 text-xs text-texto-suave">Y {contar(productos.length - 6, "producto más", "productos más")} en el detalle.</p>}
+        </motion.div>
+      )}
+
+      {soloGlobos && tramosPlan.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">
+          <BarraTamanos tramos={tramosPlan} descripcion={textoTamanosPlan ? mayusculaInicial(textoTamanosPlan) : null} retraso={reducir ? 0 : 0.9} />
+        </motion.div>
+      )}
+
+      {escenografia.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} data-testid="plan-ambientacion" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-4 pt-3 text-xs text-texto-suave @xl:px-5.5">
+          <span>En la imagen también pondré</span>
+          <ul className="contents" aria-label="Escenografía de tu foto que va en la imagen; se puede quitar">
+            {escenografia.map((chip) => {
+              const encendido = chipEncendido(chip);
+              return (
+                <li key={chip.etiqueta} className="contents">
+                  <button
+                    type="button"
+                    aria-pressed={encendido}
+                    disabled={!onEscenografiaToggle}
+                    onClick={() => onEscenografiaToggle?.(chip.elementIds, !encendido)}
+                    title={encendido ? `Quitar ${chip.etiqueta.toLowerCase()} de la imagen` : `Poner ${chip.etiqueta.toLowerCase()} en la imagen`}
+                    className={`rounded-full px-2.5 py-0.5 ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-acento disabled:cursor-default ${encendido ? "bg-superficie-suave text-texto ring-borde-suave" : "text-texto-suave line-through ring-borde-suave hover:text-texto"}`}
+                  >
+                    {chip.etiqueta}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <span>· no se cotizan</span>
+        </motion.div>
+      )}
+
+      {ajustes.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-3 @xl:px-5.5">
+          <AjustesPropuesta ajustes={ajustes} />
+        </motion.div>
+      )}
+      {modoDev && plan.event_relaxations && plan.event_relaxations.length > 0 && (
+        <p data-testid="plan-event-relaxations" className="mx-4 mt-3 rounded-md border border-aviso/40 bg-aviso-suave px-2.5 py-2 text-xs text-aviso @xl:mx-5.5">
+          Ajustes declarados: {plan.event_relaxations.join("; ")}
+        </p>
+      )}
+
+      <motion.div
+        ref={detalleRef}
+        id={idDetalle}
+        inert={!detalleAbierto}
+        initial={false}
+        animate={{ height: detalleAbierto ? "auto" : 0, opacity: detalleAbierto ? 1 : 0 }}
+        transition={reducir ? { duration: 0 } : { height: { duration: 0.42, ease: [0.23, 1, 0.32, 1] }, opacity: { duration: 0.25 } }}
+        style={{ overflow: "hidden" }}
+      >
+        <div className="space-y-3 px-4 pt-4 @xl:px-5.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-texto-suave">Toca una pieza para ver qué lleva</p>
+            {botonAjustar}
+          </div>
+
+          {editorDisponible && (
+            <ModalAjustarPropuesta
+              abrirRef={abrirAjusteRef}
+              piezas={plan.plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, nombre: descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre }))}
+              lineasDe={(estructuraId) => lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? [])}
+              imagenDeLinea={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
+              approvalToken={plan.approval_token}
+              variantIdsDelPlan={new Set(plan.estructuras.flatMap((estructura) => estructura.lineas.map((linea) => linea.variant_id)))}
+              idContenido={editorId}
+              onAplicar={(edicion, aviso) => aplicarAjusteDirecto(edicion, aviso, { enDialogo: true })}
+            />
+          )}
+          {errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+
+          <ol className="space-y-2.5" aria-label="Piezas de la decoración">
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, armadoArcoOrganico, armadoColumna, armadoColumnaOrganica, armadoGuirnaldaOrganica, dibujoEsquematico, tonos }, indice) => (
+              <DetalleEstructura
+                key={estructura.estructura_id}
+                idBase={`${editorId}-pieza-${indice}`}
+                estructura={estructura}
+                declarada={declarada}
+                oficial={oficial}
+                abierto={estructuraAbierta === estructura.estructura_id}
+                onAlternar={() => setEstructuraAbierta((actual) => (actual === estructura.estructura_id ? null : estructura.estructura_id))}
+                recorte={piezas[indice]?.recorteCrudo}
+                lineas={lineasVisiblesPorVariante(estructura.lineas)}
+                imagenDe={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
+                fotoAusente={(linea) => Boolean(imagenesAusentes[linea.variant_id])}
+                sumaCop={consumoPorEstructura.get(estructura.estructura_id) ?? null}
+                editable={editorDisponible}
+                onAgregar={() => abrirEditor("agregar", estructura.estructura_id)}
+                onEditar={(linea) => abrirEditor("reemplazar", estructura.estructura_id, linea)}
+                onQuitar={(linea) => void quitarVariante(estructura.estructura_id, linea)}
+                puedeQuitar={(linea) => lineaQuitable(linea, lineasVisiblesPorVariante(estructura.lineas), declarada?.materiales)}
+                // The sliders save on release and show their own status (with "Reintentar"); the card keeps its "Deshacer".
+                onRepartir={editorDisponible ? (participaciones) => aplicarAjusteDirecto({ accion: "repartir", estructura_id: estructura.estructura_id, participaciones }, "Listo, cambié la distribución de colores.", { enDialogo: true }) : undefined}
+                onCambiarMezcla={editorDisponible ? (mezcla) => aplicarAjusteDirecto({ accion: "mezcla", estructura_id: estructura.estructura_id, mezcla }, "Listo, cambié los tamaños de la pieza.", { enDialogo: true }) : undefined}
+                patron={conPatron || patron ? {
+                  resuelto: patronDibujo,
+                  leyenda,
+                  onEditar: editorDisponible && conPatron ? () => abrirEditorPatron(estructura.estructura_id) : undefined,
+                  // A garland with its assembly has ONE sheet: the pattern's and the assembly's merged (ADR-0032, E6).
+                  onHojaArmado: patron ? () => (armadoGuirnalda ? setHojaGuirnalda : setHojaArmado)(estructura.estructura_id) : undefined,
+                  // The session starts from the plan the pending slider changes sign.
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                armado={esBouquet && declarada && (editorDisponible || armado) ? {
+                  resuelto: armado,
+                  leyenda: leyendaArmado,
+                  onEditar: editorDisponible ? () => abrirEditorArmado(estructura.estructura_id) : undefined,
+                  onHojaArmado: armado ? () => setHojaArmadoBouquet(estructura.estructura_id) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                guirnalda={armadoGuirnalda ? {
+                  resuelto: armadoGuirnalda,
+                  leyenda: leyendaDeGuirnalda,
+                  anfitriona: anfitrionaDe(armadoGuirnalda),
+                  onEditar: editorDisponible && declarada ? () => abrirEditorGuirnalda(estructura.estructura_id) : undefined,
+                  onHojaArmado: () => setHojaGuirnalda(estructura.estructura_id),
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // El bloque pide su dibujo a /api/plan-armado-arco con el plan a la vista: el SVG es
+                // derivado y no viaja dentro del plan ni entra en `plan_hash` (ADR-0034, consecuencia 2).
+                arco={armadoArco ? {
+                  armado: armadoArco,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarArco(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que el arco clásico: el dibujo es derivado, se pide a /api/plan-armado-arco-organico y no entra en `plan_hash`.
+                // Con `onGuardar` desde que existe la edición `armado_arco_organico` en los dos lados de la frontera
+                // (`edicion-esquemas.ts`, `app/plan_edicion_arco_organico.py`): el arco orgánico, el asimétrico y
+                // todo semiarco (el mismo armado con `forma.corte` < 1) ofrecen su «Editar arco» / «Editar semiarco».
+                arcoOrganico={armadoArcoOrganico ? {
+                  armado: armadoArcoOrganico,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarArcoOrganico(estructura.estructura_id, armado, estructura.tipo === "semiarco" ? "Semiarco" : "Arco") : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que el arco: el dibujo de la columna es derivado, se pide a /api/plan-armado-columna y no entra en `plan_hash`.
+                columna={armadoColumna ? {
+                  armado: armadoColumna,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarColumna(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que la columna de anillos: el dibujo es derivado, se pide a /api/plan-armado-columna-organica y no entra en `plan_hash`.
+                columnaOrganica={armadoColumnaOrganica ? {
+                  armado: armadoColumnaOrganica,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarColumnaOrganica(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que el arco: el dibujo es derivado, se pide a /api/plan-armado-guirnalda-organica y no entra en `plan_hash`.
+                guirnaldaOrganica={armadoGuirnaldaOrganica ? {
+                  armado: armadoGuirnaldaOrganica,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarGuirnaldaOrganica(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // El dibujo esquemático va después de todos los bloques de armado y antes del patrón: una
+                // pieza que un motor dibuja de verdad siempre gana. Lo único que guarda es la forma elegida
+                // de la pieza (`formas-pieza.ts`), que cambia el dibujo y nada más: no hay armado que
+                // escribir y el dibujo no calcula ninguna cantidad.
+                dibujo={dibujoEsquematico ? {
+                  pieza: dibujoEsquematico,
+                  onCambiarForma: editorDisponible
+                    ? (forma) => aplicarAjusteDirecto({ accion: "forma", estructura_id: estructura.estructura_id, forma }, forma === null ? "Listo, la pieza vuelve a su forma por defecto." : "Listo, cambié la forma de la pieza.", { enDialogo: true })
+                    : undefined,
+                  // «Editar pared» / «Editar aro»…: forma, densidad y medidas en UNA edición (`propiedades`), así que la
+                  // propuesta se recalcula y se firma una vez y el aviso ofrece un solo «Deshacer».
+                  onGuardarPropiedades: editorDisponible
+                    ? (cambios) => aplicarAjusteDirecto({ accion: "propiedades", estructura_id: estructura.estructura_id, ...cambios }, "Listo, guardé la pieza: la propuesta recalculó sus globos y su precio.", { enDialogo: true })
+                    : undefined,
+                } : undefined}
+                vistaReparto={editorDisponible ? {
+                  pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),
+                  vistas: vistasEnVivo,
+                } : undefined}
+                ocupado={guardandoEdicion}
+                pendientes={pendientes}
+                onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
+                modoDev={modoDev}
+              />
+            ))}
+          </ol>
+
+          <div className="space-y-1 text-xs text-texto-suave">
+            <p>{soloGlobos ? `Unos ${contar(plan.totales.total_unidades, "globo", "globos")} en total.` : `Unas ${contar(plan.totales.total_unidades, "unidad", "unidades")} en total.`} Los globos se venden en paquetes cerrados y cada paquete se compra una sola vez para toda la decoración.</p>
+            {/* ahorro_paquetes_cop compares against buying every structure line in separate packages, a purchase nobody quoted; for small plans it can exceed the total, so the customer only sees the real total. */}
+            {modoDev && plan.totales.ahorro_paquetes_cop > 0 && <p>Ahorro por consolidar paquetes: <span className="font-medium text-texto">{pesos.format(plan.totales.ahorro_paquetes_cop)} COP</span></p>}
+            {modoDev && acabados.length > 0 && <p>Acabado solicitado: <span className="font-medium text-texto">{acabados.join(", ")}</span></p>}
+          </div>
+          {plan.alternativas.length > 0 && <div data-testid="plan-alternativas" className="space-y-1 rounded-xl bg-superficie-suave p-3 text-xs text-texto"><p className="font-semibold">Otras opciones de precio</p>{plan.alternativas.map((alternativa) => <p key={alternativa.familia_id} className="flex items-center justify-between gap-2"><span>{alternativa.etiqueta === "economica" ? "Económica" : alternativa.etiqueta === "equilibrada" ? "Equilibrada" : "Premium"}: {productoCliente(alternativa.titulo)}</span><span className="shrink-0 font-medium">{pesos.format(alternativa.total_cop)}{alternativa.ahorro_cop > 0 ? ` · ahorras ${pesos.format(alternativa.ahorro_cop)}` : ""}</span></p>)}</div>}
+          {modoDev && (sustituciones.length > 0 || sinCobertura.length > 0) && <div className="space-y-1 text-[11px] text-texto-suave">{sustituciones.map((item) => <p key={`sustitucion-dev:${item.estructura_id}:${item.pedido}:${item.entregado}:${item.motivo}`}>{item.estructura_id}: {item.pedido} → {item.entregado}</p>)}{sinCobertura.map((item) => <p key={`cobertura-dev:${item.estructura_id}:${item.product_id}:${item.tamano}`}>{item.estructura_id}: sin cobertura para {item.tamano}</p>)}</div>}
+        </div>
+      </motion.div>
+
+      <motion.div variants={ENTRADA_CASCADA} className="mt-4 flex flex-col gap-3 border-t border-borde-suave bg-superficie-suave px-4 py-4 @2xl:flex-row @2xl:items-center @2xl:justify-between @xl:px-5.5">
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 @2xl:block">
+          <p data-testid="plan-total" className="text-2xl font-semibold tracking-tight whitespace-nowrap tabular-nums text-texto">
+            <NumeroAnimado valor={plan.totales.total_cop} formato="pesos" retraso={reducir ? 0 : 1.1} />
+          </p>
+          <p className={`text-xs ${plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" ? "text-aviso" : "text-texto-suave"}`}>
+            COP{estadoPresupuesto ? ` · ${estadoPresupuesto}` : ""}
+            <span aria-hidden="true"> · </span>
+            <button type="button" onClick={verCotizacion} aria-haspopup="dialog" className="font-medium whitespace-nowrap text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">Ver cotización</button>
+          </p>
+        </div>
+        <div className="flex flex-col-reverse items-stretch gap-1.5 @md:flex-row @md:items-center @md:justify-end">
+          <button
+            type="button"
+            aria-expanded={detalleAbierto}
+            aria-controls={idDetalle}
+            onClick={() => setDetalleAbierto((abierto) => !abierto)}
+            className="inline-flex h-10 items-center justify-center gap-1 rounded-[0.8rem] px-3 text-sm font-medium whitespace-nowrap text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+          >
+            {detalleAbierto ? "Ocultar productos" : editorDisponible ? "Ver productos y ajustar" : "Ver productos"}
+            <ChevronDown className={`size-4 transition-transform ${detalleAbierto ? "rotate-180" : ""}`} aria-hidden="true" />
+          </button>
+          {onAprobar && (
+            <div className="plan-card-approval-action">
+              <BotonAprobar data-testid="aprobar-generar-plan" onClick={aprobarConCelebracion} disabled={aprobarDeshabilitado} ocupado={generando} className="w-full @md:w-auto">
+                {textoAprobar}
+              </BotonAprobar>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {avisoEdicion && (
+          <motion.div
+            key={avisoEdicion.id}
+            role="status"
+            initial={reducir ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden border-t border-borde-suave bg-exito-suave"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs text-texto @xl:px-5.5">
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-exito" aria-hidden="true" />{avisoEdicion.texto}</span>
+              {avisoEdicion.avisos && avisoEdicion.avisos.length > 0 && (
+                <ul data-testid="avisos-edicion" aria-label="Avisos de la edición" className="order-last basis-full space-y-0.5 text-texto-suave">
+                  {avisoEdicion.avisos.map((aviso) => <li key={aviso} className="flex gap-1.5"><Info className="mt-px size-3.5 shrink-0" aria-hidden="true" />{aviso}</li>)}
+                </ul>
+              )}
+              {avisoEdicion.deshacer && puedeDeshacer(avisoEdicion.deshacer) && (
+                <button type="button" data-testid="deshacer-edicion" onClick={() => { if (avisoEdicion.deshacer) deshacer(avisoEdicion.deshacer); }} className="rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                  Deshacer
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {falloPatron && (
+        <div data-testid="patron-sin-guardar" role="alert" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-borde-suave bg-error-suave px-4 py-2.5 text-xs font-medium text-error @xl:px-5.5">
+          <span className="min-w-0">{falloPatron.mensaje}</span>
+          {falloPatron.reintentar && (
+            <button type="button" onClick={falloPatron.reintentar} className="shrink-0 rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+              Reintentar
+            </button>
+          )}
+        </div>
+      )}
+
+      {falloArmado && (
+        <div data-testid="armado-sin-guardar" role="alert" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-borde-suave bg-error-suave px-4 py-2.5 text-xs font-medium text-error @xl:px-5.5">
+          <span className="min-w-0">{falloArmado.mensaje}</span>
+          {falloArmado.reintentar && (
+            <button type="button" onClick={falloArmado.reintentar} className="shrink-0 rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+              Reintentar
+            </button>
+          )}
+        </div>
+      )}
+
+      {falloGuirnalda && (
+        <div data-testid="armado-guirnalda-sin-guardar" role="alert" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-borde-suave bg-error-suave px-4 py-2.5 text-xs font-medium text-error @xl:px-5.5">
+          <span className="min-w-0">{falloGuirnalda.mensaje}</span>
+          {falloGuirnalda.reintentar && (
+            <button type="button" onClick={falloGuirnalda.reintentar} className="shrink-0 rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+              Reintentar
+            </button>
+          )}
+        </div>
+      )}
+
+      {editadoTrasAprobar && !aprobado && onAprobar && !bloqueo && (
+        <p data-testid="plan-reaprobar" role="status" className="border-t border-borde-suave bg-acento-suave px-4 py-2.5 text-xs font-medium text-acento @xl:px-5.5">
+          Cambiaste la propuesta: la imagen no se actualiza sola. Toca «Regenerar visual» cuando quieras verla.
+        </p>
+      )}
+
+      {onAprobar && bloqueo && (
+        <div data-testid="plan-aprobacion-bloqueada" role="status" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-borde-suave bg-aviso-suave px-4 py-2.5 text-xs text-aviso @xl:px-5.5">
+          <span className="font-medium">{bloqueo.motivo}</span>
+          {onPedirAjuste && (
+            <button
+              type="button"
+              onClick={() => onPedirAjuste(bloqueo.mensaje)}
+              className="ui-pressable inline-flex items-center gap-1 rounded-full bg-superficie px-3 py-1.5 font-semibold text-acento ring-1 ring-borde-suave ring-inset hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+            >
+              {bloqueo.accion}
+            </button>
+          )}
+        </div>
+      )}
+
+      <GlobosCelebracion disparo={celebracion} colores={coloresCelebracion} />
+
+      {patronEditando && vistaEditorPatron?.declarada && editorDisponible && (
+        <EditorPatron
+          key={vistaEditorPatron.estructura.estructura_id}
+          onCerrar={cerrarEditorPatron}
+          plan={plan.plan}
+          estructura={vistaEditorPatron.estructura}
+          declarada={vistaEditorPatron.declarada}
+          oficial={vistaEditorPatron.oficial}
+          resuelto={vistaEditorPatron.patron ?? null}
+          aprobada={aprobado || editadoTrasAprobar}
+          onGuardar={(patron) => guardarPatron(patronEditando, patron)}
+        />
+      )}
+      {vistaHojaArmado?.patron && (
+        <DialogoHojaArmado
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaArmado(null); }}
+          resuelto={vistaHojaArmado.patron}
+          leyenda={vistaHojaArmado.leyenda}
+          estructura={vistaHojaArmado.estructura}
+          declarada={vistaHojaArmado.declarada}
+          oficial={vistaHojaArmado.oficial}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
+      {armadoEditando && vistaEditorArmado?.declarada && editorDisponible && (
+        <EditorBouquet
+          key={vistaEditorArmado.estructura.estructura_id}
+          onCerrar={cerrarEditorArmado}
+          plan={plan.plan}
+          estructura={vistaEditorArmado.estructura}
+          declarada={vistaEditorArmado.declarada}
+          oficial={vistaEditorArmado.oficial}
+          resuelto={vistaEditorArmado.armado ?? null}
+          aprobada={aprobado || editadoTrasAprobar}
+          onGuardar={(armado) => guardarArmado(armadoEditando, armado)}
+        />
+      )}
+      {vistaHojaArmadoBouquet?.armado && (
+        <DialogoHojaArmadoBouquet
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaArmadoBouquet(null); }}
+          resuelto={vistaHojaArmadoBouquet.armado}
+          leyenda={vistaHojaArmadoBouquet.leyendaArmado}
+          estructura={vistaHojaArmadoBouquet.estructura}
+          declarada={vistaHojaArmadoBouquet.declarada}
+          oficial={vistaHojaArmadoBouquet.oficial}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
+      {guirnaldaEditando && vistaEditorGuirnalda?.declarada && editorDisponible && (
+        <EditorGuirnalda
+          key={vistaEditorGuirnalda.estructura.estructura_id}
+          onCerrar={cerrarEditorGuirnalda}
+          plan={plan.plan}
+          estructura={vistaEditorGuirnalda.estructura}
+          declarada={vistaEditorGuirnalda.declarada}
+          oficial={vistaEditorGuirnalda.oficial}
+          resuelto={vistaEditorGuirnalda.armadoGuirnalda ?? null}
+          nombrePieza={nombrePiezaPlan}
+          aprobada={aprobado || editadoTrasAprobar}
+          onGuardar={(armado) => guardarGuirnalda(guirnaldaEditando, armado)}
+        />
+      )}
+      {vistaHojaGuirnalda?.armadoGuirnalda && (
+        <DialogoHojaArmadoGuirnalda
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaGuirnalda(null); }}
+          resuelto={vistaHojaGuirnalda.armadoGuirnalda}
+          leyenda={vistaHojaGuirnalda.leyendaGuirnalda}
+          estructura={vistaHojaGuirnalda.estructura}
+          declarada={vistaHojaGuirnalda.declarada}
+          oficial={vistaHojaGuirnalda.oficial}
+          patron={vistaHojaGuirnalda.patron}
+          anfitriona={anfitrionaDe(vistaHojaGuirnalda.armadoGuirnalda)}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
+
+      {!onVerCotizacion && (
+        <DialogoCotizacion
+          plan={plan}
+          abierto={cotizacionAbierta}
+          onAbiertoChange={setCotizacionAbierta}
+          imagenDe={(compra) => imagenLinea(compra.variant_id, compra.imagen)}
+          onAprobar={onAprobar ? () => { setCotizacionAbierta(false); aprobarConCelebracion(); } : undefined}
+          aprobarDeshabilitado={aprobarDeshabilitado}
+          textoAprobar={textoAprobar}
+          generando={generando}
+        />
+      )}
+
+      <Dialog.Root open={Boolean(seleccionCatalogo) && !intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; setSeleccionCatalogo(null); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-borde-suave bg-superficie p-4 shadow-lg">
+            <Dialog.Title className="text-base font-semibold text-texto">{seleccionCatalogo ? productoCliente(seleccionCatalogo.linea.titulo) : "Detalle del producto"}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-xs text-texto-suave">Se usa en {seleccionCatalogo ? descripcionesPorId.get(seleccionCatalogo.estructuraId) ?? "la decoración" : "la decoración"}.</Dialog.Description>
+            {seleccionCatalogo && <div className="mt-4 space-y-4"><div className="relative">{imagenSeleccionada ? <img src={imagenSeleccionada} alt={productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo)} width={400} height={400} className="aspect-square w-full rounded-lg bg-superficie-2 object-contain" /> : <div className="flex aspect-square items-center justify-center rounded-lg bg-superficie-2 text-sm text-texto-suave">{imagenesAusentes[seleccionCatalogo.linea.variant_id] ? "Foto no disponible en el catálogo" : "Cargando foto…"}</div>}{editorDisponible && <button type="button" title="Cambiar elemento" aria-label="Cambiar elemento del catálogo" aria-expanded={intercambioAbierto} aria-controls={`intercambio-${plan.plan.plan_id}`} onClick={() => void abrirIntercambio()} className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-borde bg-superficie/90 px-2.5 py-2 text-xs font-semibold text-texto shadow-sm backdrop-blur hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><ArrowLeftRight className="size-3.5" aria-hidden="true" />Cambiar</button>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm"><div><dt className="text-xs text-texto-suave">Tamaño</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.tamano_codigo ? pulgadasConCentimetrosCliente(seleccionCatalogo.linea.tamano_codigo, seleccionCatalogo.linea.diam_cm) : "No especificado"}</dd></div><div><dt className="text-xs text-texto-suave">Color</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.color ?? "Según catálogo"}</dd></div><div><dt className="text-xs text-texto-suave">Unidades en esta estructura</dt><dd className="font-medium tabular-nums text-texto">{seleccionCatalogo.linea.unidades}</dd></div>{compraSeleccionada && <><div><dt className="text-xs text-texto-suave">Se compra en</dt><dd className="font-medium text-texto">{paquetesCliente(compraSeleccionada.paquetes)}</dd></div><div><dt className="text-xs text-texto-suave">Unidades que sobran</dt><dd className="font-medium tabular-nums text-texto">{compraSeleccionada.sobrante}</dd></div><div><dt className="text-xs text-texto-suave">Precio de los paquetes</dt><dd className="font-medium tabular-nums text-texto">{pesos.format(compraSeleccionada.subtotal)}</dd></div></>}</dl>
+              {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div></section>}
+            </div>}
+             {errorEdicion && <p role="alert" aria-live="polite" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+             <div className="mt-5 flex justify-end"><Dialog.Close asChild><button type="button" className="ui-pressable rounded-lg border border-borde px-3 py-2 text-sm font-medium text-texto hover:bg-fondo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">Cerrar</button></Dialog.Close></div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={Boolean(seleccionCatalogo) && intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; peticionCatalogoRef.current?.abort(); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto overscroll-contain rounded-2xl border border-borde-suave bg-superficie p-4 shadow-lg">
+            <Dialog.Title className="text-base font-semibold text-texto">Cambiar {seleccionCatalogo ? productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo) : "elemento"}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-xs text-texto-suave">Elige otra pieza disponible del catálogo. El total de tu propuesta se actualiza con el cambio.</Dialog.Description>
+            {seleccionCatalogo && (
+              <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
+                <button ref={volverDetalleRef} type="button" onClick={() => { setIntercambioAbierto(false); setErrorEdicion(null); }} className="self-start text-xs font-semibold text-acento underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-acento">Volver al detalle</button>
+                <label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label>
+                <input
+                  ref={busquedaCatalogoRef}
+                  id={`buscar-intercambio-${plan.plan.plan_id}`}
+                  name="buscar-intercambio-catalogo"
+                  autoComplete="off"
+                  spellCheck={false}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={consultaCatalogo.trim().length >= 2 && (buscandoCatalogo || opcionesBusqueda.length > 0)}
+                  aria-controls={`opciones-intercambio-${plan.plan.plan_id}`}
+                  aria-activedescendant={opcionBusquedaActiva >= 0 ? `opcion-intercambio-${opcionesBusqueda[opcionBusquedaActiva]?.variante.variantId}` : undefined}
+                  value={consultaCatalogo}
+                  onKeyDown={navegarOpcionesBusqueda}
+                  onChange={(evento) => {
+                    const valor = evento.target.value;
+                    setConsultaCatalogo(valor);
+                    setOpcionBusquedaActiva(-1);
+                    if (valor.trim().length < 2) {
+                      peticionCatalogoRef.current?.abort();
+                      setResultadosCatalogo([]);
+                    }
+                  }}
+                  placeholder="Busca por nombre, tamaño o color…"
+                  className="w-full rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento"
+                />
+                <div className="min-h-0 flex-1" aria-live="polite">
+                  {consultaCatalogo.trim().length >= 2 ? (
+                    buscandoCatalogo ? (
+                      <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando en todo el catálogo…</p>
+                    ) : opcionesBusqueda.length > 0 ? (
+                      <ListaOpciones
+                        opciones={opcionesBusqueda}
+                        guardando={guardandoEdicion}
+                        onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)}
+                        ariaLabel="Resultados de búsqueda del catálogo"
+                        listId={`opciones-intercambio-${plan.plan.plan_id}`}
+                        activeVariantId={opcionBusquedaActiva >= 0 ? opcionesBusqueda[opcionBusquedaActiva]?.variante.variantId : undefined}
+                      />
+                    ) : errorEdicion ? (
+                      <div className="space-y-2 rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">
+                        <p>{errorEdicion}</p>
+                        <button type="button" onClick={() => void buscarCatalogoPorTexto(consultaCatalogo)} className="font-semibold text-acento underline underline-offset-2">Reintentar búsqueda</button>
+                      </div>
+                    ) : (
+                      <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">No encontré variantes para esa búsqueda.</p>
+                    )
+                  ) : buscandoCatalogo && recomendaciones.length === 0 ? (
+                    <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p>
+                  ) : opcionesRecomendadas.length > 0 ? (
+                    <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" />
+                  ) : errorEdicion ? null : (
+                    // A failed request is not "no compatible variants": that case shows only the error below.
+                    <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Escribe al menos dos caracteres para buscar.</p>
+                  )}
+                </div>
+                {errorEdicion && consultaCatalogo.trim().length < 2 && (
+                  <div role="alert" className="space-y-1.5 rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">
+                    <p>{errorEdicion}</p>
+                    {recomendaciones.length === 0 && <button type="button" disabled={buscandoCatalogo} onClick={() => void abrirIntercambio()} className="font-semibold underline underline-offset-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-acento">Reintentar</button>}
+                  </div>
+                )}
+              </div>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </motion.section>
+  );
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13634-1",
+  "image_sha256": "eca9444f256d7ede1a32f046eb84000a2c64c7458a6e5dccbb65fffe4c85a63f",
+  "idempotency_key": "d23d928bc2dac3ecc4ee1d0d6cb9fe18b99b0deffd110dd73360dda957898e17",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13634/foto-1.jpg",
+    "orden": "13634"
+  },
+  "anotacion": {
+    "image_id": "13634-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls with patterned tile wainscoting and a mosaic tile floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "an organic balloon arch in red, yellow, blue, green, orange and purple round balloons of varied sizes framing the doorway"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "a flat printed Disney character poster hanging on the wall behind the arch"
+      }
+    ],
+    "non_purchased_elements": [
+      "a Disney character poster",
+      "a toy motorcycle",
+      "a glass coffee table",
+      "goodie bags"
+    ],
+    "uncertainties": [
+      "the exact proportion of R-12 versus R-5 balloons within the garland is not precisely distinguishable"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13634-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from round latex balloons in assorted colors, solid Fashion finish, all in 12-inch and 5-inch, mixed organically rather than graded, a decorated backdrop, anchored to the organic balloon arch, alongside a Disney character poster, a toy motorcycle, a glass coffee table and goodie bags, set against white walls with patterned tile wainscoting and a mosaic tile floor.",
+    "palabras": 69,
+    "caracteres": 452,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:39:22.713Z",
+    "recompilado_en": "2026-09-03T14:45:22.288Z"
+  }
+}

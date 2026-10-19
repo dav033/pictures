@@ -1,0 +1,102 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000186-1",
+  "image_sha256": "53c9174d254e847107fac310d73f9042e869b256b002c24e35d29133151d224d",
+  "idempotency_key": "68dd58748a9fc6ccb06f6e0e4cf07e055466b4ab70cbd9deea447523ed7900a6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000186/foto-1.jpg",
+    "orden": "950000186"
+  },
+  "anotacion": {
+    "image_id": "950000186-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background with no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.tubito.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.rose_gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Hand-tied bouquet of rose-gold balloon flowers with silver balloon stems and a rose-gold bow."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.tubito.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000186-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, installed against the rear wall, built from high-shine Reflex modeling latex balloons in rose gold and silver, all at a single 2-inch size, set against plain white background with no floor visible.",
+    "palabras": 36,
+    "caracteres": 237,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.modeling.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.rose_gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:24:20.962Z",
+    "recompilado_en": "2026-09-03T14:45:25.212Z"
+  }
+}

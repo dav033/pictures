@@ -1,0 +1,275 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000011-1",
+  "image_sha256": "27db5f85e5e86ca2f63189e9a4574ce1a262e43ca9687036d9e063db1c0bca8e",
+  "idempotency_key": "f5d7c02a3a6b90d193d075b97839f197d3cc83267c84918ef8ecba10634d0f64",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000011/foto-1.png",
+    "orden": "950000011"
+  },
+  "anotacion": {
+    "image_id": "950000011-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "an orange floor and a black mesh panel wall",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "flat mint-green board cut into an arch silhouette with a black mesh grid panel at its center"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.reflex.violet",
+          "balloon.round.latex.neon.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.orange",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "matching organic balloon clusters with foam eyeballs and spiders at the top corners of the arch, framing the backdrop on both sides"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_halloween_lettering",
+          "balloon.round.latex.solid.printed_halloween_lettering",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.neon.green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black.printed_halloween_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "a standalone bunch of tall balloons on the far left, including black and printed Halloween-lettering balloons with a silver imprinted balloon"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "lower balloon clusters running along the floor beneath the backdrop on both bottom corners"
+      }
+    ],
+    "non_purchased_elements": [
+      "black spider decorations",
+      "foam eyeball ornaments",
+      "pumpkin cutout sign",
+      "round side tables with Halloween tableware"
+    ],
+    "uncertainties": [
+      "Cannot confirm exact color mix of the peach and white round balloons from the allowed list",
+      "Printed text on foil balloons and signs not transcribed"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.peach",
+      "balloon.modeling.latex.neon.green",
+      "balloon.modeling.latex.neon.orange",
+      "balloon.modeling.latex.reflex.violet",
+      "balloon.round.latex.fashion.black.printed_halloween_lettering",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.neon.orange",
+      "balloon.round.latex.reflex.violet",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Happy Halloween"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000011-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, two matching organic balloon garlands, one at each end of the decorated backdrop, built from matte Fashion orange round latex balloons, fluorescent Neon round latex balloons in green and orange and high-shine Reflex violet round latex balloons, all 5-inch, with a balloon bouquet, standing to one side, built from 12-inch matte Fashion black round latex balloons with printed halloween lettering and round latex balloons with printed Halloween lettering, 5-inch matte Fashion orange round latex balloons and fluorescent Neon green round latex balloons, mixed organically rather than graded and an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion orange round latex balloons, fluorescent Neon green round latex balloons and high-shine Reflex violet round latex balloons, all 5-inch, alongside black spider decorations, foam eyeball ornaments, pumpkin cutout sign and round side tables with Halloween tableware, set against an orange floor and a black mesh panel wall.",
+    "palabras": 157,
+    "caracteres": 1079,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_halloween_lettering",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.neon.orange",
+      "balloon.round.latex.reflex.violet",
+      "balloon.round.latex.solid.printed_halloween_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black.printed_halloween_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:26.268Z",
+    "recompilado_en": "2026-09-03T14:45:23.301Z"
+  }
+}

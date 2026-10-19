@@ -1,0 +1,182 @@
+{
+  "release": "image-generation-v000",
+  "base_model": null,
+  "lora": null,
+  "dataset": null,
+  "image_api": null,
+  "backend": "existing-demo",
+  "frontend": "existing-demo",
+  "evaluation": "not_started",
+  "rollback_target": null,
+  "status": "development_only",
+  "approval": "none",
+  "rag": {
+    "version": "rag-v2",
+    "status": "READY",
+    "enabled": true,
+    "sources": [
+      {
+        "kind": "products_catalog",
+        "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/products_catalog.json?v=1779763986",
+        "sha256": "13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "counts": {
+          "products": 3297,
+          "variants": 6136,
+          "activeProducts": 1491,
+          "draftProducts": 1806,
+          "nonPositivePriceVariants": 278
+        }
+      },
+      {
+        "kind": "order_data",
+        "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/order_data.json?v=1779763985de",
+        "sha256": "d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+        "snapshot_id": "order_data:d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+        "counts": {
+          "orders": 200,
+          "lineItems": 1855,
+          "uniqueOrderSkus": 897,
+          "aggregateVariants": 869,
+          "matchedLines": 1785,
+          "unmatchedLines": 59,
+          "ambiguousSkuKeys": 2
+        }
+      }
+    ],
+    "contracts": {
+      "source": "cdn-graphql-v1",
+      "taxonomy": "catalog-taxonomy-v2",
+      "retrieval": "rag-search-v2"
+    },
+    "flags": {
+      "RAG_ENABLED": true,
+      "RAG_USE_VECTOR": true,
+      "RAG_USE_FULLTEXT": true,
+      "RAG_USE_TRIGRAM": true
+    },
+    "generation": {
+      "status": "PASS",
+      "source_routing": {
+        "legacy": "productIds -> SQLite",
+        "rag": "ragVariantIds -> PostgreSQL",
+        "trusted_revalidation": "ACTIVE + available + price > 0",
+        "fallback": "none",
+        "ordering": "legacy_then_rag",
+        "provenance": "multi_turn_and_edited_quotation"
+      },
+      "corpora": {
+        "sqlite_products": 1671,
+        "sqlite_variants": 3724,
+        "catalogo_visible_products": 1456,
+        "postgres_rag_products": 1411,
+        "postgres_rag_variants": 3592,
+        "exact_product_id_overlap": 0,
+        "exact_variant_id_overlap": 0,
+        "separation": "intentional"
+      },
+      "regression": {
+        "command": "npm run rag:test-generation-resolver",
+        "status": "PASS",
+        "paid_provider_called": false
+      },
+      "browser_e2e": {
+        "status": "PASS",
+        "search_query": "globo corazón rojo",
+        "search_results": 28,
+        "forma_corazon_color_rojo_results": 10,
+        "flows": ["detail", "selection", "generate_boundary"],
+        "console_errors": 0,
+        "state_cleared": true
+      }
+    },
+    "optional": {
+      "gemini": "PASS",
+      "vector": "PASS",
+      "model": "gemini-embedding-2",
+      "models": {
+        "chat": "gemini-3.6-flash",
+        "image": "gemini-3.1-flash-image",
+        "embedding": "gemini-embedding-2"
+      },
+      "dimensions": 768
+    },
+    "e2e": {
+      "baseline_p95_ms": 144.7,
+      "baseline_status": "MEASURED_NO_KEY_E2E",
+      "baseline_source": "four sequential local no-key E2E runs; conservative maximum observed p95",
+      "baseline_samples_ms": [144.7, 126.4, 137.7, 93.6],
+      "baseline_measured_at": "2026-08-22",
+      "latest_no_key_p95_ms": 88.2,
+      "latest_no_key_warmups": 2,
+      "latest_no_key_samples": 20,
+      "latest_no_key_failures": 0,
+      "latest_no_key_optional_skips": 2,
+      "latest_no_key_status": "PASS",
+      "with_gemini": "PASS",
+      "with_gemini_p95_ms": 446.8,
+      "with_gemini_failures": 0,
+      "with_gemini_absolute_limit_status": "PASS",
+      "with_gemini_regression_gate": "SKIPPED_OPTIONAL",
+      "with_gemini_regression_reason": "baseline versionado de no-key no es comparable con embeddings remotos",
+      "regression_limit": 0.15,
+      "absolute_limit_ms": 2100,
+      "artifact": "scripts/eval-e2e-rag-v2.ts"
+    },
+    "gates": {
+      "source_snapshots": "PASS",
+      "stack_check": "PASS",
+      "health": "PASS",
+      "parser_no_key": "PASS",
+      "prices_from_db": "PASS",
+      "sku_ambiguity_requires_clarification": "PASS",
+      "build": "PASS",
+      "benchmark_no_key": "PASS",
+      "benchmark_detail": "corpus=416 repeat=2 p50=25.1583ms p95=54.2580ms ndcg@10_global=0.905466 filter_variant_precision=1.0000; all mandatory quality gates PASS",
+      "benchmark": {
+        "report": "reports/rag-baseline-v2.md",
+        "corpus": 416,
+        "repeat": 2,
+        "latency_p50_ms": 25.1583,
+        "latency_p95_ms": 54.2580,
+        "ndcg_at_10_global": 0.905466,
+        "filter_variant_precision": 1.0,
+        "quality_status": "PASS"
+      },
+      "e2e_no_key": "PASS",
+      "e2e_with_gemini": "PASS",
+      "generation_resolver": "PASS",
+      "generation_http_boundary": "PASS",
+      "e2e_detail": "no-key PASS (p95=88.2ms); --with-gemini PASS (p95=446.8ms, absolute limit PASS); regression vs no-key baseline SKIPPED_OPTIONAL because remote embeddings are not comparable"
+    },
+    "artifacts": {
+      "regeneration": "docs/operations/rag-regeneration-v2.md",
+      "rollback": "docs/operations/rag-rollback-v2.md",
+      "source_manifests": [
+        "data/manifests/rag-products-source.json",
+        "data/manifests/rag-order-demand.json"
+      ],
+      "key_files": [
+        "src/lib/rag/generate-products.ts",
+        "src/app/api/generate/route.ts",
+        "scripts/test-generation-resolver.ts",
+        "src/lib/generacion/provenance.ts"
+      ]
+    },
+    "migrations": 10,
+    "package_units": {
+      "known": 3518,
+      "unknown": 74,
+      "total_variants": 3592,
+      "unknown_policy": "NULL; resolver does not invent a package size"
+    },
+    "rollback_target": {
+      "RAG_ENABLED": false,
+      "strategy": "exact_sha_reimport",
+      "products_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "products_sha256": "13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "orders_snapshot_id": "order_data:d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+      "orders_sha256": "d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11583-1",
+  "image_sha256": "790b9e99ee5afd3ea3ba891dafadb8024dc70b44a10b14b0ac3c34e8ea786929",
+  "idempotency_key": "c1464734063f4de39100bec3baee520b0421b34c977af77171ff6714ba62caba",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11583/foto-1.jpg",
+    "orden": "11583"
+  },
+  "anotacion": {
+    "image_id": "11583-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and ceiling, floor mostly obscured by a table",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red_and_white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red_and_white",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic red and white round latex balloon garland running along the ceiling and turning down the wall corner, all balloons a consistent diameter."
+      }
+    ],
+    "non_purchased_elements": [
+      "foil script letter balloons",
+      "gift favor baskets",
+      "bottled water",
+      "a green tablecloth"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red_and_white"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11583-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from matte Fashion red and white round latex balloons, all at a single 9-inch size, alongside foil script letter balloons, gift favor baskets, bottled water and a green tablecloth, set against off-white walls and ceiling, floor mostly obscured by a table.",
+    "palabras": 49,
+    "caracteres": 330,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.red_and_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.red_and_white",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:07.592Z",
+    "recompilado_en": "2026-09-03T14:45:21.954Z"
+  }
+}

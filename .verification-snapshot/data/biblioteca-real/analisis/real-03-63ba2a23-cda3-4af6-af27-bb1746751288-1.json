@@ -1,0 +1,1016 @@
+{
+  "id": "real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
+  "fuente": "63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "978955a3-2ebb-46a5-9beb-0c7c0e007db9",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Organic Balloon Arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large organic balloon half-arch anchored on the floor on the left and curving over toward the right.",
+          "reference_bbox": {
+            "x": 0.049,
+            "y": 0.039,
+            "width": 0.8899999999999999,
+            "height": 0.9239999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "light blue",
+              "royal blue",
+              "chrome silver",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.5584
+              },
+              {
+                "color": "blanco",
+                "share": 0.1297
+              },
+              {
+                "color": "azul",
+                "share": 0.074
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical half-arch, on the left, curving toward the right, strong top overhang, standing on the floor",
+            "composition": "50% light blue, 30% royal blue, 10% silver metallic, and 10% white round latex balloons arranged organically in an L-shaped organic arch curving from floor to top right.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "plateado",
+                "blanco"
+              ],
+              "pesos": [
+                60,
+                25,
+                15
+              ],
+              "confianza": 0.92
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 58,
+              "exacto": false,
+              "estimado_total": 75,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.25
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.55
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.95
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "curva",
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 22,
+              "colores_por_racimo": [
+                "azul",
+                "rosado",
+                "plateado",
+                "blanco"
+              ],
+              "relleno": null,
+              "remates": [],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "040",
+                "familia": "fashion",
+                "nombre": "Azul",
+                "nombre_completo": "Fashion Azul",
+                "parte": 0.4681,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "405",
+                "familia": "satin",
+                "nombre": "Blanco",
+                "nombre_completo": "Satín Blanco",
+                "parte": 0.3334,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "981",
+                "familia": "reflex",
+                "nombre": "Plata",
+                "nombre_completo": "Reflex Plata",
+                "parte": 0.1064,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.092,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decor element in scene",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "Helium Balloon Bouquet",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Cluster of helium balloons floating on ribbons tied to a small white weight at the bottom.",
+          "reference_bbox": {
+            "x": 0.44,
+            "y": 0.298,
+            "width": 0.21200000000000002,
+            "height": 0.6599999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "royal blue",
+              "light blue",
+              "chrome silver",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.719
+              },
+              {
+                "color": "azul",
+                "share": 0.0742
+              },
+              {
+                "color": "blanco",
+                "share": 0.0612
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "medium bouquet, on the center, standing on the floor",
+            "composition": "40% royal blue, 40% light blue, 20% metallic silver floating helium balloons tied to a white balloon weight on the floor.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "plateado"
+              ],
+              "pesos": [
+                70,
+                30
+              ],
+              "confianza": 0.95
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "armado_bouquet": {
+              "variante": "helio_escalonado",
+              "niveles": [
+                {
+                  "unidad": "pareja",
+                  "colores": [
+                    "plateado",
+                    "azul"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "mediano"
+                },
+                {
+                  "unidad": "trio",
+                  "colores": [
+                    "azul",
+                    "azul",
+                    "azul"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "mediano"
+                }
+              ],
+              "remate": {
+                "clase": "latex",
+                "color": "azul"
+              },
+              "confianza": 0.94,
+              "total_globos": 6,
+              "avisos": [
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 6,
+              "exacto": true,
+              "estimado_total": null,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.98
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "405",
+                "familia": "satin",
+                "nombre": "Blanco",
+                "nombre_completo": "Satín Blanco",
+                "parte": 0.4903,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "981",
+                "familia": "reflex",
+                "nombre": "Plata",
+                "nombre_completo": "Reflex Plata",
+                "parte": 0.2237,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "040",
+                "familia": "fashion",
+                "nombre": "Azul",
+                "nombre_completo": "Fashion Azul",
+                "parte": 0.1923,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.0936,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "piso_frontal",
+            "design_role": "soporte",
+            "repetition_group": "REF_01_E02",
+            "density": "media"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central helium bouquet element",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "Balloon Table Centerpiece",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Small quadruped/flower-like cluster of balloons sitting on top of the round table.",
+          "reference_bbox": {
+            "x": 0.685,
+            "y": 0.504,
+            "width": 0.21099999999999997,
+            "height": 0.16900000000000004
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "light blue",
+              "royal blue"
+            ],
+            "measured_colors": [
+              {
+                "color": "azul",
+                "share": 0.2308
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "short dense centerpiece, on the right, raised off the floor",
+            "composition": "70% light blue and 30% dark royal blue round latex balloons formed in a small table cluster.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul"
+              ],
+              "pesos": [
+                100
+              ],
+              "confianza": 0.93
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "armado_bouquet": {
+              "variante": "base_aire",
+              "niveles": [
+                {
+                  "unidad": "cuarteto",
+                  "colores": [
+                    "azul",
+                    "azul",
+                    "azul",
+                    "azul"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "mediano"
+                }
+              ],
+              "remate": {
+                "clase": "latex",
+                "color": "azul"
+              },
+              "confianza": 0.91,
+              "total_globos": 5,
+              "avisos": [
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 5,
+              "exacto": true,
+              "estimado_total": null,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.96
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "040",
+                "familia": "fashion",
+                "nombre": "Azul",
+                "nombre_completo": "Fashion Azul",
+                "parte": 0.6049,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.2733,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "centro_mesa",
+            "placement": "sobre_mesa_principal",
+            "design_role": "acento",
+            "repetition_group": "REF_01_E03",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Table decor centerpiece element",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "Round Side Table",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.97,
+          "visible_evidence": "Modern round pedestal table with white marble/laminate top and geometric metallic gold wire legs.",
+          "reference_bbox": {
+            "x": 0.667,
+            "y": 0.661,
+            "width": 0.268,
+            "height": 0.30599999999999994
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.4514
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "metal, wood",
+            "shape": "shape not determinable",
+            "composition": "100% white top with gold wire cross legs."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Table supporting centerpiece decor",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Blue and silver balloon half-arch with floating helium bouquet and table centerpiece",
+        "density": "moderate",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "light blue",
+          "royal blue",
+          "chrome silver",
+          "white",
+          "chrome gold"
+        ],
+        "priority": [
+          "light blue",
+          "royal blue",
+          "chrome silver",
+          "white",
+          "chrome gold"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "cc685ad393ef47fa0221feac6f7a0e15f2c26cb47ac34ffcd3a2271c3f3e3371",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 800,
+            "height": 800
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 128460,
+            "deLaCaja": 216600
+          },
+          "colores": [
+            {
+              "hex": "#7fbee0",
+              "parte": 0.4681,
+              "pixeles": 60132,
+              "cruce": {
+                "hex": "#7fbee0",
+                "candidatas": [
+                  {
+                    "codigo": "040",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Fashion Azul",
+                    "nombreEn": "matte light blue",
+                    "pms": "2915",
+                    "acabado": "matte",
+                    "hexGlobo": "#01b2e8",
+                    "deltaE": 17.2,
+                    "distancia": 3.8,
+                    "tono": 0.6,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 17.2,
+                    "distancia": 21,
+                    "tono": 2.1,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 17.1,
+                    "distancia": 29.4,
+                    "tono": 3.5,
+                    "razonCroma": 1.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#cddbe8",
+              "parte": 0.3334,
+              "pixeles": 42832,
+              "cruce": {
+                "hex": "#cddbe8",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 13.9,
+                    "distancia": 12.5,
+                    "tono": 144.9,
+                    "razonCroma": 8.2
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 15.6,
+                    "distancia": 14.9,
+                    "tono": 41.9,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#6e767b",
+              "parte": 0.1064,
+              "pixeles": 13673,
+              "cruce": {
+                "hex": "#6e767b",
+                "candidatas": [
+                  {
+                    "codigo": "981",
+                    "nombre": "Plata",
+                    "nombreCompleto": "Reflex Plata",
+                    "nombreEn": "chrome silver",
+                    "pms": "877",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a7a8aa",
+                    "deltaE": 20,
+                    "distancia": 12.9,
+                    "tono": 28.3,
+                    "razonCroma": 3.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#0661ba",
+              "parte": 0.092,
+              "pixeles": 11823,
+              "cruce": {
+                "hex": "#0661ba",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 10.5,
+                    "distancia": 9,
+                    "tono": 5.8,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 23650,
+            "deLaCaja": 36951
+          },
+          "colores": [
+            {
+              "hex": "#ccd2d8",
+              "parte": 0.4903,
+              "pixeles": 11596,
+              "cruce": {
+                "hex": "#ccd2d8",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 14.1,
+                    "distancia": 9.4,
+                    "tono": 146.2,
+                    "razonCroma": 3.8
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 16.5,
+                    "distancia": 11.8,
+                    "tono": 40.6,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#9dabb7",
+              "parte": 0.2237,
+              "pixeles": 5292,
+              "cruce": {
+                "hex": "#9dabb7",
+                "candidatas": [
+                  {
+                    "codigo": "981",
+                    "nombre": "Plata",
+                    "nombreCompleto": "Reflex Plata",
+                    "nombreEn": "chrome silver",
+                    "pms": "877",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a7a8aa",
+                    "deltaE": 7.1,
+                    "distancia": 7.2,
+                    "tono": 18.5,
+                    "razonCroma": 7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#66bbe3",
+              "parte": 0.1923,
+              "pixeles": 4548,
+              "cruce": {
+                "hex": "#66bbe3",
+                "candidatas": [
+                  {
+                    "codigo": "040",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Fashion Azul",
+                    "nombreEn": "matte light blue",
+                    "pms": "2915",
+                    "acabado": "matte",
+                    "hexGlobo": "#01b2e8",
+                    "deltaE": 11.4,
+                    "distancia": 3.2,
+                    "tono": 1,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 19.8,
+                    "distancia": 28.9,
+                    "tono": 0.5,
+                    "razonCroma": 2
+                  },
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 20.5,
+                    "distancia": 39,
+                    "tono": 1.8,
+                    "razonCroma": 2.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#0762bd",
+              "parte": 0.0936,
+              "pixeles": 2214,
+              "cruce": {
+                "hex": "#0762bd",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 11.3,
+                    "distancia": 8.8,
+                    "tono": 5.4,
+                    "razonCroma": 1.2
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E03",
+          "tipo": "centro_mesa",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.5918
+          },
+          "pixeles": {
+            "medidos": 5723,
+            "deLaCaja": 9483
+          },
+          "colores": [
+            {
+              "hex": "#73b1d3",
+              "parte": 0.6049,
+              "pixeles": 3462,
+              "cruce": {
+                "hex": "#73b1d3",
+                "candidatas": [
+                  {
+                    "codigo": "040",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Fashion Azul",
+                    "nombreEn": "matte light blue",
+                    "pms": "2915",
+                    "acabado": "matte",
+                    "hexGlobo": "#01b2e8",
+                    "deltaE": 16.2,
+                    "distancia": 2.4,
+                    "tono": 1.6,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 13.7,
+                    "distancia": 19.5,
+                    "tono": 3.1,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 14.3,
+                    "distancia": 27.8,
+                    "tono": 4.4,
+                    "razonCroma": 1.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#035cb8",
+              "parte": 0.2733,
+              "pixeles": 1564,
+              "cruce": {
+                "hex": "#035cb8",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 10.3,
+                    "distancia": 6.1,
+                    "tono": 3.8,
+                    "razonCroma": 1.2
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un tono era el mismo color con otra luz y se juntó con el suyo.",
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

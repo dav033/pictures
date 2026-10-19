@@ -1,0 +1,46 @@
+{
+ "caso": "sintetico-paquete-chico-mas-barato",
+ "origen": "sintetico",
+ "idea": null,
+ "snapshot": "sintetico",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "S01",
+   "cantidad": 136,
+   "productId": "P-ROJO",
+   "color": "rojo",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "V-ROJO-12-X50",
+     "unidadesPaq": 50,
+     "precio": 12000
+    },
+    {
+     "variantId": "V-ROJO-12-X12",
+     "unidadesPaq": 12,
+     "precio": 2000
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 26000,
+  "reserva": {
+   "objetivo": 11,
+   "cubierta": 11,
+   "sinCubrir": 0,
+   "excedenteNatural": 8
+  },
+  "compras": [
+   {
+    "variantId": "V-ROJO-12-X12",
+    "paquetes": 13,
+    "cantidad": 136,
+    "reserva": 11,
+    "paraReserva": true
+   }
+  ]
+ }
+}

@@ -1,0 +1,158 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8509-1",
+  "image_sha256": "f4fe534dda3e2b49345262e34b389129b746776ec3208bd2bb5445e25448f349",
+  "idempotency_key": "3ffa0dbcdbe4f4d487fe7ba25e1c30a0ea4b0cfd6f5f499cd8ae1eeecaf0b28c",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8509/foto-1.jpg",
+    "orden": "8509"
+  },
+  "anotacion": {
+    "image_id": "8509-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white walls and a dark wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_unclassified_interrogacion"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black.printed_unclassified_interrogacion",
+            "size_code": "R-36"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large black printed balloon forming the focal centerpiece on the main dining table."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coral"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical grouping of coral balloons on the right side behind the table."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical grouping of muted blue balloons on the left side behind the table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dining table",
+      "dining chairs",
+      "floral arrangements",
+      "party food"
+    ],
+    "uncertainties": [
+      "The blue and coral balloon groupings may be vertical garlands rather than columns."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black.printed_unclassified_interrogacion",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.pastel_dusk.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-36"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8509-1",
+    "caption": "eventdecor_style_v3, a low balloon centerpiece, placed on the main table, built from matte Fashion black round latex balloons with a printed pattern, all at a single 36-inch size, a balloon column, behind the low balloon centerpiece, built from matte Fashion coral round latex balloons, all at a single 12-inch size, a balloon column, behind the low balloon centerpiece, built from muted Pastel Dusk blue round latex balloons, all at a single 12-inch size, alongside a dining table, dining chairs, floral arrangements and party food, set against off-white walls and a dark wood floor.",
+    "palabras": 93,
+    "caracteres": 584,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_unclassified_interrogacion",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.pastel_dusk.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black.printed_unclassified_interrogacion",
+        "size_code": "R-36",
+        "inches": 36
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:55:00.675Z",
+    "recompilado_en": "2026-09-03T14:45:23.156Z"
+  }
+}

@@ -115,7 +115,7 @@ const ShinyText = ({
   const syncRef = useRef<(() => void) | null>(null);
   const content = children ?? text;
 
-  settingsRef.current = {
+  const settings: Settings = {
     color,
     shineColor,
     speed: Math.max(0.1, speed),
@@ -135,6 +135,7 @@ const ShinyText = ({
   };
 
   useEffect(() => {
+    settingsRef.current = settings;
     syncRef.current?.();
   });
 

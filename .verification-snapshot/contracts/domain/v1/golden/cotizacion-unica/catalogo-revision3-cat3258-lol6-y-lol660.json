@@ -1,0 +1,208 @@
+{
+ "caso": "catalogo-revision3-cat3258-lol6-y-lol660",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-9",
+   "codigo": "826",
+   "cantidad": 5,
+   "productId": "9407246172455",
+   "color": "verde",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "48718444003623",
+     "unidadesPaq": 12,
+     "precio": 4304
+    },
+    {
+     "variantId": "48718444069159",
+     "unidadesPaq": 20,
+     "precio": 6527
+    },
+    {
+     "variantId": "48718444036391",
+     "unidadesPaq": 50,
+     "precio": 14202
+    }
+   ]
+  },
+  {
+   "formatoId": "LOL-660",
+   "codigo": "032",
+   "cantidad": 34,
+   "productId": "8634219036967",
+   "color": "verde",
+   "diamPulg": 6,
+   "presentaciones": [
+    {
+     "variantId": "50427465498919",
+     "unidadesPaq": 20,
+     "precio": 14041
+    },
+    {
+     "variantId": "46594165375271",
+     "unidadesPaq": 50,
+     "precio": 32336
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "074",
+   "cantidad": 21,
+   "productId": "8634228834599",
+   "color": "cafe",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594207088935",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "46594207121703",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "T-260",
+   "codigo": "029",
+   "cantidad": 9,
+   "productId": "8901792301351",
+   "color": "verde",
+   "diamPulg": 2,
+   "presentaciones": [
+    {
+     "variantId": "47317916844327",
+     "unidadesPaq": 20,
+     "precio": 4818
+    },
+    {
+     "variantId": "47317916811559",
+     "unidadesPaq": 50,
+     "precio": 10815
+    }
+   ]
+  },
+  {
+   "formatoId": "LOL-6",
+   "codigo": "032",
+   "cantidad": 21,
+   "productId": "8634219036967",
+   "color": "verde",
+   "diamPulg": 6,
+   "presentaciones": [
+    {
+     "variantId": "46594165276967",
+     "unidadesPaq": 50,
+     "precio": 7857
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "806",
+   "cantidad": 9,
+   "productId": "9661845995815",
+   "color": "blanco",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "49475778183463",
+     "unidadesPaq": 12,
+     "precio": 6527
+    },
+    {
+     "variantId": "49475778216231",
+     "unidadesPaq": 50,
+     "precio": 21403
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "071",
+   "cantidad": 17,
+   "productId": "8634238927143",
+   "color": "beige",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594229403943",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594229436711",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 59201,
+  "reserva": {
+   "objetivo": 12,
+   "cubierta": 12,
+   "sinCubrir": 0,
+   "excedenteNatural": 62
+  },
+  "compras": [
+   {
+    "variantId": "46594165276967",
+    "paquetes": 1,
+    "cantidad": 21,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594207088935",
+    "paquetes": 2,
+    "cantidad": 21,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594229403943",
+    "paquetes": 1,
+    "cantidad": 17,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47317916844327",
+    "paquetes": 1,
+    "cantidad": 9,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "48718444003623",
+    "paquetes": 1,
+    "cantidad": 5,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "49475778183463",
+    "paquetes": 1,
+    "cantidad": 9,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "50427465498919",
+    "paquetes": 2,
+    "cantidad": 34,
+    "reserva": 3,
+    "paraReserva": false
+   }
+  ]
+ }
+}

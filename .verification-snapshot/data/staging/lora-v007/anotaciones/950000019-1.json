@@ -1,0 +1,282 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000019-1",
+  "image_sha256": "739faf9459290082f83455dd71a30be06ac19f6279ea0f68b152265f02a08e20",
+  "idempotency_key": "39c4c6c6199a12ad87dc007e6cd82d8df96dc7c69f69af62b1a5978e2b3530f4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000019/foto-1.png",
+    "orden": "950000019"
+  },
+  "anotacion": {
+    "image_id": "950000019-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "not visible, isolated product shot with no floor or wall",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.yellow",
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.malibu_peach",
+          "balloon.round.latex.pastel_matte.melon",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A wide organic garland spans the top of the scene, made of mixed-diameter pastel round balloons in blue, yellow, green, lilac, peach and pink, draping down toward the two dessert stands below."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "centro_mesa",
+        "count": 2,
+        "placement": "sobre_mesa_principal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.pastel_matte.yellow",
+          "balloon.modeling.latex.pastel_matte.blue",
+          "balloon.modeling.latex.pastel_matte.yellow",
+          "balloon.modeling.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Two matching fluted candy-stand bases, one wrapped in sage-green round balloons and one in lilac round balloons, each topped with a cake and small twisted balloon accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "a lollipop prop",
+      "paper party plates and cups",
+      "a striped wheel toy"
+    ],
+    "uncertainties": [
+      "Whether the small twisted balloon curls are truly modeling balloons or printed decor is not fully certain.",
+      "Exact size codes for the garland round balloons cannot be confirmed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.pastel_matte.blue",
+      "balloon.modeling.latex.pastel_matte.green",
+      "balloon.modeling.latex.pastel_matte.lilac",
+      "balloon.modeling.latex.pastel_matte.malibu_peach",
+      "balloon.modeling.latex.pastel_matte.melon",
+      "balloon.modeling.latex.pastel_matte.pink",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.pastel_matte.assorted_colors",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000019-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from Pastel Matte round latex balloons in blue, green, lilac, malibu peach, melon, pastel pink and yellow, all 9-inch, two matching low balloon centerpieces, placed on the main table, built from 2-inch Pastel Matte modeling latex balloons in blue, pink and yellow, 9-inch Pastel Matte round latex balloons in green, lilac, pastel pink and yellow, alongside a birthday cake, a lollipop prop, paper party plates and cups and a striped wheel toy, set against not visible, isolated product shot with no floor or wall.",
+    "palabras": 92,
+    "caracteres": 588,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.pastel_matte.blue",
+      "balloon.modeling.latex.pastel_matte.pink",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:38.923Z",
+    "recompilado_en": "2026-09-03T14:45:23.386Z"
+  }
+}

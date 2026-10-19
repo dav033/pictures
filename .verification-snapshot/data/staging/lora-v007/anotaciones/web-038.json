@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-038",
+  "image_sha256": "6b0a8f87502a76a4ca2487f2dfb38f9761b6764d819cac2ff5eaef2b9396058f",
+  "idempotency_key": "4162abe36c53e5577bec16ab01d60c5808ea417d6dc1f68da4d458c2d5a73bec",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-038.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/1f120d7f649d4350fc6de93b3aa08afd.jpg?v=1642706335",
+    "product_breakdown_status": "partial_source_blog_product_carousel",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-038",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.satin.pearl",
+          "balloon.round.latex.satin.pink",
+          "balloon.round.latex.satin.silver",
+          "balloon.round.latex.satin.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A tall floor-standing vertical balloon column with clustered balloons in pearl, pink, silver, and white."
+      }
+    ],
+    "non_purchased_elements": [
+      "yellow heart balloons",
+      "green foliage"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.pink",
+      "balloon.round.latex.satin.silver",
+      "balloon.round.latex.satin.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-038",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from Satin round latex balloons in pearl, pink, silver and white, alongside yellow heart balloons and green foliage, set against white wall and white floor.",
+    "palabras": 34,
+    "caracteres": 228,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.pink",
+      "balloon.round.latex.satin.silver",
+      "balloon.round.latex.satin.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:10:53.801Z"
+  }
+}

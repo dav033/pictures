@@ -1,0 +1,264 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "7391-1",
+  "image_sha256": "54cf293300e25e8d9a7a166359342e9ad1368c67e2056a7a8a41e7277c9c5e9c",
+  "idempotency_key": "e5194532e7bfd4f87f873e17ed7f3b23528181638ea02b27d35c0ef33d314f1b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "7391/foto-1.jpg",
+    "orden": "7391"
+  },
+  "anotacion": {
+    "image_id": "7391-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "dark brown walls and a gray concrete floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s4"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.fuchsia"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.fuchsia",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon garland across the upper center with pink, black, cow-print white, and small gold balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s4"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.fuchsia"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.fuchsia",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical organic balloon garland along the right side of the large white panel."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s4"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.fuchsia"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.fuchsia",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense vertical balloon grouping descending near the lower center with cow-print, black, gold, and pink balloons."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "backdrop",
+        "count": 3,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Several flat white backdrop panels with rounded and circular silhouettes stand behind the balloon arrangements."
+      }
+    ],
+    "non_purchased_elements": [
+      "a number marquee",
+      "metal panel stands"
+    ],
+    "uncertainties": [
+      "Individual boundaries between some overlapping balloon garlands are partly obscured."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.fuchsia"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "7391-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from 5-inch matte Fashion black round latex balloons and high-shine Reflex gold round latex balloons, 12-inch Satin fuchsia round latex balloons and matte Fashion white round latex balloons with a printed pattern, mixed organically rather than graded, an organic balloon garland, anchored to the decorated backdrop, built from 5-inch matte Fashion black round latex balloons and high-shine Reflex gold round latex balloons, 12-inch Satin fuchsia round latex balloons and matte Fashion white round latex balloons with a printed pattern, mixed organically rather than graded, an organic balloon garland, anchored to the decorated backdrop, built from 5-inch matte Fashion black round latex balloons and high-shine Reflex gold round latex balloons, 12-inch Satin fuchsia round latex balloons and matte Fashion white round latex balloons with a printed pattern, mixed organically rather than graded, three matching decorated backdrops, installed against the rear wall, alongside a number marquee and metal panel stands, set against dark brown walls and a gray concrete floor.",
+    "palabras": 169,
+    "caracteres": 1162,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.fuchsia"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white.printed_unclassified_vaca",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.fuchsia",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.fuchsia",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.fuchsia",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:55:11.204Z",
+    "recompilado_en": "2026-09-03T14:45:23.049Z"
+  }
+}

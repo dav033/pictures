@@ -1,0 +1,295 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000135-1",
+  "image_sha256": "fa1ec14fa6cd160816e90c194b0af312578b8327f7138294363249278b157745",
+  "idempotency_key": "ad739a223bb9ef4f59222654a63c7c15d0305a4213d6aad91d116403845eaa79",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000135/foto-1.jpg",
+    "orden": "950000135"
+  },
+  "anotacion": {
+    "image_id": "950000135-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.pastel_matte.assorted_colors",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.melon",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.pastel_matte.assorted_colors",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.melon",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon arch with a dense organic lower section and twisted modeling balloons forming the upper loop."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.pastel_matte.assorted_colors",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.pastel_matte.assorted_colors",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical balloon column descends from the center of the arch toward the floor."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Low dense balloon cluster forms the floor base around the bottom of the column."
+      }
+    ],
+    "non_purchased_elements": [
+      "a bunny figure",
+      "decorative eggs"
+    ],
+    "uncertainties": [
+      "The exact distinction between the pale pink and melon balloons is uncertain.",
+      "The patterned egg-shaped forms may be specialty balloons rather than separate props."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.pastel_matte.assorted_colors",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000135-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 2-inch modeling latex balloons in assorted colors with a Pastel Matte finish, 9-inch muted Pastel Dusk laurel green round latex balloons and Pastel Matte round latex balloons in blue, lilac, melon, pastel pink and yellow, mixed organically rather than graded, a balloon column, anchored to the organic balloon arch, built from 2-inch modeling latex balloons in assorted colors with a Pastel Matte finish, 9-inch muted Pastel Dusk laurel green round latex balloons and Pastel Matte round latex balloons in blue, lilac and yellow, mixed organically rather than graded, a balloon bouquet, anchored to the balloon column, built from muted Pastel Dusk laurel green round latex balloons and Pastel Matte round latex balloons in blue, lilac and yellow, all at a single 9-inch size, alongside a bunny figure and decorative eggs, set against white wall and white floor.",
+    "palabras": 150,
+    "caracteres": 951,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.pastel_matte.assorted_colors",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.assorted_colors",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.assorted_colors",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:14:08.356Z",
+    "recompilado_en": "2026-09-03T14:45:24.505Z"
+  }
+}

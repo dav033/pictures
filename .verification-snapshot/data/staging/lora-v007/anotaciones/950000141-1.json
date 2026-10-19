@@ -1,0 +1,174 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000141-1",
+  "image_sha256": "09f89292808cebe1434dcf04ece571d79c590b9595f7185d6599ef57fa31dce6",
+  "idempotency_key": "d7e014015844d1f9ff3130dce455820c989e8c8e532f29100e82a410c54e8f2f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000141/foto-1.jpg",
+    "orden": "950000141"
+  },
+  "anotacion": {
+    "image_id": "950000141-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_dusk.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large three-dimensional organic balloon arch surrounding the central panel."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat white arched panel centered behind the balloon arrangement."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.merlot"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical burgundy balloon column standing in the center foreground."
+      }
+    ],
+    "non_purchased_elements": [
+      "clear display plinths",
+      "decorative tableware",
+      "pink floor runner"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000141-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in coral and merlot and muted Pastel Dusk round latex balloons in cream and pink, all at a single 9-inch size, a decorated backdrop, behind the organic balloon arch, a balloon column, centred on the main display area, built from matte Fashion merlot round latex balloons, all at a single 9-inch size, alongside clear display plinths, decorative tableware and pink floor runner, set against white wall and white floor.",
+    "palabras": 87,
+    "caracteres": 543,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:15:43.039Z",
+    "recompilado_en": "2026-09-03T14:45:24.595Z"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000184-1",
+  "image_sha256": "b52e129bc51b311d76d97d98d438e4fd37d266c3fa18a494401836a2d1cac8b4",
+  "idempotency_key": "ee852e61e4ca007bc10e0351140dc0ddde0a75f4d9578bbf0df4e7ed8010c489",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000184/foto-1.jpg",
+    "orden": "950000184"
+  },
+  "anotacion": {
+    "image_id": "950000184-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lilac",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Low horizontal organic garland of clustered round balloons in fuchsia, lilac, pastel pink, and silver, with a heart-shaped balloon centered above."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed heart balloon"
+    ],
+    "uncertainties": [
+      "The heart balloon product and size are not confirmed by the allowed concepts.",
+      "The white background does not clearly distinguish wall from floor."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000184-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, grounded across the front, built from 5-inch matte Fashion round latex balloons in fuchsia and lilac and high-shine Reflex silver round latex balloons, 9-inch Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, alongside a printed heart balloon, set against white wall and white floor.",
+    "palabras": 53,
+    "caracteres": 367,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:27:51.219Z",
+    "recompilado_en": "2026-09-03T14:45:25.199Z"
+  }
+}

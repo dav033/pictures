@@ -1,0 +1,130 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-002",
+  "image_sha256": "a8ccfba8bce879bf551b43b90f0148b79afd5ac253dff023005a9d0689fb2b1d",
+  "idempotency_key": "4a852a1bcbb4bf942286ef18c8c43388b64d1dcf0579cdac027f8380bd220188",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-002.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Aro_con_flores_c4105e1b-8788-4b74-aa14-db2d2b6af64f.jpg?v=1749230021",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-002",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background with no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Closed three-dimensional circular balloon ring with mixed-size balloons and attached flower arrangements."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching balloon flowers attached on opposite lower sides of the circular ring."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Small balloon flower arrangement attached near the lower center of the ring."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon size codes cannot be identified because no permitted size codes are supplied."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-002",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion latte round latex balloons and satin Silk round latex balloons in cream pearl, gold and pearl white, two matching balloon bouquets, one at each end of the organic balloon arch, built from satin Silk round latex balloons in cream pearl, gold and pearl white, with a balloon bouquet, anchored to the organic balloon arch, built from satin Silk round latex balloons in cream pearl, gold and pearl white, set against white background with no visible floor.",
+    "palabras": 91,
+    "caracteres": 557,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:52.485Z"
+  }
+}

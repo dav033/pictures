@@ -1,0 +1,97 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-020",
+  "image_sha256": "6f227d09f628535a7c1630387137467a3bcc7df4c795c3a1c49e074a40f9b074",
+  "idempotency_key": "98306630fc2f528964b05b4ffa476dac4cc6a0729cea48587b15394152d019f8",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-020.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Figura_amor_y_amistad_2.jpg?v=1755270074",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-020",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.gold",
+          "balloon.round.latex.pastel_dusk.green_tea",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.silk.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Single balloon bouquet with two flower forms, mint-green centers, pink balloon sprigs, and a gold modeling-balloon bow."
+      }
+    ],
+    "non_purchased_elements": [
+      "lavender balloon petals",
+      "mauve balloon petals"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes are not discernible.",
+      "The pink finish and some pink balloon forms are ambiguous."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.gold",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.satin.white",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-020",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from satin Silk gold modeling latex balloons, matte Fashion pink round latex balloons, muted Pastel Dusk green tea round latex balloons and satin Silk gold round latex balloons, alongside lavender balloon petals and mauve balloon petals, set against white wall and white floor.",
+    "palabras": 52,
+    "caracteres": 350,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.silk.gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:28:42.523Z"
+  }
+}

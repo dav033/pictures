@@ -1,0 +1,401 @@
+{
+  "id": "real-12-images-27",
+  "fuente": "images (27).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-12-images-27.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "baa8726d-0fa0-48b9-b452-2d0f80c61468",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.7452
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "purple arched panel backdrop",
+          "category": "panel",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Purple arched board structure standing in center with white text 'Luciana'.",
+          "reference_bbox": {
+            "x": 0.297,
+            "y": 0.254,
+            "width": 0.34500000000000003,
+            "height": 0.496
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "purple",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "morado",
+                "share": 0.6789
+              },
+              {
+                "color": "blanco",
+                "share": 0.0482
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood/acrylic",
+            "shape": "shape not determinable",
+            "composition": "100% purple solid arched backdrop panel featuring white vinyl lettering spelling Luciana near top center."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central arched panel backdrop with personalized vinyl text.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "organic purple and silver balloon garland frame",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Dense organic balloon arrangement framing top and sides of backdrop panel spilling onto floor.",
+          "reference_bbox": {
+            "x": 0.029,
+            "y": 0.073,
+            "width": 0.943,
+            "height": 0.78
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl lilac",
+              "chrome purple",
+              "chrome silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.3274
+              },
+              {
+                "color": "lila",
+                "share": 0.1687
+              },
+              {
+                "color": "morado",
+                "share": 0.1616
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical half-arch, spanning the full width, slight top overhang, standing on the floor",
+            "composition": "40% pearl lilac lavender balloons across top and mid section, 35% chrome dark purple balloons, and 25% chrome silver balloons as accents and base clusters.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "lila",
+                "morado",
+                "plateado"
+              ],
+              "pesos": [
+                40,
+                35,
+                25
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.22,
+            "conteo": {
+              "globos_visibles": 120,
+              "exacto": false,
+              "estimado_total": 180,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            },
+            "armado_guirnalda": {
+              "soporte": "sobre_estructura",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 4,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": -0.192,
+              "racimos_visibles": 35,
+              "colores_por_racimo": [
+                "lila",
+                "morado",
+                "plateado"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "plateado",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "981",
+                "familia": "reflex",
+                "nombre": "Plata",
+                "nombre_completo": "Reflex Plata",
+                "parte": 0.4475,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E02",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Organic balloon garland framing backdrop panel.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "Luciana white vinyl name sign",
+          "category": "signage",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "White script lettering spelling 'Luciana' centered on upper portion of backdrop panel.",
+          "reference_bbox": {
+            "x": 0.361,
+            "y": 0.27,
+            "width": 0.237,
+            "height": 0.055999999999999994
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.3814
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "vinyl",
+            "shape": "shape not determinable",
+            "composition": "100% white script vinyl font affixed to purple backdrop panel."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Custom name decal on backdrop panel.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Purple arched backdrop panel with name Luciana framed by organic balloon garland structure and cluster base",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "purple",
+          "pearl lilac",
+          "chrome silver",
+          "chrome purple",
+          "white"
+        ],
+        "priority": [
+          "purple",
+          "pearl lilac",
+          "chrome silver",
+          "chrome purple",
+          "white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "d4e4677939f1c1ce0a9576b49c2aec1cfc14483c6698d8ddc02426f8bc9a117e",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 386,
+            "height": 518
+          },
+          "processed": {
+            "width": 386,
+            "height": 518
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 85834,
+            "deLaCaja": 144400
+          },
+          "colores": [
+            {
+              "hex": "#8d6696",
+              "parte": 0.5525,
+              "pixeles": 47419,
+              "cruce": {
+                "hex": "#8d6696",
+                "candidatas": [
+                  {
+                    "codigo": "951",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Reflex Violeta",
+                    "nombreEn": "chrome purple",
+                    "pms": "10215",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#815b9d",
+                    "deltaE": 11.3,
+                    "distancia": 8.9,
+                    "tono": 7,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#c0c3b1",
+              "parte": 0.4475,
+              "pixeles": 38415,
+              "cruce": {
+                "hex": "#c0c3b1",
+                "candidatas": [
+                  {
+                    "codigo": "981",
+                    "nombre": "Plata",
+                    "nombreCompleto": "Reflex Plata",
+                    "nombreEn": "chrome silver",
+                    "pms": "877",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a7a8aa",
+                    "deltaE": 14.2,
+                    "distancia": 13.1,
+                    "tono": 155.5,
+                    "razonCroma": 8.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

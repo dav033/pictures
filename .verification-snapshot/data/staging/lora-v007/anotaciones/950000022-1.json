@@ -1,0 +1,270 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000022-1",
+  "image_sha256": "0d78d1416d000cb5aea27fd46bba0ae34b29959dca5ab1a80df8c042e6707749",
+  "idempotency_key": "48d578407ac9898a54c7fca97c30a294841fa36a86e29ec31e5ed5dd09b685c6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000022/foto-1.png",
+    "orden": "950000022"
+  },
+  "anotacion": {
+    "image_id": "950000022-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "black flooring and black backdrop, no distinct walls visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.fuchsia",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A three-dimensional walk-in balloon tunnel/arch with black and blue balloons across the top and black-and-pink striped balloon columns forming the sides and interior walls."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.solid.printed_birthday_lettering",
+          "balloon.star.foil.green.printed_decorative"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.star.foil.green.printed_decorative",
+            "size_code": "18 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A bunch of black, green and blue balloons on ribbons with larger printed birthday balloons and a green printed star foil balloon, standing to the left of the tunnel."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.neon.green",
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.solid.printed_birthday_lettering",
+          "balloon.star.foil.pink.printed_decorative"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.neon.green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.star.foil.pink.printed_decorative",
+            "size_code": "18 IN"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A bunch of green, blue and fuchsia balloons on ribbons with printed birthday balloons and a pink printed star foil balloon, standing to the right of the tunnel."
+      }
+    ],
+    "non_purchased_elements": [
+      "orange tablecloth",
+      "pink cake stand",
+      "party plates and cups",
+      "black table skirt"
+    ],
+    "uncertainties": [
+      "An orange/peach-toned balloon in the right-side bunch could not be confidently matched to an allowed neon color.",
+      "Printed balloon variant (clear vs solid background) could not be confirmed due to not transcribing text.",
+      "Tunnel interior balloon sizes were assumed uniform R-5; mixed sizes cannot be ruled out."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.clear.printed_birthday_lettering",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.neon.yellow",
+      "balloon.round.latex.solid.printed_birthday_lettering",
+      "balloon.star.foil.green.printed_decorative",
+      "balloon.star.foil.pink.printed_decorative"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000022-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion black round latex balloons and fluorescent Neon round latex balloons in blue and fuchsia, all at a single 5-inch size, a balloon bouquet, standing to one side, built from 5-inch matte Fashion black round latex balloons and fluorescent Neon round latex balloons in blue and green, 12-inch round latex balloons with printed birthday lettering, 18-inch Metallic green star-shaped foil balloons with printed decorative, mixed organically rather than graded, a balloon bouquet, standing to one side, built from 5-inch fluorescent Neon round latex balloons in blue, fuchsia and green, 12-inch round latex balloons with printed birthday lettering, 18-inch Metallic pink star-shaped foil balloons with printed decorative, mixed organically rather than graded, alongside orange tablecloth, pink cake stand, party plates and cups and black table skirt, set against black flooring and black backdrop, no distinct walls visible.",
+    "palabras": 150,
+    "caracteres": 1021,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green",
+      "balloon.round.latex.solid.printed_birthday_lettering",
+      "balloon.star.foil.green.printed_decorative",
+      "balloon.star.foil.pink.printed_decorative"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.star.foil.green.printed_decorative",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.star.foil.pink.printed_decorative",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:52:42.028Z",
+    "recompilado_en": "2026-09-03T14:45:23.415Z"
+  }
+}

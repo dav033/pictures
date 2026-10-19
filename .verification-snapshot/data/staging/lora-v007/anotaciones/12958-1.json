@@ -1,0 +1,124 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12958-1",
+  "image_sha256": "cbb0a2697ccf20ed1fa94745442c482f5f204766779c28e4ab86993dea1812f8",
+  "idempotency_key": "cf1b824fc8354d1b510611323168d34d5fb0981cb541f246b82a50b249dc8a07",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12958/foto-1.jpg",
+    "orden": "12958"
+  },
+  "anotacion": {
+    "image_id": "12958-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a brick wall behind a blue foil panel, floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "organic garland of red and royal blue round balloons running across the top of the backdrop, mixed with foil stars and Paw Patrol character balloons"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "blue crinkled foil sequin panel covering the wall, with a round Paw Patrol print sign and paw-print cutouts mounted on it"
+      }
+    ],
+    "non_purchased_elements": [
+      "a round Paw Patrol sign",
+      "foil star balloons",
+      "foil character balloons",
+      "a foil number one balloon"
+    ],
+    "uncertainties": [
+      "exact count of red vs blue round balloons in the garland is not fully countable due to overlap"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12958-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion round latex balloons in red and royal blue, all at a single 12-inch size, a decorated backdrop, installed against the rear wall, alongside a round Paw Patrol sign, foil star balloons, foil character balloons and a foil number one balloon, set against a brick wall behind a blue foil panel, floor not visible.",
+    "palabras": 67,
+    "caracteres": 418,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:29.970Z",
+    "recompilado_en": "2026-09-03T14:45:22.100Z"
+  }
+}

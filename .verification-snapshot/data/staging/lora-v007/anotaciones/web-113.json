@@ -1,0 +1,121 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-113",
+  "image_sha256": "fc29c68b4e50e292889fd77e362ca00427c543822dabaf6fb9de296dace2fd2d",
+  "idempotency_key": "a3f4500e3153b7ad45ddf5475b38d4cce312687ef161992e7b2dba33db3b1e2b",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-113.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/ideas_de_fiesta_t_o_christmas_3d188093-0184-4ec7-a70c-2bb645081e88.jpg?v=1739826145",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-113",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "light gray walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s3"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch in coral, merlot, and cream surrounding the backdrop."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat sequined panel behind the balloon installation."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Exposed metal arch frame visible behind and between the balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dessert table",
+      "a floral arrangement",
+      "red party tableware"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-113",
+    "caption": "eventdecor_style_v3, an organic balloon arch, anchored to the decorative accessory, built from matte Fashion round latex balloons in coral and merlot and muted Pastel Dusk cream round latex balloons, a decorated backdrop, behind the organic balloon arch, with a decorative accessory, installed against the rear wall, alongside a dessert table, a floral arrangement and red party tableware, set against light gray walls and a light wood floor.",
+    "palabras": 67,
+    "caracteres": 442,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:17:07.623Z"
+  }
+}

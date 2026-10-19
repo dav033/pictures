@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "bundleMetric": "firstLoadUncompressedJsBytes",
+  "bundleNote": "Next.js 16.3.0 removed the CLI First Load JS table; these exact uncompressed route totals come from .next/diagnostics/route-bundle-stats.json after npm run build.",
+  "builds": {
+    "main": {
+      "commit": "32064051226e030aa1b64b7fc26c1d5f65cca3dc",
+      "command": "npm run build (Next.js 16.3.0 Turbopack production build)",
+      "routes": {
+        "3d": {
+          "pathname": "/3d",
+          "firstLoadUncompressedJsBytes": 4032616
+        },
+        "asistente": {
+          "pathname": "/asistente",
+          "firstLoadUncompressedJsBytes": 2413190
+        },
+        "sharedQuote": {
+          "pathname": "/",
+          "component": "TarjetaCotizacion (shared quote rendered on the homepage)",
+          "firstLoadUncompressedJsBytes": 2227980
+        }
+      }
+    },
+    "branch": {
+      "commit": "16307862366a2285108916e9eb9fc5e86cd98cf1",
+      "includesTaskWorktreeChanges": true,
+      "command": "npm run build (Next.js 16.3.0 Turbopack production build)",
+      "routes": {
+        "3d": {
+          "pathname": "/3d",
+          "firstLoadUncompressedJsBytes": 4197568,
+          "deltaFromMainBytes": 164952
+        },
+        "asistente": {
+          "pathname": "/asistente",
+          "firstLoadUncompressedJsBytes": 2412895,
+          "deltaFromMainBytes": -295
+        },
+        "sharedQuote": {
+          "pathname": "/",
+          "component": "TarjetaCotizacion (shared quote rendered on the homepage)",
+          "firstLoadUncompressedJsBytes": 2240529,
+          "deltaFromMainBytes": 12549
+        }
+      }
+    }
+  },
+  "phoneTrace": {
+    "browser": {
+      "name": "Chromium",
+      "version": "151.0.7922.34",
+      "playwrightVersion": "1.62.1"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "cpuThrottleRate": 4,
+    "traceCategories": [
+      "devtools.timeline",
+      "blink.user_timing"
+    ],
+    "method": "Self-contained esbuild harness with real Taller3D components; three warm interaction runs summarized by median using PerformanceObserver long-task and requestAnimationFrame samples, plus one captured CDP trace per scenario. No app server or network.",
+    "scenarios": {
+      "sheetDrag": "Start at medium height, drag the sheet upward 100 CSS px by touch, then allow 430 ms to settle.",
+      "panelOpen": "Start at medium height and touch the Añadir tab; wait for it to become active and 250 ms for rendering."
+    },
+    "results": {
+      "main": {
+        "sheetDrag": {
+          "samples": 3,
+          "medianWallDurationMs": 599,
+          "medianLongTaskCount": 0,
+          "medianLongTaskDurationMs": 0,
+          "medianMaxFrameGapMs": 33.4,
+          "medianFrameGapsOver33Ms": 1,
+          "traceEventCount": 1246
+        },
+        "panelOpen": {
+          "samples": 3,
+          "medianWallDurationMs": 3838,
+          "medianLongTaskCount": 3,
+          "medianLongTaskDurationMs": 3452,
+          "medianMaxFrameGapMs": 2349.8,
+          "medianFrameGapsOver33Ms": 5,
+          "traceEventCount": 2961
+        }
+      },
+      "branch": {
+        "sheetDrag": {
+          "samples": 3,
+          "medianWallDurationMs": 665,
+          "medianLongTaskCount": 0,
+          "medianLongTaskDurationMs": 0,
+          "medianMaxFrameGapMs": 33.4,
+          "medianFrameGapsOver33Ms": 1,
+          "traceEventCount": 1573
+        },
+        "panelOpen": {
+          "samples": 3,
+          "medianWallDurationMs": 3934,
+          "medianLongTaskCount": 3,
+          "medianLongTaskDurationMs": 3384,
+          "medianMaxFrameGapMs": 2333.3,
+          "medianFrameGapsOver33Ms": 4,
+          "traceEventCount": 3194
+        }
+      }
+    }
+  },
+  "rulings": [
+    {
+      "component": "SpotlightCard",
+      "decision": "removed",
+      "scope": "GrillaCompacta phone card presentation",
+      "benefit": "Its pointer-follow spotlight is hover-oriented and adds no useful feedback when browsing the touch sheet.",
+      "cost": "The before/after production builds measured 6640 extra uncompressed first-load JS bytes in /3d. Each visible card also mounted pointer-follow effects while the touch sheet has no hover response.",
+      "beforeRulingFirstLoadJsBytes": 4204208,
+      "afterRulingFirstLoadJsBytes": 4197568,
+      "bundleBytesAvoided": 6640,
+      "remainingImports": 0
+    }
+  ]
+}

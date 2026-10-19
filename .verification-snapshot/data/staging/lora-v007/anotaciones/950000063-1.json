@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000063-1",
+  "image_sha256": "62694c03a93b1ee3a3ee607734178e2288278c8c9ec9c32002d042bc662beedc",
+  "idempotency_key": "c8e1a2cd3f825d78559e4bf603aad8670fa431ee5a1d4e766e8dbc9b0d5b1d40",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000063/foto-1.jpg",
+    "orden": "950000063"
+  },
+  "anotacion": {
+    "image_id": "950000063-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "single tied cluster of round latex balloons stacked in four color bands: yellow, green, orange, purple, strings hanging at bottom"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "product shot on plain background, no real venue placement visible, so placement is a default guess",
+      "cannot visually confirm which balloons are R-9 vs R-12 due to camera perspective; size difference taken from order data"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000063-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion round latex balloons in copper orange, eucalyptus green and honey yellow, 12-inch matte Fashion purple orchid round latex balloons, mixed organically rather than graded, set against plain white studio background, no floor visible.",
+    "palabras": 46,
+    "caracteres": 329,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:54.145Z",
+    "recompilado_en": "2026-09-03T14:45:23.884Z"
+  }
+}

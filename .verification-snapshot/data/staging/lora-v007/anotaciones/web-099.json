@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-099",
+  "image_sha256": "b4f20e96ce27949e59c12b5e82052c4333f6ad9fac3573ffb8dd554ccc99fd61",
+  "idempotency_key": "251f5618cf0f476ca2911a4cc3d395efa1ac288692b931c4327985a8741e9d07",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-099.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Monstruo-Halloween-2_1ab3e96a-c6ed-43a7-9eae-290b92ff138b.jpg?v=1642706495",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-099",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.violet",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Closed three-dimensional balloon ring with mixed purple, lilac, green, and silver balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "cartoon eyes",
+      "clear balloon"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-099",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in lilac, lime green and violet and high-shine Reflex silver round latex balloons, alongside cartoon eyes and clear balloon, set against a plain white background.",
+    "palabras": 43,
+    "caracteres": 288,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:43:08.767Z"
+  }
+}

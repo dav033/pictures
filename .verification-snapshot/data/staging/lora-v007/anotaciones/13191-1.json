@@ -1,0 +1,169 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13191-1",
+  "image_sha256": "740a736dfe16397c3ec7ae9cd02dfcf8245d350520a6342e5a347b71e3e98a87",
+  "idempotency_key": "d57af02903237abced7d0e1c8c2629acbaf0b23dbc92c3966e9453e3d2da9cc8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13191/foto-1.jpg",
+    "orden": "13191"
+  },
+  "anotacion": {
+    "image_id": "13191-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dark brown tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "13191-1-s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "13191-1-s2"
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.pastel_matte.lilac"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.pastel_matte.lilac",
+            "size_code": "LOL-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland in pink, navy, lilac and teal balloons of varied sizes climbing from the ceiling pipe down across the wall corner and over the arch backdrop, ending near a purple mermaid-tail foil balloon."
+      },
+      {
+        "structure_id": "13191-1-s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat cream-colored arch-shaped board with a purple neon-style \"Salome\" name sign, standing behind the dessert tables."
+      },
+      {
+        "structure_id": "13191-1-s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.pastel_matte.lilac"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.pastel_matte.lilac",
+            "size_code": "LOL-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Small freestanding cluster of teal, pink and lilac balloons sitting directly on the floor in front of the cake table."
+      },
+      {
+        "structure_id": "13191-1-s4",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.pastel_matte.lilac"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.pastel_matte.lilac",
+            "size_code": "LOL-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Stacked column of pink, teal and lilac balloons in the left foreground topped with a purple foil shell balloon."
+      }
+    ],
+    "non_purchased_elements": [
+      "a tiered cake",
+      "a mermaid tail foil balloon",
+      "a name sign",
+      "gold dessert stands"
+    ],
+    "uncertainties": [
+      "Cannot confirm whether the lilac balloons visible are the linking Link-O-Loon shape versus standard round balloons given the organic garland styling; treated as the confirmed lilac concept.",
+      "Cannot distinguish exact balloon sizes from the photo; single size assumed since it is the only size confirmed for this concept."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.pastel_matte.lilac"
+    ],
+    "confirmed_size_codes": [
+      "LOL-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13191-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from Pastel Matte lilac Link-O-Loon® linking latex balloons, all 12-inch, a decorated backdrop, installed against the rear wall, with a balloon bouquet, grounded across the front, built from Pastel Matte lilac Link-O-Loon® linking latex balloons, all 12-inch and a balloon column, standing to one side, built from Pastel Matte lilac Link-O-Loon® linking latex balloons, all 12-inch, alongside a tiered cake, a mermaid tail foil balloon, a name sign and gold dessert stands, set against white walls and a dark brown tiled floor.",
+    "palabras": 93,
+    "caracteres": 618,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.pastel_matte.lilac"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.pastel_matte.lilac",
+        "size_code": "LOL-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.link.latex.pastel_matte.lilac",
+        "size_code": "LOL-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.link.latex.pastel_matte.lilac",
+        "size_code": "LOL-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:53.312Z",
+    "recompilado_en": "2026-09-03T14:45:22.172Z"
+  }
+}

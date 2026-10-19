@@ -1,0 +1,403 @@
+{
+  "id": "nueva-sempertex-05",
+  "fuente": "sempertex-05.png",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-25-guirnalda-dia-de-la-madre.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "f0a3f320-4fb4-42ee-a806-486ac732ceb6",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.6663
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "spiral_flower_balloon_garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A continuous diagonal balloon garland with spiral color bands (red floral print, coral pink, white/pink flower motifs) and gold ribbon piping.",
+          "reference_bbox": {
+            "x": 0.114,
+            "y": 0.189,
+            "width": 0.738,
+            "height": 0.685
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "printed red",
+              "coral pink",
+              "soft pink",
+              "white",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "coral",
+                "share": 0.1421
+              },
+              {
+                "color": "rosado",
+                "share": 0.0971
+              },
+              {
+                "color": "rojo",
+                "share": 0.0652
+              },
+              {
+                "color": "blanco",
+                "share": 0.031
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex, metallic ribbon/pipe",
+            "shape": "tall dense asymmetrical garland, on the center, raised off the floor",
+            "composition": "Complex multi-colored organic balloon structure featuring red floral-printed round balloons, solid coral pink latex balloons, white and soft pink flower-shaped balloon clusters, and a coiled gold metallic accent tube running along the lengt",
+            "patron_color": {
+              "modo": "espiral",
+              "colores": [
+                "rojo",
+                "coral",
+                "rosado",
+                "blanco"
+              ],
+              "motas": [
+                "dorado"
+              ],
+              "direccion": "diagonal",
+              "confianza": 0.91
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 55,
+              "exacto": false,
+              "estimado_total": 75,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.55
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "ondulada",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": null,
+              "flecha_relativa": 0,
+              "desnivel_relativo": null,
+              "racimos_visibles": 28,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "rojo",
+                "coral",
+                "rosado",
+                "blanco",
+                "dorado"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "015",
+                "familia": "fashion",
+                "nombre": "Rojo",
+                "nombre_completo": "Fashion Rojo",
+                "parte": 0.2577,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "010",
+                "familia": "fashion",
+                "nombre": "Palo de Rosa",
+                "nombre_completo": "Fashion Palo de Rosa",
+                "parte": 0.1143,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary subject decoration in the scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Helical floral balloon garland/column with spiral metallic piping, printed red balloons, coral pink round balloons, and white/pink flower motifs.",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "red",
+          "coral pink",
+          "white",
+          "gold"
+        ],
+        "priority": [
+          "red",
+          "coral pink",
+          "white",
+          "gold"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "c6d00be97b6c8ce16abad9abefaa73938e11c3e9efcec02cb8153baa8b6bc041",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 4000,
+            "height": 6000
+          },
+          "processed": {
+            "width": 533,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 61439,
+            "deLaCaja": 89056
+          },
+          "colores": [
+            {
+              "hex": "#000000",
+              "parte": 0.6207,
+              "pixeles": 38134,
+              "cruce": {
+                "hex": "#000000",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 97.2,
+                    "distancia": 49.6,
+                    "tono": 110,
+                    "razonCroma": 0
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 100,
+                    "distancia": 50,
+                    "tono": 63.2,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": false,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d65754",
+              "parte": 0.2577,
+              "pixeles": 15830,
+              "cruce": {
+                "hex": "#d65754",
+                "candidatas": [
+                  {
+                    "codigo": "015",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Fashion Rojo",
+                    "nombreEn": "matte red",
+                    "pms": "185",
+                    "acabado": "matte",
+                    "hexGlobo": "#e01b2b",
+                    "deltaE": 27.4,
+                    "distancia": 6.3,
+                    "tono": 3.5,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "915",
+                    "nombre": "Cristal Rojo",
+                    "nombreCompleto": "Reflex Cristal Rojo",
+                    "nombreEn": "chrome red",
+                    "pms": "10445",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a62d2f",
+                    "deltaE": 15.6,
+                    "distancia": 8.8,
+                    "tono": 1,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "515",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Metal Rojo",
+                    "nombreEn": "metallic red",
+                    "pms": "199",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#b21827",
+                    "deltaE": 18.9,
+                    "distancia": 8.9,
+                    "tono": 1.2,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#e8b6ac",
+              "parte": 0.1143,
+              "pixeles": 7025,
+              "cruce": {
+                "hex": "#e8b6ac",
+                "candidatas": [
+                  {
+                    "codigo": "010",
+                    "nombre": "Palo de Rosa",
+                    "nombreCompleto": "Fashion Palo de Rosa",
+                    "nombreEn": "matte blush pink",
+                    "pms": "500",
+                    "acabado": "matte",
+                    "hexGlobo": "#d8a1a3",
+                    "deltaE": 9.4,
+                    "distancia": 20.7,
+                    "tono": 17.2,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "663",
+                    "nombre": "Melón",
+                    "nombreCompleto": "Pastel Mate Melón",
+                    "nombreEn": "pale pink",
+                    "pms": "196",
+                    "acabado": "matte",
+                    "hexGlobo": "#e0c4b8",
+                    "deltaE": 9.4,
+                    "distancia": 27.7,
+                    "tono": 14.6,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "110",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Pastel Dusk Rosa",
+                    "nombreEn": "dusty pastel blush pink",
+                    "pms": "5035",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#e5c1c5",
+                    "deltaE": 10.2,
+                    "distancia": 33.1,
+                    "tono": 24.2,
+                    "razonCroma": 1.5
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Se dejó fuera un color que ocupaba menos del 6 % de la pieza (un reflejo, un borde o parte del fondo).",
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

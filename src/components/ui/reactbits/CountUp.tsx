@@ -21,7 +21,6 @@ export function CountUp({ value, duration = 700, locale = "es-CO", format, class
   useEffect(() => {
     if (prefersReducedMotion || duration <= 0 || !Number.isFinite(value)) {
       shownRef.current = value;
-      setShown(value);
       return;
     }
 
@@ -43,5 +42,6 @@ export function CountUp({ value, duration = 700, locale = "es-CO", format, class
     return () => cancelAnimationFrame(frame);
   }, [duration, prefersReducedMotion, value]);
 
-  return <span className={className} aria-label={formatter.format(value)} aria-live="off">{formatter.format(shown)}</span>;
+  const displayed = prefersReducedMotion || duration <= 0 || !Number.isFinite(value) ? value : shown;
+  return <span className={className} aria-label={formatter.format(value)} aria-live="off">{formatter.format(displayed)}</span>;
 }

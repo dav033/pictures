@@ -1,0 +1,112 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-067",
+  "image_sha256": "8cd14934e49253a0a7b5e9815031e027156545e959623546a2a6cca8c02df362",
+  "idempotency_key": "7d3daaf0fd83b7d5ff3f1f876d8b303aec55ea326d9ddb40f44beb3c24f80a8d",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-067.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/IMG_7430_-SAFARI_f643f756-f67d-4602-97fa-ebefa31d5613.jpg?v=1642706528",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-067",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "light walls and a multicolor tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.jungle_green",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon garland across the top and down both sides of the backdrop."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat wooden and greenery backdrop panel behind the dessert display."
+      }
+    ],
+    "non_purchased_elements": [
+      "wooden backdrop",
+      "greenery panel",
+      "jeep prop",
+      "animal figures"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-067",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from matte Fashion round latex balloons in coffee brown, jungle green, lime green, orange and yellow, a decorated backdrop, installed against the rear wall, alongside wooden backdrop, greenery panel, jeep prop and animal figures, set against light walls and a multicolor tiled floor.",
+    "palabras": 54,
+    "caracteres": 374,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:11:23.791Z"
+  }
+}

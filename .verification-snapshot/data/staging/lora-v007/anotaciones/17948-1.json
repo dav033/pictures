@@ -1,0 +1,229 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "17948-1",
+  "image_sha256": "b041ee3153b2cf09947f53bf12e1ee0649da65b1ad3df9e36258577d2749d118",
+  "idempotency_key": "291f171f9f141593e3f2242e723b82219e401953eaf00741686e69bff231d620",
+  "source": {
+    "kind": "order_photo",
+    "ref": "17948/foto-1.jpg",
+    "orden": "17948"
+  },
+  "anotacion": {
+    "image_id": "17948-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "light tan tiled floor and white walls with a wood trim strip",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "backdrop.mural.metallized_foil.gold.printed_checks"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Shiny gold checkered foil backdrop mural hanging on the wall behind the right-side table"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.reflex.lime_green",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-24"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.lime_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Scattered glossy green, violet and silver balloons applied directly on the left wall, with one larger silver balloon standing out among smaller ones"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "overhead",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.metal.gold",
+          "balloon.round.latex.metallic.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.metal.gold",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.black",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Cluster of gold and black round balloons hanging by ribbons from the ceiling above the gold backdrop"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "banner.sign.unspecified_material.gold_and_black.printed_birthday_lettering",
+          "balloon.round.foil.unspecified.printed_birthday_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Gold and black birthday sign draped on the front of the left table, next to a round foil balloon with printed birthday lettering"
+      }
+    ],
+    "non_purchased_elements": [
+      "a game controller balloon",
+      "a birthday cake",
+      "white plastic chairs",
+      "a star-shaped balloon"
+    ],
+    "uncertainties": [
+      "Whether the hanging gold/black cluster is physically anchored to the backdrop frame or only positioned above it could not be confirmed"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "backdrop.mural.metallized_foil.gold.printed_checks",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.metallic.black",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.reflex.violet",
+      "banner.sign.unspecified_material.gold_and_black.printed_birthday_lettering"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "NEGRO",
+      "PAQUETE X 1",
+      "PAQUETE X 16",
+      "PAQUETE X 18",
+      "PAQUETE X 8",
+      "R-12",
+      "R-24",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "VELITA CHISPITAS",
+      "PLATO DELUXE OXO GRANDE",
+      "PLATO FELIZ CUMPLEAÑOS FESTIVO",
+      "SERVILLETA FELIZ CUMPLEAÑOS MULTICOLOR"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "17948-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, built from metallized foil backdrop murals in gold with printed check pattern, a balloon wall, standing to one side, built from 12-inch high-shine Reflex round latex balloons in lime green and violet, 24-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, with an organic balloon garland, suspended above the decorated backdrop, built from Metallic round latex balloons in gold and black, all at a single 12-inch size and a decorative accessory, placed on the main table, built from 18-inch round foil balloons with printed birthday lettering, decorative signs in gold and black with printed birthday lettering, alongside a game controller balloon, a birthday cake, white plastic chairs and a star-shaped balloon, set against light tan tiled floor and white walls with a wood trim strip.",
+    "palabras": 137,
+    "caracteres": 901,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "backdrop.mural.metallized_foil.gold.printed_checks",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.metal.gold",
+      "balloon.round.latex.metallic.black",
+      "balloon.round.latex.reflex.lime_green",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.reflex.violet",
+      "banner.sign.unspecified_material.gold_and_black.printed_birthday_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.metal.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.black",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:44:46.656Z",
+    "recompilado_en": "2026-09-03T14:45:22.893Z"
+  }
+}
