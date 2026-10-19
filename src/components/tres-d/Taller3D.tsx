@@ -231,6 +231,7 @@ export function Taller3D() {
       try {
         const escena = crearEscena(lienzo);
         escenaRef.current = escena;
+        escena.tapadoAbajo(tapadoRef.current);
         quitarOyentesContexto = prepararContexto(lienzo, escena);
         observador = new ResizeObserver(() => escena.redimensionar());
         observador.observe(lienzo);
@@ -576,6 +577,9 @@ export function Taller3D() {
   const puedeMedir = Boolean(nodoElegido && hechoElegido) && !todosLosGlobos;
   const { verMedidas, alternarMedidas } = useMedidasDePieza(puedeMedir ? seleccion : null);
   const elegirPanel = (p: Panel) => setPanel((actual) => (actual === p ? null : p));
+  /** Lo que la hoja tapa del lienzo (px); se recuerda para aplicarlo al crear el visor. */
+  const tapadoRef = useRef(0);
+  const tapar = useCallback((px: number) => { tapadoRef.current = px; escenaRef.current?.tapadoAbajo(px); }, []);
   const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
   const elegirPestanaHoja = (p: PestanaHoja) => { setPestanaHoja(p); if (hoja === "cerrada" || p === "ia") setHoja("media"); };
   /** Tras mandar un pedido a la IA en el teléfono, la hoja baja a media altura: queda a la vista la escena y la tarjeta del turno. */
@@ -914,7 +918,7 @@ export function Taller3D() {
           <button type="button" onClick={() => visor?.verDesde("3d")} aria-label="Encuadrar todo" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE}`}><Scan className="size-5" aria-hidden /></button>
         </div>
       )}
-      <HojaMovil hoja={hoja} alCambiarAltura={cambiarAltura} alEscribir={() => setHoja("alta")} elevacion={insetTeclado} pestanas={pestanasHoja} activa={pestanaVista} alElegir={elegirPestanaHoja}>
+      <HojaMovil hoja={hoja} alCambiarAltura={cambiarAltura} alFijarAltura={setHoja} alTapar={tapar} alEscribir={() => setHoja("alta")} elevacion={insetTeclado} pestanas={pestanasHoja} activa={pestanaVista} alElegir={elegirPestanaHoja}>
         {contenidoHoja}
       </HojaMovil>
     </>
@@ -961,8 +965,8 @@ export function Taller3D() {
             </aside>
           )}
           <main ref={visorCajaRef} aria-label="Visor 3D" className={`relative min-w-0 flex-1 overflow-hidden ${solitario.activo ? "bg-[radial-gradient(circle_at_50%_40%,var(--taller-encima)_0,var(--taller-visor)_70%)]" : "bg-taller-visor"}`}>
-            {/* En el teléfono el lienzo termina donde empieza la hoja (al encuadrar, la escena queda a la vista). */}
-            <canvas key={generacionLienzo} ref={lienzoRef} className={`absolute inset-x-0 top-0 block w-full touch-none ${esAncho ? "h-full" : hoja === "cerrada" ? "h-[calc(100%-84px)]" : "h-[56%]"}`} aria-label="Escena en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar. Clic en una pieza para elegirla." />
+            {/* El lienzo ocupa todo el visor; en el teléfono la hoja va encima y la cámara centra la escena en lo que queda a la vista. */}
+            <canvas key={generacionLienzo} ref={lienzoRef} className="absolute inset-x-0 top-0 block w-full touch-none h-full" aria-label="Escena en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar. Clic en una pieza para elegirla." />
             {sobreVisor}
             {esAncho && solitario.activo && colgarEnSolitario && (
               <aside aria-label="Colgar decoración" onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); setColgarEnSolitario(false); } }}

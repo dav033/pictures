@@ -90,6 +90,8 @@ export type EscenaGlobos = ExportadoresEscena & {
   /** Rebuilds the latest drawing after the WebGL context has been restored and frames the scene again. */
   reconstruir: () => void;
   redimensionar: () => void;
+  /** px de la parte baja del lienzo tapados por la hoja del teléfono: la cámara centra la escena en lo que queda a la vista. */
+  tapadoAbajo: (px: number) => void;
   /**
    * Dibuja ya, sin esperar al cuadro siguiente: para leer el lienzo justo después (las miniaturas). El visor dibuja
    * solo cuando algo cambia, así que en reposo el lienzo no se vuelve a pintar.
@@ -1279,6 +1281,22 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     else pedirCuadro();
   }
 
+  let tapadoPx = 0;
+  /** Con la hoja encima, el centro de la imagen sube la mitad de lo tapado (view offset); sin ella, la proyección normal. */
+  function aplicarDesplazamiento() {
+    const { clientWidth: ancho, clientHeight: alto } = lienzo;
+    const tapado = Math.max(0, Math.min(tapadoPx, alto * 0.95));
+    if (tapado > 0 && ancho > 0 && alto > 0) camara.setViewOffset(ancho, alto, 0, tapado / 2, ancho, alto);
+    else camara.clearViewOffset();
+    camara.updateProjectionMatrix();
+  }
+  function tapadoAbajo(px: number) {
+    if (Math.abs(px - tapadoPx) < 0.5) return;
+    tapadoPx = px;
+    aplicarDesplazamiento();
+    dibujar();
+  }
+
   function redimensionar() {
     const { clientWidth, clientHeight } = lienzo;
     if (!clientWidth || !clientHeight) return;
@@ -1289,7 +1307,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     if (Math.abs(renderer.getPixelRatio() - densidad) > 0.01) renderer.setPixelRatio(densidad);
     renderer.setSize(clientWidth, clientHeight, false);
     camara.aspect = clientWidth / clientHeight;
-    camara.updateProjectionMatrix();
+    aplicarDesplazamiento();
     // Cambiar el tamaño borra el lienzo: se dibuja ya (no en el cuadro siguiente) para que no parpadee.
     dibujar();
   }
@@ -1602,6 +1620,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       dibujar();
     },
     redimensionar,
+    tapadoAbajo,
     dibujar,
     piezaEn,
     puntoEnPlano,
@@ -1652,6 +1671,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const distancia = esfera.radius / Math.sin(THREE.MathUtils.degToRad(camara.fov) / 2) * 1.02;
       camara.position.copy(esfera.center).addScaledVector(direccion, distancia);
       camara.lookAt(esfera.center);
+      camara.clearViewOffset();
       camara.aspect = 1;
       camara.near = distancia / 100;
       camara.far = distancia * 20;
@@ -1694,7 +1714,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       camara.aspect = antes.aspecto;
       camara.near = antes.near;
       camara.far = antes.far;
-      camara.updateProjectionMatrix();
+      aplicarDesplazamiento();
       camara.lookAt(controles.target);
       dibujar();
 

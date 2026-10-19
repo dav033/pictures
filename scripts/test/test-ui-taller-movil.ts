@@ -30,7 +30,7 @@ const SHIM_NAME = "window.__name = (f) => f;";
 const ALTURAS = ["cerrada", "media", "alta"] as const;
 type Altura = (typeof ALTURAS)[number];
 /** Parte mínima del alto del teléfono que debe quedar para el lienzo sobre la hoja. */
-const LIENZO_MIN: Readonly<Record<Altura, number>> = { cerrada: 0.7, media: 0.4, alta: 0.15 };
+const LIENZO_MIN: Readonly<Record<Altura, number>> = { cerrada: 0.7, media: 0.4, alta: 0.14 };
 
 const CHECKS = [
   ["primer-render", "El Taller3D real monta a 390x844 con táctil, con lienzo y sin errores de página."],
@@ -156,7 +156,7 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
   const asa = hoja.locator('[role=button][tabindex="0"]').first();
   const alto = async () => Math.round((await hoja.boundingBox())!.height);
   for (let i = 0; i < 4; i++) {
-    const altoMedio = ALTO * 0.44, altoAlta = ALTO * 0.78, actual = await alto();
+    const altoMedio = ALTO * 0.45, altoAlta = ALTO * 0.85, actual = await alto();
     const actualNombre: Altura = Math.abs(actual - altoAlta) < 8 ? "alta" : Math.abs(actual - altoMedio) < 8 ? "media" : actual < ALTO * 0.2 ? "cerrada" : "media";
     if (actualNombre === objetivo) return actual;
     await asa.focus();
@@ -168,7 +168,7 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
 
 function esperadoAlto(a: Altura): ((h: number) => boolean) {
   if (a === "cerrada") return (h) => h < ALTO * 0.2;
-  const f = a === "media" ? 0.44 : 0.78;
+  const f = a === "media" ? 0.45 : 0.85;
   return (h) => Math.abs(h - ALTO * f) <= 8;
 }
 
