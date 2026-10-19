@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MotionConfig } from "motion/react";
+import type { ReactNode } from "react";
 import { SeleccionProvider } from "@/lib/estado/seleccion";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SCRIPT_TEMA_ANTES_DE_PINTAR } from "@/lib/tema/tema";
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
     "Chatbot que recomienda decoración de tu catálogo y genera una visualización del evento.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html
       lang="es"

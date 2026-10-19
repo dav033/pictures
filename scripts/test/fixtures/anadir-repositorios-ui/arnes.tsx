@@ -68,7 +68,7 @@ function Taller({ movil }: { movil: boolean }) {
     <div className="taller-3d fixed inset-0 overflow-hidden font-sans">
       <main className="h-full overflow-auto">{escena}</main>
       <HojaMovil hoja={hoja} alCambiarAltura={(paso) => setHoja((h) => (paso > 0 ? (h === "cerrada" ? "media" : "alta") : (h === "alta" ? "media" : "cerrada")))} alEscribir={() => setHoja("alta")}
-        pestanas={[{ id: "anadir", nombre: "Añadir", icono: null }]} activa="anadir" alElegir={() => {}}>
+        alFijarAltura={setHoja} pestanas={[{ id: "anadir", nombre: "Añadir", icono: null }]} activa="anadir" alElegir={() => {}}>
         {panel}
       </HojaMovil>
     </div>

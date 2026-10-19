@@ -284,16 +284,23 @@ async function auditarDesplazamientoCamara(page: Page): Promise<Violacion[]> {
   for (const altura of ALTURAS) {
     await ponerAltura(page, altura);
     await page.waitForTimeout(100);
-    const estadoHandle = await page.waitForFunction<{ tapado: number; vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null; ancho: number; alto: number }, string>((selector) => {
+    type EstadoCamara = {
+      tapado: number;
+      vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null;
+      ancho: number;
+      alto: number;
+    };
+    const estadoHandle = await page.waitForFunction<EstadoCamara | false, string>((selector) => {
       const hoja = document.querySelector(selector)?.getBoundingClientRect();
       const canvas = document.querySelector("canvas")?.getBoundingClientRect();
       const observaciones = (window as typeof window & { __tallerMovilObservaciones?: { tapado: number; vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null }[] }).__tallerMovilObservaciones ?? [];
-      if (!hoja || !canvas) return null;
+      if (!hoja || !canvas) return false;
       const tapado = Math.max(0, window.innerHeight - hoja.top);
       const ultima = observaciones.at(-1);
-      return ultima && Math.abs(ultima.tapado - tapado) < 1 ? { tapado, vista: ultima.vista, ancho: canvas.width, alto: canvas.height } : null;
+      return ultima && Math.abs(ultima.tapado - tapado) < 1 ? { tapado, vista: ultima.vista, ancho: canvas.width, alto: canvas.height } : false;
     }, SELECTOR_HOJA, { timeout: 2_000 });
     const estado = await estadoHandle.jsonValue();
+    if (estado === false) throw new Error("La cámara no produjo una observación estable durante la auditoría.");
     const vista = estado.vista;
     const coincide = vista?.enabled && Math.abs(vista.offsetY - estado.tapado / 2) < 1 && Math.abs(vista.fullWidth - estado.ancho) < 1 && Math.abs(vista.fullHeight - estado.alto) < 1 && Math.abs(vista.width - estado.ancho) < 1 && Math.abs(vista.height - estado.alto) < 1;
     if (!coincide) violaciones.push(fallo("desplazamiento-camara", altura, `hoja tapa ${Math.round(estado.tapado)}px; viewOffset observado ${vista ? `y=${vista.offsetY}, ${vista.width}x${vista.height}/${vista.fullWidth}x${vista.fullHeight}` : "desactivado"}`));
