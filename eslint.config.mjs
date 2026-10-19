@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     "services/ai-api/.venv/**",
     // Herramientas de evaluación (juez, trazadores): scripts que se ejecutan con tsx, no código de la app.
     "evaluacion/**",
+    // Copia de verificación del árbol, no código fuente.
+    ".verification-snapshot/**",
     // Worktrees temporales (los que crea un agente viven aqui dentro): son
     // copias del repo, no codigo fuente de este arbol. Sin esto, el lint
     // recorre cada copia y un arbol con cuatro worktrees pasa de 25 avisos

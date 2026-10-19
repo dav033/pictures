@@ -335,6 +335,7 @@ export function Taller3D() {
       resaltado: solitario.activo && seleccion === solitario.solitario?.raizId ? null : (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null, encuadrar,
     });
     if (encuadrar) setVistaFija("3d");
+    // eslint-disable-next-line react-hooks/immutability -- ref de vista pendiente: se limpia a propósito, no es estado de render
     if (vistaVuelta) { visor.ponerVistaCamara(vistaVuelta); vistaFotoPendiente.current = null; }
     else if (vistaFotoPendiente.current) {
       visor.ponerVistaCamara(vistaDeFoto(vistaFotoPendiente.current, armadaMostrada.sala));
@@ -356,6 +357,7 @@ export function Taller3D() {
     cambiarVista({ ...escenaVista, nodos: escenaVista.nodos.map((n) => (n.id === id ? { ...n, ...cambio } : n)) }, agrupar ? { agrupar } : undefined);
   }, [cambiarVista, escenaVista]);
   const cambiarVistaSolitario = useCallback((vista: VistaSolitario) => {
+    // eslint-disable-next-line react-hooks/immutability -- ref de vista pendiente: se limpia a propósito, no es estado de render
     if (vista.todosLosGlobos) vistaFotoPendiente.current = null;
     setVistaSolitario(vista);
   }, []);
