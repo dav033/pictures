@@ -22,6 +22,7 @@
     "topes:test": "tsx --conditions=react-server scripts/test/test-topes-durables.ts && tsx --conditions=react-server scripts/test/test-topes-rutas.ts",
     "taller:test-hoja-armado-ui": "tsx scripts/test/test-hoja-armado-ui.ts",
     "taller:test-reentrada-ui": "tsx scripts/test/test-ui-taller-reentrada.ts",
+    "taller:test-movil-ui": "tsx scripts/test/test-ui-taller-movil.ts",
     "taller:test-anadir-repositorios-ui": "tsx scripts/test/test-anadir-repositorios-ui.ts && tsx scripts/test/test-anadir-repositorios-marcha-atras-ui.ts && tsx scripts/test/test-lista-repositorios-ui.ts",
     "e2e:humo": "tsx scripts/e2e/humo.ts",
     "test-e2e-humo-guardia": "tsx scripts/test/test-e2e-humo-guardia.ts",
