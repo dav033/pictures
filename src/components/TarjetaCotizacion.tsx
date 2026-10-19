@@ -11,7 +11,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-bluepri
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
 import { agruparComprasCliente, familiasEnOrden, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";
-import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
+import { CountUp } from "@/components/ui/reactbits/CountUp";
 
 const pesos = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -106,7 +106,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
           {/* Fuera de edicion manda el total que firmo Python; `borrador.total` es una re-suma
               local y solo vale como vista previa mientras el cliente ajusta paquetes. */}
           <span className="block text-xs text-texto-suave">{editando ? "Nuevo total estimado" : cotizacion.incluyeIva ? "Total con IVA" : "Total sin IVA"}</span>
-          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto"><NumeroAnimado valor={editando ? borrador.total : cotizacion.total} formato="pesos" /></span>
+          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto"><CountUp value={editando ? borrador.total : cotizacion.total} format={{ style: "currency", currency: "COP", maximumFractionDigits: 0 }} /></span>
         </p>
       </div>
 
