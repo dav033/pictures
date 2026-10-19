@@ -3,12 +3,12 @@ import { Taller3D } from "../../../../src/components/tres-d/Taller3D";
 
 declare global {
   interface Window {
-    __montarTallerMovil: () => void;
+    __montarMovil: () => void;
   }
 }
 
 let root: Root | null = null;
-window.__montarTallerMovil = () => {
+window.__montarMovil = () => {
   root?.unmount();
   root = createRoot(document.getElementById("raiz")!);
   root.render(<Taller3D />);

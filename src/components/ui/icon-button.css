@@ -1,0 +1,27 @@
+@layer components {
+  /* Base compacta fuera de la cabecera; los controles de cabecera son objetivos táctiles. */
+  .ui-icon-button {
+    display: inline-grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.7rem;
+    color: var(--texto-suave);
+  }
+
+  .app-header .ui-icon-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .ui-icon-button:hover:not(:disabled) {
+    background: var(--superficie-2);
+    color: var(--texto);
+  }
+
+  .ui-icon-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
