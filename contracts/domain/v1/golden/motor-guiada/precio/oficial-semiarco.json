@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "fb299f391f83226041c04984b20809af54df6e226ed08a34760ff1f69991fed4",
+ "especHash": "b4f4a664a72fb3f8851d9f10bdc8f6495382124d4460e4a23302036a23d5bf04",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

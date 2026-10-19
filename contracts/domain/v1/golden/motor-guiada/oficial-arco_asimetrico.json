@@ -2,9 +2,9 @@
  "caso": "oficial-arco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "01b641c03a16a4753d7ad04513a2c633bb472960f00aca9dda271ef25683da2c",
+ "especHash": "ca82a2790de7ee27c45cbb46210afe8add303ca7a17e60ce5f12cd0186cb7568",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARCO_ASIMETRICO": {

@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { adminConfigurado, claveAdminValida, cookieDeAdministrador, errorFeedback, exigirAdministrador, exigirSesionMismoOrigen, ipDe } from "./acceso";
+import { errorFeedback, exigirAdministrador } from "./acceso";
 import { ENCABEZADO_CSV, filasACsv } from "./csv";
 import {
-  ClaveAdminSchema,
   FiltrosAdminSchema,
   LIMITE_EXPORTACION_COMPLETA,
   MOMENTOS_CAPTURA,
@@ -14,10 +13,10 @@ import {
   type RespuestaListadoFeedback,
 } from "./contrato";
 import type { DependenciasRutas } from "./dependencias";
-import { leerJsonValidado, validar } from "./entrada-http";
+import { validar } from "./entrada-http";
 import { idsParaExportar, listar, llamadasIaDeSolicitud, obtenerPorId, paginaParaExportar, type FilaFeedback, type FilaListado } from "./repositorio";
 
-/** Rutas de solo administrador: listado y exportación, detalle de un turno y sus imágenes. */
+/** Rutas del panel (sesión de la app): listado y exportación, detalle de un turno y sus imágenes. */
 
 const RUTA_IMAGEN = "/api/feedback-ia/admin/imagen";
 
@@ -100,32 +99,6 @@ export async function atenderListado(request: Request, deps: DependenciasRutas):
     deps.registrarFallo("feedback_ia.listado", error);
     return errorFeedback("BASE_NO_DISPONIBLE", "No se pudo leer el feedback.", 503);
   }
-}
-
-const LIMITE_INTENTOS_CLAVE_POR_MINUTO = 10;
-const intentosPorIp = new Map<string, number[]>();
-
-function demasiadosIntentos(ip: string): boolean {
-  const ahora = Date.now();
-  const recientes = (intentosPorIp.get(ip) ?? []).filter((marca) => ahora - marca < 60_000);
-  recientes.push(ahora);
-  intentosPorIp.set(ip, recientes);
-  if (intentosPorIp.size > 1_000) intentosPorIp.clear();
-  return recientes.length > LIMITE_INTENTOS_CLAVE_POR_MINUTO;
-}
-
-/** Entrega la cookie de administrador a quien manda `ADMIN_PASSWORD` (sin ella configurada, nunca). Sin auditar el cuerpo: lleva la clave. */
-export async function atenderSesionAdmin(request: Request): Promise<Response> {
-  const acceso = exigirSesionMismoOrigen(request);
-  if ("respuesta" in acceso) return acceso.respuesta;
-  if (!adminConfigurado()) return errorFeedback("ADMIN_NO_CONFIGURADO", "El acceso de administrador no está configurado.", 403);
-  if (demasiadosIntentos(ipDe(request))) return errorFeedback("DEMASIADAS_PETICIONES", "Demasiados intentos; espera un minuto.", 429);
-  const leido = await leerJsonValidado(request, ClaveAdminSchema, 1_000);
-  if ("respuesta" in leido) return leido.respuesta;
-  if (!claveAdminValida(leido.valor.clave)) return errorFeedback("CLAVE_INCORRECTA", "Clave incorrecta.", 401);
-  const respuesta = Response.json({ ok: true });
-  respuesta.headers.append("set-cookie", cookieDeAdministrador());
-  return respuesta;
 }
 
 function urlImagen(id: number, momento: (typeof MOMENTOS_CAPTURA)[number], clave: string | null): string | null {

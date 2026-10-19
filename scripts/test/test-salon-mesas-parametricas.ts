@@ -7,15 +7,22 @@
  */
 import assert from "node:assert/strict";
 import { armarEscena, duplicarNodo, SALA_INICIAL, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
+import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { contarMobiliario, grupoDeSillasDe, sillasDeMesaNodo } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
 import { esMesaParametrica, sillasDePieza } from "../../src/lib/globos3d/mobiliario-conjunto";
 import { aforoDeMesas, medidasDeMesa, SILLAS_POR_MESA, TIPOS_MESA_SALON, type TipoMesaSalon } from "../../src/lib/globos3d/salon-evento";
 import { conjuntoDeMesaSalon } from "../../src/lib/globos3d/salon-mesa-parametrica";
 import { quitarConLoSuyo } from "../../src/lib/globos3d/salon-nodos";
+import { mesasVivas } from "../../src/lib/globos3d/salon-registro";
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
 const vacia = (): Escena => ({ sala: { ...SALA_INICIAL }, nodos: [] });
+const herramienta = (escena: Escena, nombre: string, argumentos: Record<string, unknown>) => {
+  const r = aplicarHerramienta(escena, nombre, argumentos);
+  if (!r.ok) assert.fail(`${nombre}: ${r.error}`);
+  return r;
+};
 
 const sillasValidas = (tipo: TipoMesaSalon): number[] => {
   const { min, max } = tipo === "imperial" ? SILLAS_POR_MESA.imperial : SILLAS_POR_MESA.redonda;
@@ -97,5 +104,21 @@ prueba("la paleta del salón (mantel, sillas, cojines) llega al conjunto y las m
   assert.throws(() => conjuntoDeMesaSalon({ tipo: "imperial", sillas: 9, ids: { mesa: "m", sillas: "s" }, xCm: 0, zCm: 0, giroGrados: 0 }), /número par/);
 });
 
+prueba("armar_salon crea conjuntos paramétricos registrados con sillas reales para cada tipo de mesa", () => {
+  for (const [tipo, cantidad] of [["redonda8", 6], ["redonda10", 10], ["imperial", 8]] as const) {
+    const resultado = herramienta(vacia(), "armar_salon", { mesas: 2, mesa: tipo, sillas_por_mesa: cantidad, zonas: [] });
+    const mesas = mesasVivas(resultado.escena).map((v) => v.nodo);
+    assert.equal(mesas.length, 2, tipo);
+    for (const mesa of mesas) {
+      assert.ok(esMesaParametrica(mesa.pieza), `${tipo}: mesa paramétrica`);
+      assert.ok(!mesa.pieza.mueble.opciones?.sillas, `${tipo}: no usa opciones.sillas del catálogo`);
+      const grupo = grupoDeSillasDe(resultado.escena, mesa.id);
+      assert.ok(grupo, `${tipo}: grupo de sillas asociado`);
+      assert.equal(resultado.escena.salon?.piezas[grupo.id]?.rol, "grupo_sillas", `${tipo}: el grupo pertenece al registro`);
+      assert.equal(sillasDeMesaNodo(resultado.escena, mesa).total, cantidad, `${tipo}: sillas contadas desde la escena`);
+    }
+    assert.match(resultado.resumen, new RegExp(`${2 * cantidad} puestos en 2 mesas`), tipo);
+  }
+});
+
 console.log(`test-salon-mesas-parametricas: ok (${pruebas} pruebas, ${casos.length} combinaciones tipo/sillas)`);
-console.log("  NOTA: armar_salon (ponerElemento) todavía pone el mueble del catálogo con opciones.sillas; este conjunto es el núcleo puro, sin conectar.");

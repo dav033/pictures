@@ -40,8 +40,8 @@ export async function atenderLecturaMotor(request: Request, deps: DependenciasMo
 }
 
 /**
- * POST (solo administrador, mismo origen): fija la cookie `guiada_motor` de ESE navegador para probar el 3D en
- * producción sin tocar a los clientes. `defecto` la borra. La cookie solo vale mientras la sesión de administrador sea
+ * POST (sesión de la app, mismo origen): fija la cookie `guiada_motor` de ESE navegador para probar el 3D en
+ * producción sin tocar a los clientes. `defecto` la borra. La cookie solo vale mientras la sesión de la app sea
  * válida (`leerMotorGuiada` la ignora sin ella).
  */
 export async function atenderFijarMotor(request: Request): Promise<Response> {

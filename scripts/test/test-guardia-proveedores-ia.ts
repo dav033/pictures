@@ -198,10 +198,9 @@ const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/[numero]/foto/route.ts": "sirve una foto",
   "src/app/api/admin/ordenes/catalogo-buscar/route.ts": "búsqueda admin",
   "src/app/api/admin/ordenes/estadisticas/route.ts": "estadísticas admin",
-  "src/app/api/feedback-ia/admin/route.ts": "REQ-010: listado y exportación del panel (solo administrador, lectura)",
-  "src/app/api/feedback-ia/admin/[id]/route.ts": "REQ-010: detalle de un turno calificado (solo administrador, lectura)",
-  "src/app/api/feedback-ia/admin/imagen/route.ts": "REQ-010: sirve una captura del almacén (solo administrador)",
-  "src/app/api/feedback-ia/admin/sesion/route.ts": "REQ-010: clave de administrador del panel (autenticación: no registrar credenciales)",
+  "src/app/api/feedback-ia/admin/route.ts": "REQ-010: listado y exportación del panel (solo sesión, lectura)",
+  "src/app/api/feedback-ia/admin/[id]/route.ts": "REQ-010: detalle de un turno calificado (solo sesión, lectura)",
+  "src/app/api/feedback-ia/admin/imagen/route.ts": "REQ-010: sirve una captura del almacén (solo sesión)",
 };
 
 /** Código del navegador que llama a rutas del flujo: debe mandar x-conversacion-id. */

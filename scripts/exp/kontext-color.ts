@@ -1,7 +1,7 @@
 /**
- * Experimento PAGADO «color fiel» (2026-10-09): «Ver cómo quedaría» de la guiada cambia colores con FLUX.1 Kontext max (dorado
- * cromado → plata, lila pastel → gris). La imagen base es la captura de la vista de reserva del servidor (proyección SVG de la armada, sin
- * navegador). Las variantes del texto y las escenas están en `kontext-variantes.ts`; el gasto y su tope, en `kontext-gasto.ts`.
+ * Bounded paid Kontext colour-fidelity experiment. The original 2026-10-09 run tested guided photos; REQ-014 T44 reruns the wording
+ * variants against `promptFotoDeLayout`, the shared Taller/guided builder, on the exact server-side SVG capture (no browser).
+ * Variants and scenes live in `kontext-variantes.ts`; the per-run spend ledger and hard cap live in `kontext-gasto.ts`.
  *
  * Modos (FAL_KEY viene de --env-file; nunca se imprime; con `NODE_OPTIONS=--use-system-ca` por el proxy de la red). `[escena]` es `07`
  * (por defecto) o `10`:

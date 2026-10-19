@@ -14,6 +14,8 @@ import assert from "node:assert/strict";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { aplicarHerramienta, DECLARACIONES_ESCENA } from "../../src/lib/globos3d/herramientas-escena";
 import { MAX_NODOS } from "../../src/lib/globos3d/limites-escena";
+import { grupoDeSillasDe, sillasDeMesaNodo } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
+import { esMesaParametrica } from "../../src/lib/globos3d/mobiliario-conjunto";
 import { distribuirSalon, ENTRADA_RETIRO_CM, MESAS_SALON, PASILLO_CM, TIPOS_MESA_SALON, type ElementoSalon } from "../../src/lib/globos3d/salon-evento";
 import { esDelSalon, mesasVivas } from "../../src/lib/globos3d/salon-registro";
 import { rectDe, seCruzan, ZONAS_SALON, zonasDeEscena, zonasPresentes, type RectCm } from "../../src/lib/globos3d/salon-zonas";
@@ -41,7 +43,12 @@ const TODAS = [...ZONAS_SALON];
 /** Ninguna pieza de una zona se encima con una pieza de otra (las de una misma zona sí se tocan: sillas con su mesa, arco con su panel). */
 function sinEncimar(escena: Escena) {
   const c = cajas(escena);
-  const zonaDe = (id: string) => { const i = escena.salon!.piezas[id]!; return i.zona === "mesas" ? id : i.zona; };
+  const zonaDe = (id: string) => {
+    const i = escena.salon!.piezas[id]!;
+    if (i.zona !== "mesas") return i.zona;
+    const n = escena.nodos.find((x) => x.id === id);
+    return n?.colocacion.en === "sobre" ? n.colocacion.padreId : id;
+  };
   const ids = [...c.keys()].filter((id) => escena.salon?.piezas[id] !== undefined);
   ids.forEach((a, i) => { for (const b of ids.slice(i + 1)) if (zonaDe(a) !== zonaDe(b)) assert.ok(!seCruzan(c.get(a)!, c.get(b)!), `${a} se encima con ${b}`); });
 }
@@ -123,19 +130,26 @@ prueba("las zonas que no caben se avisan en vez de salirse de la sala", () => {
 // armar_salon sobre una escena
 // ---------------------------------------------------------------------------------------------------------------------
 
-prueba("armar_salon: piezas reales dentro de la sala, sin encimarse (cajas armadas), una pieza por mesa con sus sillas", () => {
+prueba("armar_salon: piezas reales dentro de la sala, sin encimarse, con un grupo de sillas separado por mesa", () => {
   const r = herramienta(vacia(), "armar_salon", { invitados: 120, colores: ["blanco", "dorado"] });
   const e = r.escena;
   assert.equal(mesas(e).length, 15);
   assert.ok(e.nodos.length < MAX_NODOS);
-  for (const m of mesas(e)) assert.equal(m.pieza.tipo === "escenografia" && m.pieza.mueble?.id, "mesa_redonda_sillas");
+  for (const m of mesas(e)) {
+    assert.ok(esMesaParametrica(m.pieza));
+    assert.ok(!m.pieza.mueble.opciones?.sillas);
+    assert.equal(sillasDeMesaNodo(e, m).total, 8);
+  }
   const c = cajas(e);
   const ids = [...c.keys()];
   ids.forEach((a, i) => {
     assert.ok(dentro(c.get(a)!, e.sala, 1), `${a} sale de la sala`);
     for (const b of ids.slice(i + 1)) {
       const propios = (a.startsWith("salon-principal") && b.startsWith("salon-principal"));
-      if (!propios) assert.ok(!seCruzan(c.get(a)!, c.get(b)!, ), `${a} se encima con ${b}`);
+      const aNode = e.nodos.find((n) => n.id === a);
+      const bNode = e.nodos.find((n) => n.id === b);
+      const relacionados = (aNode?.colocacion.en === "sobre" && aNode.colocacion.padreId === b) || (bNode?.colocacion.en === "sobre" && bNode.colocacion.padreId === a);
+      if (!propios && !relacionados) assert.ok(!seCruzan(c.get(a)!, c.get(b)!, ), `${a} se encima con ${b}`);
     }
   });
   const principal = e.nodos.find((n) => n.id === "salon-principal")!;
@@ -237,7 +251,13 @@ prueba("ajustar_salon 120 → 60 quita las últimas mesas sin mover las demás n
   const antes = mesas(base).slice(0, 8);
   assert.deepEqual(mesas(r.escena), antes, "las 8 de adelante quedan idénticas");
   for (const n of base.nodos.filter((x) => !esDelSalon(base, x.id))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
-  for (const n of delSalon(base).filter((x) => !mesas(base).includes(x))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
+  const idsMesasConservadas = new Set(antes.map((m) => m.id));
+  for (const n of delSalon(base).filter((x) => !mesas(base).includes(x))) {
+    const padreId = n.colocacion.en === "sobre" ? n.colocacion.padreId : null;
+    const grupoDeMesaQuitada = padreId !== null && mesas(base).some((m) => m.id === padreId) && !idsMesasConservadas.has(padreId);
+    if (!grupoDeMesaQuitada) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
+  }
+  for (const mesa of antes) assert.deepEqual(grupoDeSillasDe(r.escena, mesa.id), grupoDeSillasDe(base, mesa.id), `${mesa.id}: su grupo quedó igual`);
   assert.deepEqual(r.escena.sala, base.sala, "la sala no cambia");
   assert.match(r.resumen, /Quité 7 mesa/);
 });
@@ -251,8 +271,40 @@ prueba("ajustar_salon 60 → 120 agrega las mesas del final y cambiar el tipo co
   const imperial = herramienta(grande.escena, "ajustar_salon", { mesa: "imperial" });
   const ms = mesas(imperial.escena);
   assert.ok(ms.length >= Math.ceil(120 / 10));
-  assert.ok(ms.every((m) => m.pieza.tipo === "escenografia" && m.pieza.mueble?.id === "mesa_imperial_sillas" && m.pieza.mueble.opciones?.colores[1] === "#d6b25a"));
+  assert.ok(ms.every((m) => {
+    const grupo = grupoDeSillasDe(imperial.escena, m.id);
+    return esMesaParametrica(m.pieza) && grupo?.pieza.tipo === "escenografia" && grupo.pieza.mueble?.sillas?.colorEstructura === "#d6b25a" && sillasDeMesaNodo(imperial.escena, m).total === 10;
+  }));
   for (const [id, caja] of cajas(imperial.escena)) assert.ok(dentro(caja, imperial.escena.sala, 5), `${id} fuera`);
+});
+
+prueba("ajustar_salon cambia las sillas paramétricas de cada mesa y conserva su paleta", () => {
+  const base = herramienta(vacia(), "armar_salon", { invitados: 40, colores: ["blanco", "dorado"] }).escena;
+  const ajustada = herramienta(base, "ajustar_salon", { sillas_por_mesa: 6 });
+  const ms = mesas(ajustada.escena);
+  assert.equal(ms.length, 7);
+  for (const mesa of ms) {
+    const grupo = grupoDeSillasDe(ajustada.escena, mesa.id);
+    assert.ok(grupo?.pieza.tipo === "escenografia" && grupo.pieza.mueble?.sillas);
+    assert.equal(sillasDeMesaNodo(ajustada.escena, mesa).total, 6);
+    if (grupo?.pieza.tipo === "escenografia") assert.equal(grupo.pieza.mueble?.sillas?.colorEstructura, "#d6b25a");
+  }
+  assert.match(ajustada.resumen, /42 puestos en 7 mesas/);
+});
+
+prueba("cambiar el tipo no repone un grupo de sillas quitado; pedir sillas explícitamente sí lo repone", () => {
+  const base = herramienta(vacia(), "armar_salon", { invitados: 40 }).escena;
+  const mesa = mesas(base)[0]!;
+  const grupo = grupoDeSillasDe(base, mesa.id)!;
+  const sinSillas = herramienta(base, "quitar_pieza", { id: grupo.id }).escena;
+  assert.equal(grupoDeSillasDe(sinSillas, mesa.id), null);
+
+  const imperial = herramienta(sinSillas, "ajustar_salon", { mesa: "imperial" }).escena;
+  assert.equal(grupoDeSillasDe(imperial, mesa.id), null, "cambiar el tipo respeta la eliminación manual");
+
+  const pedidas = herramienta(imperial, "ajustar_salon", { sillas_por_mesa: 10 }).escena;
+  const mesaPedida = mesas(pedidas).find((n) => n.id === mesa.id)!;
+  assert.equal(sillasDeMesaNodo(pedidas, mesaPedida).total, 10, "el pedido explícito devuelve el grupo aunque sea el valor por defecto");
 });
 
 prueba("ajustar_salon agranda la sala si las mesas no caben, y con una sala más chica o grande corre cada zona con su pared", () => {
@@ -311,7 +363,7 @@ prueba("lo que está sobre una mesa que se quita se va con ella; lo demás del u
   const centro: NodoEscena = { id: "centro-x", nombre: "Centro", pieza: base.nodos.find((n) => n.id === "salon-postres")!.pieza, colocacion: { en: "sobre", padreId: ultima.id, puntoCm: { x: 0, y: 75, z: 0 }, normal: { x: 0, y: 1, z: 0 }, giroGrados: 0 } };
   const r = herramienta({ ...base, nodos: [...base.nodos, centro] }, "ajustar_salon", { invitados: 8 });
   assert.ok(!r.escena.nodos.some((n) => n.id === "centro-x"));
-  assert.match(r.resumen, /1 pieza\(s\) que estaban sobre ellas/);
+  assert.match(r.resumen, /5 pieza\(s\) que estaban sobre ellas/);
   assert.equal(r.escena.nodos.filter((n) => !esDelSalon(r.escena, n.id)).length, 3);
 });
 
@@ -337,7 +389,8 @@ prueba("planificar_evento: boda de 120 en blanco y dorado, de una llamada, con a
   assert.equal(arco.tipo, "arco_organico");
   if (arco.tipo === "arco_organico") assert.deepEqual(arco.arco.colores.map((c) => c.codigo), ["005", "570"], "blanco y dorado del resolvedor de colores");
   const mesa = e.nodos.find((n) => n.id === "salon-mesa-01")!.pieza;
-  assert.equal(mesa.tipo === "escenografia" && mesa.mueble?.opciones?.colores[0], "#f7f6f2");
+  assert.ok(esMesaParametrica(mesa));
+  assert.equal(mesa.mueble.mesa.colorMantel, "#f7f6f2");
   assert.ok(armarEscena(e).globos.length > 300, "hay globos de verdad");
   sinEncimar(e);
   for (const [id, caja] of cajas(e)) assert.ok(dentro(caja, e.sala, 5), `${id} fuera`);

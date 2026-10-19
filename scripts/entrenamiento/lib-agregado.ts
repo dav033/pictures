@@ -65,7 +65,7 @@ export type RegistroPasada = {
   fallos: ClaseFallo[];
   /** Las causas concretas de `capacidad_faltante` (`lib-capacidad.ts`) y cuántas veces se vio cada una. Ausente en los registros viejos; `{}` si se clasificó y no hubo ninguna. */
   capacidades?: ConteoCapacidad;
-  captura: "pendiente" | "hecha";
+  captura: "pendiente" | "hecha" | "fallida";
   costeUsd: number;
   abortada: string | null;
   error: string | null;

@@ -102,7 +102,8 @@ export function armarSalon(escena: Escena, p: PedidoSalon, notas: string[]): Res
 
   const cambioSala = d.sala.anchoCm !== base.sala.anchoCm || d.sala.fondoCm !== base.sala.fondoCm;
   const sala: Sala = { ...base.sala, anchoCm: d.sala.anchoCm, fondoCm: d.sala.fondoCm, altoCm: cambioSala && Math.max(d.sala.anchoCm, d.sala.fondoCm) >= 900 ? Math.max(base.sala.altoCm, ALTO_SALON_CM) : base.sala.altoCm };
-  if (base.nodos.length + d.elementos.length > MAX_NODOS) fallar(`El salón suma ${d.elementos.length} piezas y la escena ya tiene ${base.nodos.length} (máximo ${MAX_NODOS}): quita piezas o usa menos zonas.`);
+  const nodosDelSalon = d.elementos.length + d.elementos.filter((e) => e.rol === "mesa").length;
+  if (base.nodos.length + nodosDelSalon > MAX_NODOS) fallar(`El salón suma ${nodosDelSalon} piezas y la escena ya tiene ${base.nodos.length} (máximo ${MAX_NODOS}): quita piezas o usa menos zonas.`);
 
   const inicial = { invitados, mesa, ...(sillas !== undefined ? { sillas } : {}), profundidadFondoCm: adopta ? profundidadFondoCm ?? PROFUNDIDAD_FONDO_CM : Math.max(PROFUNDIDAD_FONDO_CM, p.profundidadFondoCm ?? 0) };
   let nodos = [...base.nodos];

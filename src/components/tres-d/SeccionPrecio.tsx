@@ -1,10 +1,16 @@
 "use client";
 
 import { Tag } from "lucide-react";
+import { useMemo } from "react";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
+import type { Escena } from "@/lib/globos3d/escena";
+import type { ResumenHelio } from "@/lib/globos3d/helio-cinta";
+import type { EscenaGlobos } from "./escena-globos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
+import { claveDeCotizacionTaller } from "@/lib/taller/cotizacion-profesional-desde-taller";
 import { BTN } from "./ui-taller";
 import { useCotizacionTaller } from "./useCotizacionTaller";
+import { CotizacionProfesionalDesdeTaller } from "./CotizacionProfesionalDesdeTaller";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -12,8 +18,17 @@ const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
  * El precio de la lista de compra en la tienda en línea (D-038): el mismo cotizador que el plan y el «¿cuánto cuesta?» de
  * la vista guiada, así que la misma lista cuesta lo mismo aquí y allá. Se pide con el botón.
  */
-export function SeccionPrecio({ materiales }: { materiales: ReadonlyArray<MaterialDecoracion> }) {
-  const { estado, cotizar, demasiadas } = useCotizacionTaller(materiales);
+export function SeccionPrecio({ nombre, escena, materiales, helio, visor, readerEnabled, writerEnabled }: {
+  nombre: string;
+  escena: Escena;
+  materiales: ReadonlyArray<MaterialDecoracion>;
+  helio: ResumenHelio | null;
+  visor: EscenaGlobos | null;
+  readerEnabled: boolean;
+  writerEnabled: boolean;
+}) {
+  const revisionEscena = useMemo(() => claveDeCotizacionTaller({ nombre, escena, materiales, helio }), [nombre, escena, materiales, helio]);
+  const { estado, cotizar, demasiadas } = useCotizacionTaller(materiales, revisionEscena);
   if (!materiales.length) return null;
   const cotizando = estado.estado === "cotizando";
   return (
@@ -39,6 +54,16 @@ export function SeccionPrecio({ materiales }: { materiales: ReadonlyArray<Materi
             <p className="mt-1 text-xs text-red-600" role="note">No incluido en el precio (la tienda no los vende en esa talla o color): {estado.cotizacion.faltantes.map((f) => `${f.cantidad} × ${f.formatoId} ${referenciaPorCodigo(f.codigo)?.nombreCompleto ?? f.codigo}`).join(", ")}.</p>
           )}
           <p className="mt-1 text-xs text-taller-suave">Con IVA y con los paquetes que vende la tienda. Incluye repuestos de cada globo (el {estado.cotizacion.mermaPorcentaje} %, al menos uno) salvo cuando comprarlos encarece de más. No incluye helio ni montaje.</p>
+          <CotizacionProfesionalDesdeTaller
+            nombre={nombre}
+            cotizacion={estado.cotizacion}
+            helio={helio}
+            clave={revisionEscena}
+            vigente={estado.vigente}
+            visor={visor}
+            readerEnabled={readerEnabled}
+            writerEnabled={writerEnabled}
+          />
         </div>
       )}
     </section>

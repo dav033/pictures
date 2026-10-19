@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "@/lib/auth/session";
+import { isPublicSharedQuotePath } from "@/lib/auth/shared-quote-public-path";
 
 export function proxy(request: NextRequest) {
+  if (isPublicSharedQuotePath(request.nextUrl.pathname)) return NextResponse.next();
   if (loginOmitidoEnDesarrollo()) return NextResponse.next();
   const expected = process.env.APP_PASSWORD;
   if (!expected) {

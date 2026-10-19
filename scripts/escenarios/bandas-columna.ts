@@ -17,7 +17,7 @@ import type { FilaBanda } from "./bandas";
  *
  * Los colores sin R-9 (13 de ~80 códigos: 056, 909...) rellenan menos por metro: la tercera cifra de cada fila es la fracción del mínimo que se les perdona
  * (medida con el 056, con tope de `TOPE_MARGEN_SIN_R9`). Donde ese tope no alcanza, la clase de fallo está en `clases-permitidas.ts` con su extremo medido.
- * Ese hueco del motor no se corrige aquí: ver P-089 (las columnas no reciben el relleno compensado de la guirnalda).
+ * P-089 aplica el relleno compensado a las columnas directas; el margen sigue cubriendo diferencias de conteo que quedan dentro del 30 %.
  *
  * Cada tramo: [mínimo/m, máximo/m, fracción de mínimo perdonada sin R-9].
  */

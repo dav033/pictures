@@ -7,6 +7,8 @@ import { FORMATOS_GLOBO } from "@/lib/globos3d/formatos";
  */
 
 export const RUTA_COTIZACION_TALLER = "/api/taller/cotizacion";
+/** Respuesta ampliada para llevar el precio del Taller al borrador profesional sin romper clientes de v1. */
+export const RUTA_COTIZACION_TALLER_V2 = "/api/taller/cotizacion/v2";
 /** Globos distintos (formato y color) de una lista del Taller. Sus compras se cotizan por trozos (`cotizarBom`). */
 export const MAX_LINEAS_COTIZACION_TALLER = 256;
 /**
@@ -50,6 +52,40 @@ export const CotizacionTallerSchema = z.object({
   faltantes: z.array(FaltanteTallerSchema),
 }).strict();
 export type CotizacionTaller = z.infer<typeof CotizacionTallerSchema>;
+
+/** Línea v2: conserva el resumen de compra y agrega la identidad que necesita `cotizacion-profesional.v1`. */
+const LineaCotizacionTallerV2Schema = z.object({
+  id: z.string().min(1),
+  productId: z.string().min(1),
+  formatoId: z.string(),
+  codigo: z.string(),
+  tamano: z.string(),
+  tamanoCodigo: z.string(),
+  color: z.string().optional(),
+  nombre: z.string().min(1),
+  cantidad: z.number().int().nonnegative(),
+  cantidadNecesaria: z.number().int().positive(),
+  disponible: z.literal(true),
+  reserva: z.number().int().nonnegative(),
+  varianteId: z.string().min(1),
+  paquetes: z.number().int().positive(),
+  unidadesPaquete: z.number().int().positive(),
+  precioPaquete: z.number().int().positive(),
+  subtotal: z.number().int().positive(),
+  sobrante: z.number().int().nonnegative(),
+}).strict();
+
+/** Contrato versionado del Taller para integrar la lista con el cotizador profesional. */
+export const CotizacionTallerV2Schema = z.object({
+  schema_version: z.literal("taller-cotizacion.v2"),
+  total: z.number().int().positive(),
+  mermaPorcentaje: z.number().min(0).max(100),
+  incluyeIva: z.literal(true),
+  complementosSoportados: z.literal(false),
+  lineas: z.array(LineaCotizacionTallerV2Schema).min(1),
+  faltantes: z.array(FaltanteTallerSchema),
+}).strict();
+export type CotizacionTallerV2 = z.infer<typeof CotizacionTallerV2Schema>;
 
 export const FalloCotizacionTallerSchema = z.object({
   error: z.string(),

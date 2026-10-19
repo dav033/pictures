@@ -8,6 +8,7 @@
  */
 import { detectarGlobos, type Deteccion } from "@/lib/globos3d/detectar-globos-ia";
 import type { Escena } from "@/lib/globos3d/escena";
+import { encuadreDeLectura, type Encuadre } from "@/lib/globos3d/encuadre-foto";
 import { reiniciarCupoEscenaIA } from "@/lib/globos3d/cupo-escena-ia";
 import { resumenParaAgente, type Modelado } from "@/lib/globos3d/modelar-desde-foto";
 import { resolverOtro } from "@/lib/globos3d/lectura-otro";
@@ -48,7 +49,7 @@ export type OpcionesPasada = {
 };
 
 /** `evidencia`: con qué se clasificó la capacidad que falta; el arnés la guarda con la escena para volver a clasificar sin repetir la pasada. */
-export type ResultadoPasada = { registro: RegistroPasada; escena: Escena | null; topeAlcanzado: boolean; evidencia?: EvidenciaCapacidad };
+export type ResultadoPasada = { registro: RegistroPasada; escena: Escena | null; encuadre?: Encuadre; topeAlcanzado: boolean; evidencia?: EvidenciaCapacidad };
 
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -178,5 +179,11 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
     costeUsd: Math.round((o.contador.gastado - gastoAntes) * 1e6) / 1e6,
     abortada: paro, error, ...(avisos.length ? { avisos } : {}),
   };
-  return { registro, escena, topeAlcanzado: paro !== null, ...(capacidad ? { evidencia: capacidad.evidencia } : {}) };
+  return {
+    registro,
+    escena,
+    ...(modelado && escena ? { encuadre: encuadreDeLectura(modelado.lectura) } : {}),
+    topeAlcanzado: paro !== null,
+    ...(capacidad ? { evidencia: capacidad.evidencia } : {}),
+  };
 }

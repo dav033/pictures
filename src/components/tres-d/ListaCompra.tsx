@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, ClipboardCopy, FileText } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
@@ -11,6 +11,7 @@ import { BTN } from "./ui-taller";
 import { SeccionHelio } from "./SeccionHelio";
 import { SeccionBomba } from "./SeccionBomba";
 import { SeccionPrecio } from "./SeccionPrecio";
+import type { EscenaGlobos } from "./escena-globos";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
 import { avisoMetalizados, contarMetalizados, gruposDeHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
 import { lineasHelio } from "@/lib/globos3d/helio-bom";
@@ -72,7 +73,16 @@ function enTexto(nombre: string, escena: Escena, armada: EscenaArmada, calibraci
  * cada pieza, productos de fiesta, avisos y, del motor de la biblioteca, los productos exactos de la tienda. Con
  * `onHojaDeArmado` (la bandera de la hoja encendida) lleva el botón «Hoja de armado», que pasa la calibración de la bomba.
  */
-export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDeArmado }: { nombre: string; escena: Escena; armada: EscenaArmada; productosExactos: ReactNode; onHojaDeArmado?: (calibracion: CalibracionBomba) => void }) {
+export function ListaCompra({ nombre, escena, armada, productosExactos, visor, readerEnabled, writerEnabled, onHojaDeArmado }: {
+  nombre: string;
+  escena: Escena;
+  armada: EscenaArmada;
+  productosExactos: ReactNode;
+  visor: EscenaGlobos | null;
+  readerEnabled: boolean;
+  writerEnabled: boolean;
+  onHojaDeArmado?: (calibracion: CalibracionBomba) => void;
+}) {
   const [copiada, setCopiada] = useState(false);
   const [calibracion, setCalibracion] = useState<CalibracionBomba>({});
   useEffect(() => {
@@ -80,6 +90,8 @@ export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDe
     setCalibracion(leerCalibracionBomba(almacenDelNavegador()));
   }, []);
   const cambiarCalibracion = (siguiente: CalibracionBomba) => { setCalibracion(siguiente); guardarCalibracionBomba(almacenDelNavegador(), siguiente); };
+  const gruposHelio = useMemo(() => gruposDeHelio(escena.nodos, armada.porNodo), [escena.nodos, armada.porNodo]);
+  const resumenDeHelio = useMemo(() => resumenHelio(gruposHelio), [gruposHelio]);
   const copiar = async () => {
     try { await navigator.clipboard.writeText(enTexto(nombre, escena, armada, calibracion)); setCopiada(true); setTimeout(() => setCopiada(false), 2500); } catch { setCopiada(false); }
   };
@@ -104,8 +116,16 @@ export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDe
         {corazonesSinCobertura(armada.materiales).map((x) => <p key={x.codigo} className="text-xs text-red-600" role="note">Sin cobertura: la tienda no vende el Corazón 12 en {referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ({x.codigo}); {x.cantidad} {x.cantidad === 1 ? "corazón no se puede comprar" : "corazones no se pueden comprar"} en ese color.</p>)}
         {armada.flores.length > 0 && <p className="mt-1 text-xs text-taller-suave">Las flores artificiales son follaje: no cuentan como globos.</p>}
       </section>
-      <SeccionPrecio materiales={armada.materiales} />
-      <SeccionHelio grupos={gruposDeHelio(escena.nodos, armada.porNodo)} metalizados={contarMetalizados(escena.nodos, armada.porNodo)} />
+      <SeccionPrecio
+        nombre={nombre}
+        escena={escena}
+        materiales={armada.materiales}
+        helio={resumenDeHelio}
+        visor={visor}
+        readerEnabled={readerEnabled}
+        writerEnabled={writerEnabled}
+      />
+      <SeccionHelio grupos={gruposHelio} metalizados={contarMetalizados(escena.nodos, armada.porNodo)} />
       <SeccionBomba globos={inflablesDeEscena(armada)} calibracion={calibracion} onCambiar={cambiarCalibracion} />
       <section aria-label="Por pieza">
         <h3 className="taller-rotulo mb-2">Por pieza</h3>

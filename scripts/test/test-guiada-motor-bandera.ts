@@ -1,31 +1,25 @@
 import assert from "node:assert/strict";
 import test, { afterEach, beforeEach } from "node:test";
 import { sessionToken, SESSION_COOKIE } from "../../src/lib/auth/session";
-import { cookieDeAdministrador, esAdministrador as realEsAdministrador } from "../../src/lib/feedback-ia/acceso";
+import { esAdministrador as realEsAdministrador } from "../../src/lib/feedback-ia/acceso";
 import { COOKIE_MOTOR, TTL_AJUSTE_MS, crearLectorBandera, leerFilaAjuste, type ConsultaAjuste, type DependenciasBandera } from "../../src/lib/guiada-motor/bandera";
 
 /**
- * Precedencia de la bandera GUIADA_MOTOR (cookie de administrador > corte del 3D > ajustes_runtime > env > python), sin Neon
+ * Precedencia de la bandera GUIADA_MOTOR (cookie con sesión > corte del 3D > ajustes_runtime > env > python), sin Neon
  * ni red. El corte (`guiada_motor_corte` / `GUIADA_MOTOR_CORTE`, P-045) es aparte de la bandera: fuerza python también en los
  * planes del 3D ya abiertos, y lo dice con la fuente `corte`.
  */
 
 const CLAVE_APP = "clave-app-de-prueba";
-const CLAVE_ADMIN = "clave-admin-de-prueba";
 const SESION = `${SESSION_COOKIE}=${sessionToken(CLAVE_APP)}`;
-const COOKIE_ADMIN = cookieDeAdministrador(CLAVE_ADMIN).split(";")[0]!;
 
 let appAnterior: string | undefined;
-let adminAnterior: string | undefined;
 beforeEach(() => {
   appAnterior = process.env.APP_PASSWORD;
-  adminAnterior = process.env.ADMIN_PASSWORD;
   process.env.APP_PASSWORD = CLAVE_APP;
-  process.env.ADMIN_PASSWORD = CLAVE_ADMIN;
 });
 afterEach(() => {
   if (appAnterior === undefined) delete process.env.APP_PASSWORD; else process.env.APP_PASSWORD = appAnterior;
-  if (adminAnterior === undefined) delete process.env.ADMIN_PASSWORD; else process.env.ADMIN_PASSWORD = adminAnterior;
 });
 
 function peticion(cookies: string[] = [SESION]): Request {
@@ -35,7 +29,7 @@ function peticion(cookies: string[] = [SESION]): Request {
 type Lectura = string | null | (() => Promise<string | null>);
 const valorDe = (lectura: Lectura | undefined): Promise<string | null> => (typeof lectura === "function" ? lectura() : Promise.resolve(lectura ?? null));
 
-function montar(extra: { ajuste?: Lectura; env?: string; corte?: Lectura; envCorte?: string; reloj?: { ms: number } } = {}) {
+function montar(extra: { ajuste?: Lectura; env?: string; corte?: Lectura; envCorte?: string; cookieVale?: boolean; reloj?: { ms: number } } = {}) {
   const reloj = extra.reloj ?? { ms: 1_000 };
   const lecturas = { ajuste: 0, corte: 0 };
   const deps: DependenciasBandera = {
@@ -51,6 +45,7 @@ function montar(extra: { ajuste?: Lectura; env?: string; corte?: Lectura; envCor
       return valorDe(extra.corte);
     },
     envCorte: () => extra.envCorte,
+    cookieGanaAlCorte: () => extra.cookieVale === true,
     ahora: () => reloj.ms,
   };
   return { leer: crearLectorBandera(deps), lecturas, reloj };
@@ -72,24 +67,19 @@ test("el ajuste de Neon gana a la variable de entorno", async () => {
   assert.deepEqual(await montar({ ajuste: "basura", env: "3d" }).leer(peticion()), { motor: "3d", fuente: "env" }, "una fila inválida no manda");
 });
 
-test("la cookie de un administrador gana a todo y no consulta Neon", async () => {
-  const { leer, lecturas } = montar({ ajuste: "python", env: "python" });
-  assert.deepEqual(await leer(peticion([SESION, COOKIE_ADMIN, `${COOKIE_MOTOR}=3d`])), { motor: "3d", fuente: "cookie" });
-  assert.equal(lecturas.ajuste, 0);
-  assert.deepEqual(await montar({ ajuste: "3d" }).leer(peticion([SESION, COOKIE_ADMIN, `${COOKIE_MOTOR}=python`])), { motor: "python", fuente: "cookie" });
+test("la cookie de una sesión de la app gana a todo lo que no sea el corte", async () => {
+  const { leer } = montar({ ajuste: "python", env: "python" });
+  assert.deepEqual(await leer(peticion([SESION, `${COOKIE_MOTOR}=3d`])), { motor: "3d", fuente: "cookie" });
+  assert.deepEqual(await montar({ ajuste: "3d" }).leer(peticion([SESION, `${COOKIE_MOTOR}=python`])), { motor: "python", fuente: "cookie" });
 });
 
-test("la cookie se ignora sin sesión de administrador, con la cookie de administrador mala o sin ADMIN_PASSWORD", async () => {
+test("la cookie se ignora sin la sesión de la app", async () => {
   const esperado = { motor: "python", fuente: "env" };
-  assert.deepEqual(await montar({ env: "python" }).leer(peticion([SESION, `${COOKIE_MOTOR}=3d`])), esperado, "cliente normal");
-  assert.deepEqual(await montar({ env: "python" }).leer(peticion([SESION, "feedback_admin=falsa", `${COOKIE_MOTOR}=3d`])), esperado, "cookie de administrador falsa");
-  assert.deepEqual(await montar({ env: "python" }).leer(peticion([COOKIE_ADMIN, `${COOKIE_MOTOR}=3d`])), esperado, "sin la sesión de la app");
-  delete process.env.ADMIN_PASSWORD;
-  assert.deepEqual(await montar({ env: "python" }).leer(peticion([SESION, COOKIE_ADMIN, `${COOKIE_MOTOR}=3d`])), esperado, "ADMIN_PASSWORD sin configurar: cerrado");
+  assert.deepEqual(await montar({ env: "python" }).leer(peticion([`${COOKIE_MOTOR}=3d`])), esperado, "sin la sesión de la app");
 });
 
-test("una cookie inválida de administrador cae al siguiente nivel", async () => {
-  assert.deepEqual(await montar({ ajuste: "3d" }).leer(peticion([SESION, COOKIE_ADMIN, `${COOKIE_MOTOR}=otro`])), { motor: "3d", fuente: "ajuste" });
+test("una cookie inválida cae al siguiente nivel", async () => {
+  assert.deepEqual(await montar({ ajuste: "3d" }).leer(peticion([SESION, `${COOKIE_MOTOR}=otro`])), { motor: "3d", fuente: "ajuste" });
 });
 
 test("el ajuste se cachea 30 s y después se vuelve a leer", async () => {
@@ -132,11 +122,12 @@ test("el corte del 3D (fila o variable de entorno) gana a la bandera y lo dice c
   assert.deepEqual(await montar({ ajuste: "3d" }).leer(peticion()), { motor: "3d", fuente: "ajuste" }, "sin corte, la bandera sigue igual");
 });
 
-test("la cookie del administrador gana también al corte (el dueño prueba un arreglo en su navegador) y no consulta Neon", async () => {
-  const { leer, lecturas } = montar({ corte: "activo" });
-  assert.deepEqual(await leer(peticion([SESION, COOKIE_ADMIN, `${COOKIE_MOTOR}=3d`])), { motor: "3d", fuente: "cookie" });
-  assert.deepEqual(lecturas, { ajuste: 0, corte: 0 });
-  assert.deepEqual(await leer(peticion([SESION, `${COOKIE_MOTOR}=3d`])), { motor: "python", fuente: "corte" }, "un cliente con la cookie sigue cortado");
+test("con el corte puesto la cookie de una sesión no lo salta; solo GUIADA_MOTOR_COOKIE_VALE_CON_CORTE lo permite (D-058)", async () => {
+  const cortado = montar({ corte: "activo" });
+  assert.deepEqual(await cortado.leer(peticion([SESION, `${COOKIE_MOTOR}=3d`])), { motor: "python", fuente: "corte" });
+  assert.deepEqual(await cortado.leer(peticion([`${COOKIE_MOTOR}=3d`])), { motor: "python", fuente: "corte" }, "sin la sesión de la app la cookie no cuenta");
+  const permitido = montar({ corte: "activo", cookieVale: true });
+  assert.deepEqual(await permitido.leer(peticion([SESION, `${COOKIE_MOTOR}=3d`])), { motor: "3d", fuente: "cookie" });
 });
 
 test("el corte se cachea 30 s como la bandera, y si Neon falla decide la variable de entorno", async () => {

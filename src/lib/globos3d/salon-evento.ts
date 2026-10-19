@@ -14,7 +14,7 @@ import { inflar, rectDe, type RectCm, type ZonaSalon } from "./salon-zonas";
 export const TIPOS_MESA_SALON = ["redonda8", "redonda10", "imperial"] as const;
 export type TipoMesaSalon = (typeof TIPOS_MESA_SALON)[number];
 
-/** Cada tipo de mesa de invitados: el conjunto del catálogo (mesa con sillas en una sola pieza) y lo que ocupa con las sillas. */
+/** Cada preset de mesa de invitados: id de catálogo histórico, puestos y espacio reservado para mesa y sillas. */
 export type MedidasMesa = { mueble: string; puestos: number; anchoCm: number; fondoCm: number; altoCm: number };
 export const MESAS_SALON: Readonly<Record<TipoMesaSalon, MedidasMesa>> = {
   redonda8: { mueble: "mesa_redonda_sillas", puestos: 8, anchoCm: 270, fondoCm: 270, altoCm: 90 },

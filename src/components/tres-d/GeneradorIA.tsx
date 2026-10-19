@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, LoaderCircle, Trash2 } from "lucide-react";
 import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { TIEMPO_FOTO, resumenFotoRealista } from "@/lib/globos3d/foto-realista";
+import { RespuestaRenderFotoV1Schema, type CajaLetreroFotoV1 } from "@/lib/globos3d/render-imagen-contrato-v1";
 import { postReanudable } from "@/lib/generacion/post-reanudable";
 import type { AspectoCaptura } from "./escena-globos";
 import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
@@ -21,7 +22,7 @@ const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${A
  * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Cada foto queda guardada
  * en este navegador (`imagenes-guardadas.ts`, las últimas 40) y sigue ahí al volver; nada se guarda en el servidor.
  */
-export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => Promise<{ datos: string; aspecto: AspectoCaptura } | null>; descripcion: string; escena?: string }) {
+export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => Promise<{ datos: string; aspecto: AspectoCaptura; cajasLetreroV1?: CajaLetreroFotoV1[] } | null>; descripcion: string; escena?: string }) {
   const [ambiente, setAmbiente] = useState<AmbienteRender>(AMBIENTE_POR_DEFECTO);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +45,18 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
       // Capturar puede esperar la letra de los nombres y lanza si no carga: ese error se le muestra a la persona, sin llamar a la IA.
       const captura = await capturar();
       if (!captura) throw new Error("El visor 3D todavía no está listo.");
-      const respuesta = await postReanudable("/api/render-3d-imagen", JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }));
-      const datos = (await respuesta.json().catch(() => ({}))) as { imagen?: string; error?: string };
-      if (!respuesta.ok || !datos.imagen) throw new Error(datos.error ?? "No pude generar la foto.");
+      const respuesta = await postReanudable("/api/render-3d-imagen", JSON.stringify({
+        render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto, cajasLetreroV1: captura.cajasLetreroV1 ?? [],
+      }));
+      const cuerpo: unknown = await respuesta.json().catch(() => ({}));
+      const validado = RespuestaRenderFotoV1Schema.safeParse(cuerpo);
+      if (!validado.success) throw new Error("La respuesta de la foto no cumple el formato.");
+      const datos = validado.data;
+      if (!respuesta.ok || !("imagen" in datos)) throw new Error("error" in datos ? datos.error : "No pude generar la foto.");
       const nueva: ImagenGuardada = { id: Date.now(), imagen: datos.imagen, ambiente, escena, creada: new Date().toISOString() };
       setGeneradas((actuales) => [nueva, ...actuales].slice(0, MAXIMO));
-      if (!(await guardarImagen(nueva))) setAviso("Este navegador no dejó guardar la foto: descárgala para no perderla.");
+      const avisos = [datos.aviso, !(await guardarImagen(nueva)) ? "Este navegador no dejó guardar la foto: descárgala para no perderla." : undefined].filter((texto): texto is string => Boolean(texto));
+      if (avisos.length) setAviso(avisos.join(" "));
     } catch (causa) {
       // Un corte de red llega como TypeError («Failed to fetch», «NetworkError when attempting to fetch resource»): eso no se le muestra a nadie.
       setError(causa instanceof TypeError ? MENSAJE_SIN_RED : causa instanceof Error ? causa.message : "No pude generar la foto.");
