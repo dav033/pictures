@@ -1,0 +1,35 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { forbidden, notFound, redirect } from "next/navigation";
+import { ASESOR_SESSION_COOKIE } from "@/lib/asesor/auth";
+import { getAdminConversationDetail, getAdminPageAccess } from "@/lib/asesor/admin";
+import { createAsesorRepository } from "@/lib/asesor/repository";
+
+export const instant = false;
+
+export default async function AdminConversationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const jar = await cookies();
+  const access = getAdminPageAccess(jar.get(ASESOR_SESSION_COOKIE)?.value);
+  if (access === "anonymous") redirect("/asesor/login");
+  if (access === "forbidden") forbidden();
+  const { id } = await params;
+
+  let conversation;
+  try {
+    conversation = await getAdminConversationDetail(createAsesorRepository(), id);
+  } catch {
+    return <main className="mx-auto max-w-5xl px-6 py-10"><h1 className="text-2xl font-semibold">Conversación no disponible</h1><p role="alert">No fue posible cargar los datos guardados.</p><Link href="/asesor/admin" className="underline">Volver al monitor</Link></main>;
+  }
+  if (!conversation) notFound();
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-10">
+      <header className="space-y-2"><Link href="/asesor/admin" className="text-sm underline">← Volver al monitor</Link><h1 className="text-2xl font-semibold">{conversation.title || "Conversación"}</h1><p className="text-sm text-muted-foreground">Estado: {conversation.status} · Avance del brief: {conversation.progress.completed}/{conversation.progress.required}</p></header>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Transcripción</h2>
+        {conversation.transcript.length === 0 ? <p>No hay mensajes guardados.</p> : <ol className="space-y-3">{conversation.transcript.map((message) => <li key={message.id} className="rounded-lg border p-4"><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{message.role === "user" ? "Cliente" : message.role === "assistant" ? "Asesor" : "Sistema"}</p><p className="whitespace-pre-wrap">{message.content}</p>{message.attachments.length > 0 && <ul className="mt-3 space-y-1 text-sm text-muted-foreground">{message.attachments.map((attachment) => <li key={attachment.id}>Adjunto {attachment.mimeType} · {attachment.byteSize} bytes · referencia {attachment.id}</li>)}</ul>}</li>)}</ol>}
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Brief aprobado</h2>{conversation.approvedBrief ? <article className="whitespace-pre-wrap rounded-lg border p-4">{conversation.approvedBrief.text}</article> : <p>No hay un brief aprobado.</p>}</section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Datos guardados del evento</h2><pre className="overflow-x-auto rounded-lg border p-4 text-sm">{JSON.stringify(conversation.brief, null, 2)}</pre></section>
+    </main>
+  );
+}

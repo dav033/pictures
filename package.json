@@ -71,7 +71,7 @@
     "rag:migrate": "tsx scripts/migrate.ts",
     "asesor:migrate": "tsx --conditions=react-server scripts/migrate-asesor.ts",
     "asesor:migrate:test": "tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
-    "asesor:test": "tsx --conditions=react-server scripts/test/asesor/run.ts",
+    "asesor:test": "npm run build --workspace=@sempertex/agente-core && tsx --conditions=react-server scripts/test/asesor/run.ts",
     "asesor:seed": "tsx --conditions=react-server scripts/seed-asesor.ts",
     "asesor:test:integration": "tsx --conditions=react-server --test scripts/integration/asesor-db.test.ts",
     "rag:migrate:check": "tsx scripts/migrate.ts --dry-run",
