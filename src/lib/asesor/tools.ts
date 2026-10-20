@@ -1,0 +1,140 @@
+import { createHash } from "node:crypto";
+import { z } from "zod";
+import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
+import { EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
+import { calculateBriefProgress } from "./progress";
+
+const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission");
+const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true }).strict();
+const summaryArgsSchema = z.object({}).strict();
+const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
+const fieldPropertySchema = (field: string): Record<string, unknown> => {
+  if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
+  if (["guestCount", "honoreeAge"].includes(field)) return { type: "integer", minimum: field === "guestCount" ? 1 : 0 };
+  if (field === "budget") return { type: "number", minimum: 0 };
+  if (field === "colors") return { type: "array", items: { type: "string" } };
+  if (field === "contactEmail") return { type: "string", format: "email" };
+  return { type: "string" };
+};
+
+export const ADVISOR_TOOLS: Herramienta[] = [
+  { nombre: "save_event_fields", descripcion: "Guarda campos de evento indicados explícitamente por el cliente.", esquema: { type: "object", additionalProperties: false, properties: Object.fromEntries(fieldNames.map((key) => [key, fieldPropertySchema(key)])) } },
+  { nombre: "propose_summary", descripcion: "Solicita al servidor crear el resumen si el brief está completo.", esquema: { type: "object", additionalProperties: false, properties: {} } },
+  { nombre: "approve_summary", descripcion: "Registra aprobación del resumen vigente; requiere confirmación explícita del cliente.", esquema: { type: "object", additionalProperties: false, required: ["summaryVersion"], properties: { summaryVersion: { type: "integer", minimum: 1 } } } },
+];
+
+export type AdvisorToolEffect = { event: "tool"; name: string; result: unknown; state: EventBriefState; progress: ReturnType<typeof calculateBriefProgress> };
+export type BriefMutator = (mutate: (state: unknown, version: number) => unknown) => Promise<{ version: number; state: unknown }>;
+
+const CUSTOMER_APPROVAL = /\b(?:apruebo|confirmo|acepto)\s+(?:(?:el|la|este|esta)\s+)?(?:resumen|propuesta)\b|\bestoy de acuerdo con (?:el )?(?:resumen|propuesta)\b|\bdoy mi aprobaci[oó]n (?:al|a la) (?:resumen|propuesta)\b/i;
+const CUSTOMER_REJECTION = /\bno (?:apruebo|confirmo|acepto|estoy de acuerdo)\b/i;
+const CUSTOMER_CONTACT_CONSENT = /\b(?:autorizo (?:que me contacten|el contacto)|pueden contactarme|acepto que me contacten)\b/i;
+const CUSTOMER_ADDRESS_CONSENT = /\b(?:autorizo (?:usar|compartir) (?:mi )?(?:direcci[oó]n|ubicaci[oó]n)|pueden usar mi direcci[oó]n)\b/i;
+
+export function customerConsent(text: string): { contact: boolean; address: boolean; refusedContact: boolean; refusedAddress: boolean } {
+  return {
+    contact: CUSTOMER_CONTACT_CONSENT.test(text), address: CUSTOMER_ADDRESS_CONSENT.test(text),
+    refusedContact: /\b(?:no (?:quiero|autorizo|acepto) que me contacten|no autorizo compartir (?:mi )?(?:direcci[oó]n|ubicaci[oó]n) ni que me contacten|no (?:quiero|autorizo|acepto|comparto) (?:el contacto|mi (?:tel[eé]fono|correo))|prefiero no (?:dar|compartir) (?:mi )?(?:tel[eé]fono|correo))\b/i.test(text),
+    refusedAddress: /\b(?:no (?:quiero|autorizo|acepto|comparto) (?:dar|compartir|usar)? ?(?:mi )?(?:direcci[oó]n|ubicaci[oó]n)|prefiero no (?:dar|compartir) (?:mi )?(?:direcci[oó]n|ubicaci[oó]n))\b/i.test(text),
+  };
+}
+
+export function applyCustomerConsentToState(state: EventBriefState, text: string): EventBriefState {
+  const consent = customerConsent(text);
+  const previousContact = state.brief.contactPermission;
+  const previousAddress = state.brief.addressPermission;
+  const previousRefusedContact = state.refused.contact;
+  const previousRefusedAddress = state.refused.address;
+  if (consent.refusedContact) { state.refused.contact = true; state.brief.contactPermission = false; }
+  if (consent.refusedAddress) { state.refused.address = true; state.brief.addressPermission = false; }
+  if (consent.contact && !state.refused.contact) state.brief.contactPermission = true;
+  if (consent.address && !state.refused.address) state.brief.addressPermission = true;
+  if (previousContact !== state.brief.contactPermission || previousAddress !== state.brief.addressPermission
+    || previousRefusedContact !== state.refused.contact || previousRefusedAddress !== state.refused.address) {
+    state.summary = null;
+    state.approval = null;
+  }
+  return state;
+}
+
+export async function applyAdvisorTool(input: {
+  call: LlamadaHerramienta;
+  operationId: string;
+  currentCustomerText: string;
+  mutateBrief: BriefMutator;
+  now?: () => Date;
+}): Promise<AdvisorToolEffect> {
+  const { call, currentCustomerText } = input;
+  const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
+  let message = "";
+  const result = await input.mutateBrief((raw, version) => {
+    const state = parseEventBriefState(raw);
+    const receipt = state.toolReceipts[input.operationId];
+    if (receipt) {
+      message = receipt.name === call.nombre && receipt.argsHash === argsHash
+        ? receipt.message
+        : "Este turno ya aplicó una herramienta diferente en este paso. Se conserva el cambio anterior; inicia un turno nuevo para continuar.";
+      return state;
+    }
+    if ((call.nombre === "propose_summary" && !summaryArgsSchema.safeParse(call.args).success)
+      || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)) {
+      message = "Los argumentos de la herramienta no son válidos; no se aplicó ningún cambio.";
+      return state;
+    }
+    applyCustomerConsentToState(state, currentCustomerText);
+
+    if (call.nombre === "save_event_fields") {
+      const patch = fieldsSchema.safeParse(call.args);
+      if (!patch.success) { message = "Los campos recibidos no son válidos; pide al cliente que aclare el dato."; return state; }
+      const updated = EventBriefSchema.safeParse({ ...state.brief, ...patch.data });
+      if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
+      state.brief = updated.data;
+      state.summary = null;
+      state.approval = null;
+      message = "Campos guardados. El resumen y la aprobación anteriores quedaron invalidados.";
+    } else if (call.nombre === "propose_summary") {
+      const progress = calculateBriefProgress(state.brief);
+      if (!progress.complete) { message = `Faltan campos obligatorios: ${progress.missing.join(", ")}.`; return state; }
+      const summaryVersion = (state.summary?.version ?? 0) + 1;
+      const safeBrief = { ...state.brief,
+        address: state.brief.addressPermission && !state.refused.address ? state.brief.address : null,
+        contactName: state.brief.contactPermission && !state.refused.contact ? state.brief.contactName : null,
+        contactPhone: state.brief.contactPermission && !state.refused.contact ? state.brief.contactPhone : null,
+        contactEmail: state.brief.contactPermission && !state.refused.contact ? state.brief.contactEmail : null,
+      };
+      const summaryLines = [
+        `Evento: ${safeBrief.eventName ?? safeBrief.eventKind ?? "sin especificar"}`,
+        `Fecha: ${safeBrief.date ?? "sin especificar"}`,
+        `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
+        `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
+        `Presupuesto: ${safeBrief.budget === null ? "sin especificar" : `${safeBrief.currency} ${safeBrief.budget}`}`,
+        safeBrief.companyName ? `Empresa: ${safeBrief.companyName}` : null,
+        safeBrief.schoolName ? `Institución educativa: ${safeBrief.schoolName}${safeBrief.grade ? `, ${safeBrief.grade}` : ""}` : null,
+        safeBrief.theme ? `Tema: ${safeBrief.theme}` : null,
+        safeBrief.colors.length ? `Colores: ${safeBrief.colors.join(", ")}` : null,
+        safeBrief.address ? `Dirección autorizada: ${safeBrief.address}` : null,
+      ].filter((line): line is string => line !== null);
+      state.summary = { version: summaryVersion, briefVersion: version + 1, text: summaryLines.join("\n") };
+      state.approval = null;
+      message = `Resumen ${summaryVersion} propuesto. Muéstralo al cliente y espera su confirmación explícita.`;
+    } else if (call.nombre === "approve_summary") {
+      const summaryVersion = call.args.summaryVersion;
+      if (!Number.isSafeInteger(summaryVersion) || !state.summary || summaryVersion !== state.summary.version) {
+        message = "No se puede aprobar: el resumen no es el vigente. Propón el resumen actualizado.";
+      } else if (CUSTOMER_REJECTION.test(currentCustomerText) || !CUSTOMER_APPROVAL.test(currentCustomerText)) {
+        message = "No se puede aprobar sin confirmación explícita del cliente al resumen vigente.";
+      } else if (state.refused.contact || state.refused.address) {
+        message = "La aprobación no está disponible hasta contar con autorización explícita para contacto y dirección.";
+      } else {
+        state.approval = { summaryVersion: summaryVersion as number, confirmedAt: (input.now ?? (() => new Date()))().toISOString() };
+        message = "Resumen aprobado por confirmación explícita del cliente.";
+      }
+    } else {
+      message = "Herramienta desconocida; no se aplicaron cambios.";
+    }
+    state.toolReceipts[input.operationId] = { name: call.nombre, argsHash, message };
+    return state;
+  });
+  const state = parseEventBriefState(result.state);
+  return { event: "tool", name: call.nombre, result: { message }, state, progress: calculateBriefProgress(state.brief) };
+}

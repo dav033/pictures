@@ -7,6 +7,7 @@ export type MessageInput = { id: string; role: MessageRole; content: string; att
 export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer };
 export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[] };
 export type StoredBrief = { conversationId: string; version: number; state: unknown };
+export type StoredConversation = { id: string; accountId: string | null; title: string | null; updatedAt: string };
 
 /**
  * Every method rejects when the database fails; nothing here swallows an error or returns a success
@@ -31,6 +32,21 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         [id, accountId ?? null, title ?? null],
       );
       return { inserted: (result.rowCount ?? 0) > 0 };
+    },
+
+    async getConversation(id: string): Promise<StoredConversation | null> {
+      const { rows } = await db.query<{ id: string; account_id: string | null; title: string | null; updated_at: Date | string }>(
+        `SELECT id, account_id, title, updated_at FROM conversations WHERE id = $1`, [id],
+      );
+      const row = rows[0];
+      return row ? { id: row.id, accountId: row.account_id, title: row.title, updatedAt: String(row.updated_at) } : null;
+    },
+
+    async listConversations(accountId: string): Promise<StoredConversation[]> {
+      const { rows } = await db.query<{ id: string; account_id: string | null; title: string | null; updated_at: Date | string }>(
+        `SELECT id, account_id, title, updated_at FROM conversations WHERE account_id = $1 ORDER BY updated_at DESC`, [accountId],
+      );
+      return rows.map((row) => ({ id: row.id, accountId: row.account_id, title: row.title, updatedAt: String(row.updated_at) }));
     },
 
     /** Atomic message + attachments insert. A repeated message id inserts nothing and returns false. */
@@ -101,6 +117,36 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         [conversationId, JSON.stringify(state)],
       );
       return { version: rows[0].version };
+    },
+
+    /** Serialize read/modify/write so concurrent tabs merge against the last committed state. */
+    async mutateBrief(conversationId: string, mutate: (state: unknown, version: number) => unknown): Promise<{ version: number; state: unknown }> {
+      const client = await db.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [conversationId]);
+        const { rows } = await client.query<{ version: number; state: unknown }>(
+          `SELECT version, state FROM briefs WHERE conversation_id = $1 ORDER BY version DESC LIMIT 1`, [conversationId],
+        );
+        const previous = rows[0];
+        const state = mutate(previous?.state ?? null, previous?.version ?? 0);
+        if (previous && JSON.stringify(state) === JSON.stringify(previous.state)) {
+          await client.query("COMMIT");
+          return { version: previous.version, state };
+        }
+        const { rows: inserted } = await client.query<{ version: number }>(
+          `INSERT INTO briefs (conversation_id, version, state) VALUES ($1, $2, $3::jsonb) RETURNING version`,
+          [conversationId, (previous?.version ?? 0) + 1, JSON.stringify(state)],
+        );
+        await client.query(`UPDATE conversations SET updated_at = now() WHERE id = $1`, [conversationId]);
+        await client.query("COMMIT");
+        return { version: inserted[0].version, state };
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     },
 
     async latestBrief(conversationId: string): Promise<StoredBrief | null> {
