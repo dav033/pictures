@@ -20,6 +20,20 @@ function sse(event: AdvisorEvent, briefVersion?: number): string {
 
 export const maxDuration = 60;
 
+function localE2EFakeModelAllowed(request: Request): boolean {
+  if (process.env.ASESOR_E2E_FAKE_MODEL !== "1") return false;
+  const hostname = new URL(request.url).hostname;
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+function localE2EFailureAllowed(request: Request, content: string): boolean {
+  const token = process.env.ASESOR_E2E_PROVIDER_FAILURE_TOKEN;
+  const supplied = request.headers.get("x-asesor-e2e-token");
+  if (!token || token.length < 32 || supplied !== token || content !== "PROVIDER_FAILURE") return false;
+  const hostname = new URL(request.url).hostname;
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
 export async function POST(request: Request) {
   const session = requireAdvisorRole(request);
   if (session instanceof Response) return session;
@@ -63,9 +77,14 @@ export async function POST(request: Request) {
 
   let chat;
   try {
-    // Use the provider directly: the general ChatPort audit wrapper stores prompts and transcript bodies.
-    const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
-    chat = crearChatGemini();
+    if (localE2EFakeModelAllowed(request) || localE2EFailureAllowed(request, input.content)) {
+      const { createE2EFakeAdvisorChat } = await import("@/lib/asesor/e2e-fake-model.server");
+      chat = createE2EFakeAdvisorChat();
+    } else {
+      // Use the provider directly: the general ChatPort audit wrapper stores prompts and transcript bodies.
+      const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
+      chat = crearChatGemini();
+    }
   } catch {
     const state = parseEventBriefState(latest?.state);
     const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "El proveedor no está disponible. El mensaje quedó guardado; puedes reintentar este turno.", state, progress: calculateBriefProgress(state.brief), retryAvailable: true };

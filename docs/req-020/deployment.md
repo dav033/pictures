@@ -1,0 +1,69 @@
+# REQ-020 M1 deployment
+
+This deployment enables the advisor's text flow. Keep credentials in each provider's encrypted environment settings or the VPS secret store; never commit them or put them in `NEXT_PUBLIC_*` variables.
+
+## Required runtime variables
+
+Configure the same names on Vercel Production and the VPS service:
+
+| Variable | Purpose |
+| --- | --- |
+| `SUPABASE_DB_URL` | Supabase Postgres transaction-pooler DSN for the advisor schema. It is separate from `DATABASE_URL` and must use TLS. |
+| `ASESOR_SESSION_SECRET` | Random signing key with at least 32 characters. Rotate it to invalidate all advisor sessions. |
+| `ASESOR_USER_PASSWORD_HASH` | Scrypt hash for the `user` role, generated with `npm run asesor:seed` or the existing password-hash tooling. |
+| `ASESOR_ADMIN_PASSWORD_HASH` | Scrypt hash for the `admin` role. Store the corresponding password outside the repository. |
+| `GEMINI_API_KEY` | Server-only key used by the advisor's Gemini text conversation. |
+
+`ASESOR_E2E_USER_PASSWORD`, `ASESOR_E2E_ADMIN_PASSWORD`, `ASESOR_TEST_DATABASE_URL`, `ASESOR_E2E_FAKE_MODEL`, and `ASESOR_E2E_PROVIDER_FAILURE_TOKEN` are acceptance-test inputs only. Do not configure them in Vercel or the VPS service. The local runner creates its fake credentials and failure token in memory; the live runner reads its E2E passwords from the coordinator's environment and does not print them.
+
+## Release gate and revision pinning
+
+Run every gate on one commit and deploy that exact commit or immutable build artifact:
+
+```sh
+npm run gate
+npm run happie:test-webhook
+npm run lint
+npm run build --workspaces --if-present
+npx tsc --noEmit
+npm run build
+```
+
+After these checks pass, configure the required runtime variables, apply the advisor migration to the intended Supabase project with `npm run asesor:migrate`, and deploy the same SHA. Do not rebuild from a different branch or commit between verification and deployment. Keep the SHA, check outcomes, migration result, and deployment URL in the release record. Run the M1 acceptance command with the live credentials before opening the advisor to users.
+
+## Vercel
+
+Add the five required runtime variables under the Production environment for the advisor's Vercel project. Use the project's encrypted environment-variable controls; do not place values in `vercel.json`, build arguments, or repository files. Deploy the verified SHA as a production deployment and retain the previous production deployment until M1 observation is complete. Vercel deployments are immutable, so rollback by promoting the prior deployment for the same project and environment; do not rebuild an older branch to roll back.
+
+The application uses the existing Node.js Next.js runtime (`npm run build` / `npm run start`) and dynamic Route Handlers. Do not configure a static export for this application.
+
+## VPS
+
+Store the same five variables in the VPS secret manager or a root-owned environment file outside the checkout. Check out the verified SHA into a versioned release directory, install from the lockfile, build workspace packages and the app, then run `npm run start` behind the existing TLS reverse proxy. Bind the Node process to loopback; expose only the proxy. The service must restart on failure and must not print environment values.
+
+Keep the active release as a symlink or equivalent pointer to an immutable SHA directory. Roll back by switching the pointer to the last verified release and restarting the service with its matching environment configuration. Keep the prior release and environment available until the new revision has passed the phone observations below.
+
+## Database and rollback
+
+Run `npm run asesor:migrate` against `SUPABASE_DB_URL` before switching traffic. The migration runner serializes changes, checks stored checksums, and never uses `DATABASE_URL` for this schema. Take the database backup required by the existing Supabase operating procedure before applying production migrations. For application rollback, restore the previous deployment/release and keep the additive advisor schema in place; do not drop or reverse tables while a prior application revision may still be running. Any destructive schema rollback needs its own reviewed migration and data recovery plan.
+
+## M1 observation
+
+After deployment, use a phone to verify login, keyboard visibility, same-device reload, correction of a summary, and admin visibility of an approved brief. Record only pass/fail observations and the release SHA; do not record customer names, contact details, conversation bodies, credentials, or screenshots containing customer data. M1 is not ready for release if the gate, webhook regression, lint, workspace build, type check, production build, live Gemini/Supabase acceptance, or phone observation is missing or failed.
+
+## Audit evidence
+
+The live runner writes `integration-results/1` with its invocation, SHA, task, per-command outcomes, and required M1 scenario checks. The findings file uses `audit-findings/1`, for example:
+
+```json
+{
+  "schema": "audit-findings/1",
+  "revision": "<full 40-character SHA>",
+  "taskReferences": ["T7"],
+  "findings": [
+    { "id": "OBS-1", "severity": "medium", "status": "closed", "taskReferences": ["T7"] }
+  ]
+}
+```
+
+Run `npx tsx --conditions=react-server scripts/e2e/asesor/check-findings.ts --findings <report> --results <integration-results> --task T7 --known-tasks T7 --revision <SHA> --ledger <ledger> --audit-root <audit-directory>` after the independent audit writes its report and ledger. The checker requires live M1 evidence, verifies task/revision/command/outcome linkage and every required scenario step, rejects open critical/high findings and malformed or missing task references, and rejects tracked or untracked audit edits outside the specified findings report and ledger. A report file's existence alone is not evidence of audit success.

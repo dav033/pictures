@@ -84,7 +84,11 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   let state = parseEventBriefState(consentWrite.state);
   // Do not send prior turns to tools; they are contextual input only. The model has no access to other conversations.
   const history = toHistory(deps.messages);
-  let system = `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(state))}\nAvance calculado por servidor: ${calculateBriefProgress(state.brief).completed}/${calculateBriefProgress(state.brief).required}.`;
+  const modelContext = (currentState: EventBriefState) => {
+    const progress = calculateBriefProgress(currentState.brief);
+    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.`;
+  };
+  let system = modelContext(state);
   let accumulated = "";
   let operations = 0;
   try {
@@ -115,8 +119,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
         yield { type: "tool", name: call.nombre, result: effect.result, state, progress: effect.progress };
         operations++;
       }
-      const progress = calculateBriefProgress(state.brief);
-      system = `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado actualizado: ${JSON.stringify(briefForModel(state))}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.`;
+      system = modelContext(state);
       if (operations >= 8) throw new Error("advisor_tool_limit");
     }
   } catch {
