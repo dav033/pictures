@@ -13,8 +13,9 @@ const TurnSchema = z.object({
   content: z.string().trim().min(1).max(12_000),
 }).strict();
 
-function sse(event: AdvisorEvent): string {
-  return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+function sse(event: AdvisorEvent, briefVersion?: number): string {
+  const payload = briefVersion === undefined ? event : { ...event, briefVersion };
+  return `event: ${event.type}\ndata: ${JSON.stringify(payload)}\n\n`;
 }
 
 export const maxDuration = 60;
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
   if (previousAssistant) {
     const state = parseEventBriefState(latest?.state);
     const terminal: AdvisorEvent = { type: "final", state, progress: calculateBriefProgress(state.brief), messageId: assistantId, retryAvailable: false };
-    const replay = `${sse({ type: "text", delta: previousAssistant.content })}${sse(terminal)}`;
+    const replay = `${sse({ type: "text", delta: previousAssistant.content })}${sse(terminal, latest?.version ?? 0)}`;
     return new Response(replay, { headers: streamHeaders() });
   }
 
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   } catch {
     const state = parseEventBriefState(latest?.state);
     const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "El proveedor no está disponible. El mensaje quedó guardado; puedes reintentar este turno.", state, progress: calculateBriefProgress(state.brief), retryAvailable: true };
-    return new Response(sse(terminal), { headers: streamHeaders() });
+    return new Response(sse(terminal, latest?.version ?? 0), { headers: streamHeaders() });
   }
 
   const controller = new AbortController();
@@ -97,7 +98,10 @@ export async function POST(request: Request) {
         const next = await iterator.next();
         if (next.done) { streamController.close(); return; }
         if (next.value.type === "final" || next.value.type === "error") terminalSent = true;
-        streamController.enqueue(new TextEncoder().encode(sse(next.value)));
+        const briefVersion = next.value.type === "tool" || next.value.type === "final" || next.value.type === "error"
+          ? (await repo.latestBrief(input.conversationId))?.version ?? 0
+          : undefined;
+        streamController.enqueue(new TextEncoder().encode(sse(next.value, briefVersion)));
         if (next.value.type === "final" || next.value.type === "error") {
           await iterator.return?.(undefined).catch(() => undefined);
           streamController.close();
@@ -107,7 +111,7 @@ export async function POST(request: Request) {
         const state = parseEventBriefState((await repo.latestBrief(input.conversationId))?.state);
         const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "Se conservaron los datos guardados. La respuesta se interrumpió; puedes reintentar este turno.", state, progress: calculateBriefProgress(state.brief), retryAvailable: true };
         terminalSent = true;
-        streamController.enqueue(new TextEncoder().encode(sse(terminal)));
+        streamController.enqueue(new TextEncoder().encode(sse(terminal, (await repo.latestBrief(input.conversationId))?.version ?? 0)));
         streamController.close();
       }
     },
