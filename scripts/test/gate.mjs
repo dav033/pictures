@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 
 const SUITES = [
   "contracts:check",
+  "asesor:test",
   "kontext:test",
   "catalogo:test",
   "globos3d:test",
