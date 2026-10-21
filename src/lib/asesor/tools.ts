@@ -34,7 +34,7 @@ const CUSTOMER_ADDRESS_CONSENT = /\b(?:autorizo (?:usar|compartir) (?:mi )?(?:di
 export function customerConsent(text: string): { contact: boolean; address: boolean; refusedContact: boolean; refusedAddress: boolean } {
   return {
     contact: CUSTOMER_CONTACT_CONSENT.test(text), address: CUSTOMER_ADDRESS_CONSENT.test(text),
-    refusedContact: /\b(?:no (?:quiero|autorizo|acepto) que me contacten|no autorizo compartir (?:mi )?(?:direcci[oó]n|ubicaci[oó]n) ni que me contacten|no (?:quiero|autorizo|acepto|comparto) (?:el contacto|mi (?:tel[eé]fono|correo))|prefiero no (?:dar|compartir) (?:mi )?(?:tel[eé]fono|correo))\b/i.test(text),
+    refusedContact: /\b(?:no (?:quiero|autorizo|acepto) que me contacten|no autorizo compartir (?:mi )?(?:direcci[oó]n|ubicaci[oó]n) ni que me contacten|no (?:quiero|autorizo|acepto|autorizo compartir|comparto) (?:el contacto|mi contacto|mis datos de contacto|mi (?:tel[eé]fono|correo))|prefiero no (?:dar|compartir) (?:mi )?(?:contacto|tel[eé]fono|correo)|no autorizo (?:a )?(?:compartir|usar) (?:mi )?contacto)\b/i.test(text),
     refusedAddress: /\b(?:no (?:quiero|autorizo|acepto|comparto) (?:dar|compartir|usar)? ?(?:mi )?(?:direcci[oó]n|ubicaci[oó]n)|prefiero no (?:dar|compartir) (?:mi )?(?:direcci[oó]n|ubicaci[oó]n))\b/i.test(text),
   };
 }
@@ -104,7 +104,9 @@ export async function applyAdvisorTool(input: {
       };
       const summaryLines = [
         `Evento: ${safeBrief.eventName ?? safeBrief.eventKind ?? "sin especificar"}`,
+        safeBrief.honoreeName ? `Homenajeado/a: ${safeBrief.honoreeName}` : null,
         `Fecha: ${safeBrief.date ?? "sin especificar"}`,
+        `Hora: ${safeBrief.startTime ?? "sin especificar"}`,
         `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
         `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
         `Presupuesto: ${safeBrief.budget === null ? "sin especificar" : `${safeBrief.currency} ${safeBrief.budget}`}`,
@@ -113,6 +115,9 @@ export async function applyAdvisorTool(input: {
         safeBrief.theme ? `Tema: ${safeBrief.theme}` : null,
         safeBrief.colors.length ? `Colores: ${safeBrief.colors.join(", ")}` : null,
         safeBrief.address ? `Dirección autorizada: ${safeBrief.address}` : null,
+        safeBrief.contactName ? `Contacto autorizado: ${safeBrief.contactName}` : null,
+        safeBrief.contactPhone ? `Teléfono autorizado: ${safeBrief.contactPhone}` : null,
+        safeBrief.contactEmail ? `Correo autorizado: ${safeBrief.contactEmail}` : null,
       ].filter((line): line is string => line !== null);
       state.summary = { version: summaryVersion, briefVersion: version + 1, text: summaryLines.join("\n") };
       state.approval = null;
@@ -123,7 +128,7 @@ export async function applyAdvisorTool(input: {
         message = "No se puede aprobar: el resumen no es el vigente. Propón el resumen actualizado.";
       } else if (CUSTOMER_REJECTION.test(currentCustomerText) || !CUSTOMER_APPROVAL.test(currentCustomerText)) {
         message = "No se puede aprobar sin confirmación explícita del cliente al resumen vigente.";
-      } else if (state.refused.contact || state.refused.address) {
+      } else if (state.refused.contact || state.refused.address || !state.brief.contactPermission || !state.brief.addressPermission) {
         message = "La aprobación no está disponible hasta contar con autorización explícita para contacto y dirección.";
       } else {
         state.approval = { summaryVersion: summaryVersion as number, confirmedAt: (input.now ?? (() => new Date()))().toISOString() };

@@ -21,8 +21,8 @@ function stateStore(initial: unknown = null) {
 function toolCall(name: string, args: Record<string, unknown>): LlamadaHerramienta { return { nombre: name, args }; }
 
 const requiredFields = {
-  eventKind: "corporate", date: "2026-11-14", guestCount: 80, venueType: "salón", budget: 4_000_000,
-  companyName: "Acme", schoolName: null, eventName: null, startTime: null, endTime: null, venueName: null,
+  eventKind: "corporate", date: "2026-11-14", startTime: "18:00", guestCount: 80, venueType: "salón", budget: 4_000_000,
+  companyName: "Acme", schoolName: null, eventName: null, endTime: null, venueName: null,
   address: "Calle 1", city: "Bogotá", department: null, currency: "COP", honoreeName: null, honoreeAge: null,
   grade: null, audience: null, theme: null, colors: [], style: null, contactName: "Ana", contactPhone: "3001234567",
   contactEmail: null, notes: null,
@@ -35,15 +35,19 @@ test("EventBrief accepts birthday, corporate, school, and validates all R3 field
   }
   assert.equal(EventBriefSchema.safeParse({ ...requiredFields, guestCount: 0 }).success, false);
   assert.equal(EventBriefSchema.safeParse({ ...requiredFields, undeclaredPermission: true }).success, false);
-  assert.deepEqual(calculateBriefProgress(parseEventBriefState({ brief: { eventKind: "school" } }).brief).missing, ["date", "guestCount", "venueType", "budget", "schoolName"]);
+  assert.deepEqual(calculateBriefProgress(parseEventBriefState({ brief: { eventKind: "school" } }).brief).missing,
+    ["date", "startTime", "guestCount", "venueType", "city", "address", "contactName", "schoolName", "contactPhoneOrEmail"]);
 });
 
 test("server progress requires event facts and conditional organization fields", () => {
-  const base = EventBriefSchema.parse({ ...requiredFields, eventKind: "corporate" });
-  assert.deepEqual(calculateBriefProgress(base), { complete: true, completed: 6, required: 6, missing: [] });
+  const base = EventBriefSchema.parse({ ...requiredFields, eventKind: "corporate", startTime: "18:00", contactPermission: true, addressPermission: true });
+  assert.deepEqual(calculateBriefProgress(base), { complete: true, completed: 10, required: 10, missing: [] });
+  assert.equal(calculateBriefProgress(EventBriefSchema.parse({ ...base, budget: null })).complete, true, "budget is optional");
   const school = EventBriefSchema.parse({ ...requiredFields, eventKind: "school", schoolName: null });
   assert.equal(calculateBriefProgress(school).complete, false);
   assert.ok(calculateBriefProgress(school).missing.includes("schoolName"));
+  const birthday = EventBriefSchema.parse({ ...requiredFields, eventKind: "birthday", honoreeName: null });
+  assert.ok(calculateBriefProgress(birthday).missing.includes("honoreeName"));
 });
 
 test("field writes invalidate summary and approval; summary requires complete fields and approval needs customer confirmation", async () => {
@@ -79,6 +83,14 @@ test("refused contact/address keeps approval unavailable with Spanish explanatio
   const approval = await applyAdvisorTool({ call: toolCall("approve_summary", { summaryVersion: proposal.state.summary!.version }), operationId: "turn:2:0", currentCustomerText: "Apruebo el resumen", mutateBrief: store.mutateBrief });
   assert.equal(approval.state.approval, null);
   assert.match(String((approval.result as { message: string }).message), /no está disponible/);
+
+  const contactOnly = stateStore({ brief: { ...requiredFields, contactPermission: true, addressPermission: true }, refused: { contact: false, address: false } });
+  const refusedProposal = await applyAdvisorTool({ call: toolCall("propose_summary", {}), operationId: "refusal:propose", currentCustomerText: "No autorizo compartir mi contacto", mutateBrief: contactOnly.mutateBrief });
+  assert.equal(calculateBriefProgress(refusedProposal.state.brief).complete, true, String((refusedProposal.result as { message: string }).message));
+  const refusedApproval = await applyAdvisorTool({ call: toolCall("approve_summary", { summaryVersion: refusedProposal.state.summary!.version }), operationId: "refusal:approve", currentCustomerText: "Apruebo el resumen", mutateBrief: contactOnly.mutateBrief });
+  assert.equal(refusedApproval.state.refused.contact, true);
+  assert.equal(refusedApproval.state.approval, null);
+  assert.match(String((refusedApproval.result as { message: string }).message), /no está disponible/);
 });
 
 function fakeChat(script: Array<{ text: string; calls: LlamadaHerramienta[] }>): ChatPort {
