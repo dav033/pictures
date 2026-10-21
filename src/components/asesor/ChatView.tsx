@@ -9,7 +9,7 @@ import type { AdvisorMessage } from "./conversation-contract";
 const welcome: AdvisorMessage = {
   id: "advisor-welcome",
   role: "assistant",
-  content: "¡Hola! Me alegra acompañarte. ¿Qué celebración estás planeando y qué te gustaría que sintieran tus invitados?",
+  content: "¡Hola! Me alegra acompañarte. ¿Qué celebración estás planeando, para quién es y qué te gustaría que sintieran tus invitados?",
 };
 
 export function ChatView() {

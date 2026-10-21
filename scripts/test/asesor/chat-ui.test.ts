@@ -17,6 +17,7 @@ test("advisor page places privacy and test notices before the welcome question",
   const transcript = chatView.indexOf("{visibleMessages.map");
   assert.ok(privacy >= 0 && preview > privacy && transcript > preview);
   assert.match(chatView, /¿Qué celebración estás planeando/);
+  assert.match(chatView, /para quién es/);
   assert.match(chatView, /min-h-dvh/);
   assert.match(chatView, /safe-area-inset-bottom/);
   assert.match(composer, /<textarea/);
