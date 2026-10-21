@@ -110,12 +110,7 @@ export async function applyAdvisorTool(input: {
         `Evento: ${safeBrief.eventName ?? safeBrief.eventKind ?? "sin especificar"}`,
         safeBrief.honoreeName ? `Homenajeado/a: ${safeBrief.honoreeName}` : null,
         `Fecha: ${safeBrief.date ?? "sin especificar"}`,
-<<<<<<< 8355646259217a368c44af38a86caf6fbaf66d6e
-        `Hora: ${safeBrief.startTime ?? "sin especificar"}`,
-||||||| f492be0a0713204e89775a81fdf8a4b04d641d4d
-=======
         safeBrief.startTime || safeBrief.endTime ? `Horario: ${[safeBrief.startTime, safeBrief.endTime].filter(Boolean).join("–")}` : null,
->>>>>>> 94d76cfb959ed10ab69d376697361facb740c13f
         `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
         `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
         safeBrief.department ? `Departamento: ${safeBrief.department}` : null,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createBriefGetHandler, createBriefProjection } from "@/lib/asesor/brief";
+import { getBriefDisplayEntries } from "@/lib/asesor/brief-display";
 import { EventBriefSchema, parseEventBriefState } from "@/lib/asesor/contracts";
 import { applyAdvisorTool, type BriefMutator } from "@/lib/asesor/tools";
 import type { LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
@@ -60,15 +61,23 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
   assert.equal(full.brief.likes, "Flores");
   assert.equal(full.brief.dislikes, "Globos metálicos");
   assert.equal(full.brief.organiserPriority, "personalise");
+  assert.equal(full.brief.honoreeName, "Sofía Pérez");
   assert.equal(full.brief.proposedPackage, "Arco floral");
   assert.equal(full.photos[0].id, "photo-1");
+  assert.ok(getBriefDisplayEntries(full).some((entry) => entry.label === "Homenajeado/a" && entry.value === "Sofía Pérez"));
 
-  const vendor = createBriefProjection(state, photos, "vendor");
+  const echoedPrivateData = parseEventBriefState({ ...state, brief: {
+    ...state.brief,
+    eventName: "Celebración de Ana Pérez al 3001234567",
+    venueName: "ana@example.test · Calle 18 # 20-30",
+    proposedPackage: "Diseño para Ana Pérez en Calle 18 # 20-30",
+  }, summary: { ...state.summary, text: "Ana Pérez, 3001234567, ana@example.test, Calle 18 # 20-30" } });
+  const vendor = createBriefProjection(echoedPrivateData, photos, "vendor");
   const serialized = JSON.stringify(vendor);
   for (const key of ["contactName", "contactPhone", "contactEmail", "contactPermission", "addressPermission", "address", "budget", "honoreeName"]) {
     assert.ok(!(key in vendor.brief), `vendor projection leaked ${key}`);
   }
-  for (const value of ["Ana Pérez", "3001234567", "ana@example.test", "Calle 18 # 20-30", "2500000", "2,500,000", "contains private fields"]) {
+  for (const value of ["Ana Pérez", "3001234567", "ana@example.test", "Calle 18 # 20-30", "2500000", "2,500,000"]) {
     assert.ok(!serialized.includes(value), `vendor projection leaked ${value}`);
   }
   assert.equal(vendor.brief.likes, "Flores");

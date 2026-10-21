@@ -18,7 +18,6 @@ const VENDOR_EXCLUDED_FIELDS = new Set([
   "contactName", "contactPhone", "contactEmail", "contactPermission", "addressPermission",
   "address", "budget", "honoreeName",
 ]);
-const FREE_TEXT_FIELDS = new Set(["notes", "requests", "brandRequests", "likes", "dislikes"]);
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -59,7 +58,8 @@ function vendorBrief(brief: EventBrief): Partial<EventBrief> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(brief)) {
     if (VENDOR_EXCLUDED_FIELDS.has(key)) continue;
-    result[key] = FREE_TEXT_FIELDS.has(key) ? redactFreeText(value, personal) : value;
+    // Model-writable values can echo private data in any field, including names and packages.
+    result[key] = redactFreeText(value, personal);
   }
   return result as Partial<EventBrief>;
 }
