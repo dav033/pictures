@@ -179,6 +179,6 @@ export function useConversation() {
   }, [createConversation]);
 
   const cards: readonly AdvisorComposerCard[] = [];
-  const capabilities: ComposerCapabilities = { photo: false, voice: false };
+  const capabilities: ComposerCapabilities = { photo: false, voice: true };
   return { conversationId, messages, progress, briefVersion, status, error, streamingText, cards, capabilities, submit, retry, startFresh };
 }

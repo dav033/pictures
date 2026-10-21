@@ -1,4 +1,4 @@
-import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import { isAuthenticatedVoiceRequest, isSameOriginVoiceRequest } from "@/lib/asesor/voice";
 import { auditarLlamadaIa, conRegistro } from "@/lib/registro/servidor";
 import { transcribirEnVps } from "@/lib/voz/cliente-vps";
 import { leerConfigVoz } from "@/lib/voz/config";
@@ -15,13 +15,14 @@ export const POST = conRegistro("/api/voz/transcribir", atenderPOST, { auditarEn
 
 /** `{ habilitada }`: lo único del servicio que ve el navegador. Sin `conRegistro`: no decide nada. */
 export function GET(request: Request) {
-  return atenderEstadoVoz(request, { autenticado: isAuthenticatedRequest, config: () => leerConfigVoz() });
+  if (!isSameOriginVoiceRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  return atenderEstadoVoz(request, { autenticado: isAuthenticatedVoiceRequest, config: () => leerConfigVoz() });
 }
 
 function atenderPOST(request: Request) {
   return atenderTranscripcion(request, {
-    autenticado: isAuthenticatedRequest,
-    mismoOrigen: isSameOriginRequest,
+    autenticado: isAuthenticatedVoiceRequest,
+    mismoOrigen: isSameOriginVoiceRequest,
     config: () => leerConfigVoz(),
     cupo: tomarCupoVoz,
     transcribir: (audio, contentType, config) => auditarLlamadaIa(

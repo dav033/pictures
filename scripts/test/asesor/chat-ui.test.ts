@@ -61,12 +61,13 @@ test("retry reuses the pending turn ID and failed conversation IDs have a recove
   assert.match(chatView, /Empezar una conversación nueva/);
 });
 
-test("Composer owns capability-gated media controls and typed direction/package cards", () => {
+test("Composer owns capability-gated photo controls, advisor dictation, and typed direction/package cards", () => {
   assert.match(composer, /capabilities\.photo && onPhoto/);
-  assert.match(composer, /capabilities\.voice && onVoice/);
+  assert.match(composer, /capabilities\.voice && onVoiceText/);
+  assert.match(composer, /<BotonVoz/);
   assert.match(composer, /card\.kind === "direction" \? "Dirección" : "Paquete"/);
   assert.match(composer, /disabled=\{!canPhoto \|\| busy\}/);
-  assert.match(composer, /disabled=\{!canVoice \|\| busy\}/);
   assert.match(hook, /const cards: readonly AdvisorComposerCard\[\] = \[\]/);
-  assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: false, voice: false \}/);
+  assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: false, voice: true \}/);
+  assert.match(chatView, /onVoiceText=\{setDraft\}/);
 });

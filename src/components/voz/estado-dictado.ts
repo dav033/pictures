@@ -9,6 +9,7 @@ export type CodigoErrorDictado =
   | "sesion"
   | "no_disponible"
   | "no_se_entendio"
+  | "tiempo_agotado"
   | "fallo";
 
 export type EstadoDictado =
