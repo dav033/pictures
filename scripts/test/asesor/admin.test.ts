@@ -72,7 +72,7 @@ test("admin detail reads transcript and approved brief while returning attachmen
   }, row.id);
   assert.ok(detail);
   assert.equal(detail.transcript[0].content, "Adjunto una referencia.");
-  assert.deepEqual(detail.transcript[0].attachments, [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512 }]);
+  assert.deepEqual(detail.transcript[0].attachments, [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512, kind: "inspiration", confirmed: null, preference: "neutral" }]);
   assert.equal("data" in detail.transcript[0].attachments[0], false);
   assert.equal(detail.approvedBrief?.text, "Brief aprobado: cumpleaños en Bogotá.");
   assert.equal(await getAdminConversationDetail({ getAdminConversation: async () => null, listMessages: async () => [] }, "other-account-id"), null);

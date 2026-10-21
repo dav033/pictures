@@ -2,9 +2,11 @@ import { getAsesorPool, type AsesorDb } from "./db";
 
 export type MessageRole = "user" | "assistant" | "system";
 
-export type AttachmentInput = { id: string; mimeType: string; data: Buffer };
+export type PhotoKind = "inspiration" | "venue";
+export type PhotoPreference = "like" | "dislike" | "neutral";
+export type AttachmentInput = { id: string; mimeType: string; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference };
 export type MessageInput = { id: string; role: MessageRole; content: string; attachments?: AttachmentInput[] };
-export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer };
+export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference };
 export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[] };
 export type StoredBrief = { conversationId: string; version: number; state: unknown };
 export type StoredConversation = { id: string; accountId: string | null; title: string | null; updatedAt: string };
@@ -144,9 +146,9 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         if (inserted) {
           for (const attachment of message.attachments ?? []) {
             await client.query(
-              `INSERT INTO attachments (id, message_id, mime_type, byte_size, data) VALUES ($1, $2, $3, $4, $5)
+              `INSERT INTO attachments (id, message_id, mime_type, byte_size, data, photo_kind, confirmed, preference) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                ON CONFLICT (id) DO NOTHING`,
-              [attachment.id, message.id, attachment.mimeType, attachment.data.length, attachment.data],
+              [attachment.id, message.id, attachment.mimeType, attachment.data.length, attachment.data, attachment.kind ?? "inspiration", attachment.confirmed ?? null, attachment.preference ?? "neutral"],
             );
           }
           await client.query(`UPDATE conversations SET updated_at = now() WHERE id = $1`, [conversationId]);
@@ -176,8 +178,11 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         mime_type: string;
         byte_size: number;
         data: Buffer;
+        photo_kind: PhotoKind;
+        confirmed: boolean | null;
+        preference: PhotoPreference;
       }>(
-        `SELECT a.id, a.message_id, a.mime_type, a.byte_size, a.data
+        `SELECT a.id, a.message_id, a.mime_type, a.byte_size, a.data, a.photo_kind, a.confirmed, a.preference
            FROM attachments a JOIN messages m ON m.id = a.message_id
           WHERE m.conversation_id = $1 ORDER BY m.seq, a.created_at, a.id`,
         [conversationId],
@@ -186,8 +191,27 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         ...row,
         attachments: files
           .filter((file) => file.message_id === row.id)
-          .map((file) => ({ id: file.id, mimeType: file.mime_type, byteSize: file.byte_size, data: file.data })),
+          .map((file) => ({ id: file.id, mimeType: file.mime_type, byteSize: file.byte_size, data: file.data, kind: file.photo_kind ?? "inspiration", confirmed: file.confirmed ?? null, preference: file.preference ?? "neutral" })),
       }));
+    },
+
+    async getAttachment(id: string): Promise<(StoredAttachment & { conversationId: string; accountId: string | null }) | null> {
+      const { rows } = await db.query<{ id: string; mime_type: string; byte_size: number; data: Buffer; photo_kind: PhotoKind; confirmed: boolean | null; preference: PhotoPreference; conversation_id: string; account_id: string | null }>(
+        `SELECT a.id, a.mime_type, a.byte_size, a.data, a.photo_kind, a.confirmed, a.preference, m.conversation_id, c.account_id
+           FROM attachments a JOIN messages m ON m.id = a.message_id JOIN conversations c ON c.id = m.conversation_id
+          WHERE a.id = $1`, [id],
+      );
+      const row = rows[0];
+      return row ? { id: row.id, mimeType: row.mime_type, byteSize: row.byte_size, data: row.data, kind: row.photo_kind ?? "inspiration", confirmed: row.confirmed ?? null, preference: row.preference ?? "neutral", conversationId: row.conversation_id, accountId: row.account_id } : null;
+    },
+
+    async updatePhotoFeedback(conversationId: string, attachmentId: string, confirmed: boolean, preference: PhotoPreference): Promise<boolean> {
+      const result = await db.query(
+        `UPDATE attachments a SET confirmed = $3, preference = $4
+          FROM messages m WHERE a.id = $2 AND a.message_id = m.id AND m.conversation_id = $1`,
+        [conversationId, attachmentId, confirmed, preference],
+      );
+      return (result.rowCount ?? 0) === 1;
     },
 
     /** Appends a new brief version (1, 2, ...). Concurrent writers collide on the key and one fails loudly. */

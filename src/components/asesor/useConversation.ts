@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorComposerCard, type AdvisorMessage, type AdvisorProgress } from "./conversation-contract";
 import type { ComposerCapabilities } from "./Composer";
+import type { PhotoKind } from "@/lib/asesor/repository";
 
 type Status = "loading" | "ready" | "sending" | "failed" | "invalid" | "unavailable" | "completed";
-type PendingTurn = { id: string; content: string };
+type PendingTurn = { id: string; content: string; files?: File[]; kind?: PhotoKind };
+const PhotoUploadResponseSchema = z.object({
+  turnId: z.string().uuid(),
+  attachments: z.array(z.object({ id: z.string().min(1), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), byteSize: z.number().int().min(1).max(6 * 1024 * 1024), kind: z.enum(["inspiration", "venue"]) }).strict()).min(1).max(4),
+}).strict();
 
 export function useConversation() {
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -96,10 +102,40 @@ export function useConversation() {
     const controller = new AbortController();
     activeRequest.current = controller;
     try {
+      let content = turn.content;
+      if (turn.files?.length) {
+        if (turn.files.length > 4) throw new Error("Puedes compartir hasta 4 fotos por mensaje.");
+        for (const file of turn.files) {
+          if (file.size > 6 * 1024 * 1024) throw new Error(`La foto “${file.name}” supera el máximo permitido de 6 MB.`);
+        }
+        if (!content.trim()) content = "Quiero compartir estas fotos para orientar la propuesta.";
+        const form = new FormData();
+        form.set("conversationId", conversationId);
+        form.set("turnId", turn.id);
+        form.set("content", content);
+        form.set("kind", turn.kind ?? "inspiration");
+        for (const file of turn.files) form.append("photos", file, file.name);
+        const uploaded = await fetch("/api/asesor/photos", { method: "POST", body: form, signal: controller.signal });
+        const responseBody: unknown = await uploaded.json().catch(() => null);
+        const parsedUpload = PhotoUploadResponseSchema.safeParse(responseBody);
+        if (!uploaded.ok || !parsedUpload.success || parsedUpload.data.turnId !== turn.id) {
+          const message = typeof responseBody === "object" && responseBody !== null && typeof Reflect.get(responseBody, "message") === "string"
+            ? Reflect.get(responseBody, "message") as string : "No pudimos subir las fotos. Revisa los archivos e intenta de nuevo.";
+          throw new Error(message);
+        }
+        const attachments = parsedUpload.data.attachments;
+        setMessages((current) => current.map((message) => message.id === turn.id ? {
+          ...message,
+          attachments: attachments.map((attachment) => ({
+            id: attachment.id, mimeType: attachment.mimeType, byteSize: attachment.byteSize,
+            kind: attachment.kind, confirmed: null, preference: "neutral",
+          })),
+        } : message));
+      }
       const response = await fetch("/api/asesor/conversar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, turnId: turn.id, content: turn.content }),
+        body: JSON.stringify({ conversationId, turnId: turn.id, content }),
         signal: controller.signal,
       });
       if (!response.ok || !response.body) throw new Error(response.status === 404 ? "Esta conversación ya no está disponible." : "No pudimos enviar tu mensaje.");
@@ -161,11 +197,11 @@ export function useConversation() {
     }
   }, [conversationId]);
 
-  const submit = useCallback((content: string) => {
+  const submit = useCallback((content: string, files?: File[], kind?: PhotoKind) => {
     const cleaned = content.trim();
-    if (!cleaned || status === "sending") return;
-    const turn = { id: crypto.randomUUID(), content: cleaned };
-    setMessages((current) => [...current, { id: turn.id, role: "user", content: cleaned }]);
+    if ((!cleaned && !files?.length) || status === "sending") return;
+    const turn = { id: crypto.randomUUID(), content: cleaned, ...(files?.length ? { files, kind } : {}) };
+    setMessages((current) => [...current, { id: turn.id, role: "user", content: cleaned || "Quiero compartir estas fotos para orientar la propuesta." }]);
     void sendTurn(turn);
   }, [sendTurn, status]);
 
@@ -179,6 +215,6 @@ export function useConversation() {
   }, [createConversation]);
 
   const cards: readonly AdvisorComposerCard[] = [];
-  const capabilities: ComposerCapabilities = { photo: false, voice: false };
+  const capabilities: ComposerCapabilities = { photo: true, voice: false };
   return { conversationId, messages, progress, briefVersion, status, error, streamingText, cards, capabilities, submit, retry, startFresh };
 }

@@ -1,6 +1,7 @@
 export const ADVISOR_CONVERSATION_STORAGE_KEY = "asesor.conversationId";
 
-export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string };
+export type AdvisorPhoto = { id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
+export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[] };
 export type AdvisorProgress = { complete: boolean; completed: number; required: number; missing: string[] };
 export type AdvisorComposerCard =
   | { kind: "direction"; id: string; title: string; description: string; content: string }
@@ -27,7 +28,18 @@ export function parseAdvisorSnapshot(value: unknown): AdvisorSnapshot | null {
   const messages: AdvisorMessage[] = [];
   for (const message of value.messages) {
     if (!isRecord(message) || typeof message.id !== "string" || (message.role !== "user" && message.role !== "assistant") || typeof message.content !== "string") return null;
-    messages.push({ id: message.id, role: message.role, content: message.content });
+    let attachments: AdvisorPhoto[] | undefined;
+    if (message.attachments !== undefined) {
+      if (!Array.isArray(message.attachments)) return null;
+      attachments = [];
+      for (const item of message.attachments) {
+        if (!isRecord(item) || typeof item.id !== "string" || typeof item.mimeType !== "string" || !Number.isSafeInteger(item.byteSize)
+          || (item.kind !== "inspiration" && item.kind !== "venue") || (item.confirmed !== null && typeof item.confirmed !== "boolean")
+          || (item.preference !== "like" && item.preference !== "dislike" && item.preference !== "neutral")) return null;
+        attachments.push({ id: item.id, mimeType: item.mimeType, byteSize: item.byteSize as number, kind: item.kind, confirmed: item.confirmed, preference: item.preference });
+      }
+    }
+    messages.push({ id: message.id, role: message.role, content: message.content, ...(attachments ? { attachments } : {}) });
   }
   return {
     conversationId: value.conversation.id,

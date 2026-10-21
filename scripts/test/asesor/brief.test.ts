@@ -53,7 +53,7 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
     summarySequence: 4,
     approval: { summaryVersion: 4, confirmedAt: "2026-10-20T12:00:00.000Z" },
   });
-  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==" }];
+  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==", kind: "inspiration" as const, confirmed: null, preference: "neutral" as const }];
   const full = createBriefProjection(state, photos, "full");
   assert.equal(full.brief.budget, 2_500_000);
   assert.equal(full.brief.address, "Calle 18 # 20-30");

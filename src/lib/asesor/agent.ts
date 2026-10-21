@@ -4,6 +4,8 @@ import { ADVISOR_SYSTEM_PROMPT } from "./prompts/base";
 import { calculateBriefProgress } from "./progress";
 import { applyAdvisorTool, ADVISOR_TOOLS, applyCustomerConsentToState, type BriefMutator } from "./tools";
 import { parseEventBriefState, type EventBriefState } from "./contracts";
+import { prepareAdvisorPhoto } from "./photos";
+import type { PhotoPreference } from "./repository";
 
 export type AdvisorEvent =
   | { type: "text"; delta: string }
@@ -18,14 +20,30 @@ export type AdvisorTurnDependencies = {
   mutateBrief: BriefMutator;
   readBrief: () => Promise<unknown>;
   appendAssistant: (id: string, content: string) => Promise<void>;
+  savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
   signal?: AbortSignal;
   timeoutMs?: number;
 };
 
-function toHistory(messages: StoredMessage[]): Mensaje[] {
-  return messages.filter((message) => message.role === "user" || message.role === "assistant").map((message) =>
-    message.role === "user" ? { rol: "usuario", texto: message.content } : { rol: "asistente", texto: message.content },
-  );
+async function toHistory(messages: StoredMessage[]): Promise<Mensaje[]> {
+  const lastUser = messages.findLast((message) => message.role === "user");
+  const history: Mensaje[] = [];
+  for (const message of messages) {
+    if (message.role === "assistant") { history.push({ rol: "asistente", texto: message.content }); continue; }
+    if (message.role !== "user") continue;
+    const photoNotes = message.attachments.map((photo) => `Foto ${photo.id}: ${photo.kind === "venue" ? "lugar" : "inspiración"}; confirmación ${photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"}; preferencia ${photo.preference}.`);
+    const content = [message.content, ...photoNotes].filter(Boolean).join("\n");
+    if (message.id !== lastUser?.id || message.attachments.length === 0) { history.push({ rol: "usuario", texto: content }); continue; }
+    const images = [];
+    for (const photo of message.attachments) {
+      try {
+        const prepared = await prepareAdvisorPhoto(photo.mimeType, photo.data);
+        images.push({ id: photo.id, mime: "image/jpeg", base64: prepared.derivative.toString("base64"), descripcion: photo.kind === "venue" ? "Foto del lugar del evento." : "Foto de inspiración." });
+      } catch { /* Stored uploads are validated; skip a legacy attachment that cannot be decoded. */ }
+    }
+    history.push({ rol: "usuario", texto: `${content}\nAnaliza visualmente cada foto disponible. En tu primera respuesta, describe brevemente lo que observas y pregunta al cliente si confirma esa lectura y qué le gusta o no le gusta de cada foto.`, ...(images.length ? { imagenes: images } : {}) });
+  }
+  return history;
 }
 
 function briefForModel(state: EventBriefState) {
@@ -83,7 +101,8 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   });
   let state = parseEventBriefState(consentWrite.state);
   // Do not send prior turns to tools; they are contextual input only. The model has no access to other conversations.
-  const history = toHistory(deps.messages);
+  const history = await toHistory(deps.messages);
+  const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateBriefProgress(currentState.brief);
     return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.`;
@@ -113,7 +132,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       else if (turn.text) history.push({ rol: "asistente", texto: turn.text });
       for (let index = 0; index < turn.calls.length; index++) {
         const call = turn.calls[index];
-        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief });
+        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback });
         state = effect.state;
         history.push({ rol: "herramienta", nombre: call.nombre, llamadaId: call.id, resultado: effect.result });
         yield { type: "tool", name: call.nombre, result: effect.result, state, progress: effect.progress };

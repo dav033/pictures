@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Check, Sparkles } from "lucide-react";
 import { Composer } from "./Composer";
 import { useConversation } from "./useConversation";
@@ -59,7 +60,7 @@ export function ChatView() {
         {conversation.status === "unavailable" && <div role="alert" className="rounded-2xl border border-error/30 bg-error-suave p-4"><p>{conversation.error}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 min-h-11 rounded-xl border border-borde bg-superficie px-4 font-semibold text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Intentar recuperar de nuevo</button></div>}
 
         <ol className="flex flex-col gap-3" aria-label="Mensajes">
-          {visibleMessages.map((message) => <li key={message.id} className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[82%] ${message.role === "user" ? "ml-auto rounded-br-lg bg-acento text-sobre-acento" : "mr-auto rounded-bl-lg border border-borde bg-superficie text-texto"}`}>{message.content}</li>)}
+          {visibleMessages.map((message) => <li key={message.id} className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[82%] ${message.role === "user" ? "ml-auto rounded-br-lg bg-acento text-sobre-acento" : "mr-auto rounded-bl-lg border border-borde bg-superficie text-texto"}`}><p>{message.content}</p>{message.attachments?.length ? <div className="mt-3 grid grid-cols-2 gap-2">{message.attachments.map((photo) => <figure key={photo.id}><Image src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar" : "Foto de inspiración"} width={240} height={160} unoptimized className="max-h-48 w-full rounded-xl object-cover" /><figcaption className="mt-1 text-xs opacity-80">{photo.kind === "venue" ? "Lugar" : "Inspiración"} · {photo.confirmed === null ? "confirmación pendiente" : photo.confirmed ? "confirmada" : "no confirmada"} · {photo.preference === "neutral" ? "sin preferencia" : photo.preference === "like" ? "le gusta" : "no le gusta"}</figcaption></figure>)}</div> : null}</li>)}
           {conversation.streamingText && <li aria-label="Respuesta en curso" className="mr-auto max-w-[90%] whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-[15px] leading-relaxed shadow-sm">{conversation.streamingText}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></li>}
           {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="mr-auto rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-sm text-texto-suave">Estoy pensando…</li>}
         </ol>

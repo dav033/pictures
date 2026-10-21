@@ -107,6 +107,7 @@ export async function POST(request: Request) {
         if (!stored || stored.content !== content) throw new Error("advisor_assistant_id_conflict");
       }
     },
+    savePhotoFeedback: (attachmentId, confirmed, preference) => repo.updatePhotoFeedback(input.conversationId, attachmentId, confirmed, preference),
     signal: controller.signal,
   })[Symbol.asyncIterator]();
 

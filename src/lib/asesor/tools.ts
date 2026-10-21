@@ -2,12 +2,14 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
+import type { PhotoPreference } from "./repository";
 import { calculateBriefProgress } from "./progress";
 
 const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission");
 const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true }).strict();
 const summaryArgsSchema = z.object({}).strict();
 const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
+const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100), confirmed: z.boolean(), preference: z.enum(["like", "dislike", "neutral"]) }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
   if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
@@ -22,6 +24,7 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "save_event_fields", descripcion: "Guarda campos de evento indicados explícitamente por el cliente.", esquema: { type: "object", additionalProperties: false, properties: Object.fromEntries(fieldNames.map((key) => [key, fieldPropertySchema(key)])) } },
   { nombre: "propose_summary", descripcion: "Solicita al servidor crear el resumen si el brief está completo.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "approve_summary", descripcion: "Registra aprobación del resumen vigente; requiere confirmación explícita del cliente.", esquema: { type: "object", additionalProperties: false, required: ["summaryVersion"], properties: { summaryVersion: { type: "integer", minimum: 1 } } } },
+  { nombre: "record_photo_feedback", descripcion: "Registra por attachmentId si el cliente confirmó la lectura de una foto y si le gusta, le disgusta o no expresó preferencia. Usa solo los IDs disponibles en el contexto.", esquema: { type: "object", additionalProperties: false, required: ["attachmentId", "confirmed", "preference"], properties: { attachmentId: { type: "string" }, confirmed: { type: "boolean" }, preference: { type: "string", enum: ["like", "dislike", "neutral"] } } } },
 ];
 
 export type AdvisorToolEffect = { event: "tool"; name: string; result: unknown; state: EventBriefState; progress: ReturnType<typeof calculateBriefProgress> };
@@ -63,12 +66,15 @@ export async function applyAdvisorTool(input: {
   operationId: string;
   currentCustomerText: string;
   mutateBrief: BriefMutator;
+  photoIds?: ReadonlySet<string>;
+  savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
   now?: () => Date;
 }): Promise<AdvisorToolEffect> {
   const { call, currentCustomerText } = input;
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
   let message = "";
   let recordReceipt = true;
+  const pendingPhotoFeedback: { value: { attachmentId: string; confirmed: boolean; preference: PhotoPreference } | null } = { value: null };
   const result = await input.mutateBrief((raw, version) => {
     const state = parseEventBriefState(raw);
     const receipt = state.toolReceipts[input.operationId];
@@ -79,7 +85,8 @@ export async function applyAdvisorTool(input: {
       return state;
     }
     if ((call.nombre === "propose_summary" && !summaryArgsSchema.safeParse(call.args).success)
-      || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)) {
+      || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)
+      || (call.nombre === "record_photo_feedback" && !photoFeedbackSchema.safeParse(call.args).success)) {
       message = "Los argumentos de la herramienta no son válidos; no se aplicó ningún cambio.";
       return state;
     }
@@ -146,12 +153,25 @@ export async function applyAdvisorTool(input: {
         state.approval = { summaryVersion: summaryVersion as number, confirmedAt: (input.now ?? (() => new Date()))().toISOString() };
         message = "Resumen aprobado por confirmación explícita del cliente.";
       }
+    } else if (call.nombre === "record_photo_feedback") {
+      const parsed = photoFeedbackSchema.parse(call.args);
+      if (!input.photoIds?.has(parsed.attachmentId) || !input.savePhotoFeedback) {
+        message = "No se pudo asociar la preferencia a una foto de esta conversación.";
+      } else {
+        pendingPhotoFeedback.value = parsed;
+        message = `Preferencia recibida para la foto ${parsed.attachmentId}.`;
+      }
     } else {
       message = "Herramienta desconocida; no se aplicaron cambios.";
     }
     if (recordReceipt) state.toolReceipts[input.operationId] = { name: call.nombre, argsHash, message };
     return state;
   });
+  if (pendingPhotoFeedback.value && input.savePhotoFeedback) {
+    const feedback = pendingPhotoFeedback.value;
+    const saved = await input.savePhotoFeedback(feedback.attachmentId, feedback.confirmed, feedback.preference);
+    message = saved ? `Preferencia registrada para la foto ${feedback.attachmentId} (${feedback.preference}; confirmada: ${feedback.confirmed}).` : "No se encontró la foto para guardar su preferencia.";
+  }
   const state = parseEventBriefState(result.state);
   return { event: "tool", name: call.nombre, result: { message }, state, progress: calculateBriefProgress(state.brief) };
 }
