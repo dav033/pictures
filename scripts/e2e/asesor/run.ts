@@ -21,12 +21,14 @@ function parseArgs(args: string[]): Options {
   if (!args.includes("--start") || !mode) throw new Error("Required flags: --start and exactly one of --fake-model or --live.");
   if (args.includes("--fake-model") && args.includes("--live")) throw new Error("Choose only one run mode.");
   const milestone = value("--milestone");
-  if (!milestone) throw new Error("--milestone is required.");
+  if (milestone !== "M1") throw new Error("This runner currently supports only --milestone M1.");
+  const task = value("--task", "T7")!;
+  if (!/^T\d+$/.test(task)) throw new Error("--task must be a task reference such as T7.");
   return {
     start: true,
     mode,
     milestone,
-    task: value("--task", "T7")!,
+    task,
     reportPath: path.resolve(value("--report", "reports/e2e/asesor/integration-results.json")!),
   };
 }
@@ -61,7 +63,8 @@ async function createPasswordHash(password: string): Promise<string> {
 }
 
 function requiredEnvironment(mode: Mode): { env: NodeJS.ProcessEnv; userPassword: string; adminPassword: string } {
-  const env: NodeJS.ProcessEnv = { ...process.env, NEXT_TELEMETRY_DISABLED: "1", HOSTNAME: "127.0.0.1" };
+  // This runner exercises the Vercel production shape, where `next start` is supported.
+  const env: NodeJS.ProcessEnv = { ...process.env, VERCEL: "1", NEXT_TELEMETRY_DISABLED: "1", HOSTNAME: "127.0.0.1" };
   if (mode === "live") {
     const required = ["GEMINI_API_KEY", "SUPABASE_DB_URL", "ASESOR_SESSION_SECRET", "ASESOR_USER_PASSWORD_HASH", "ASESOR_ADMIN_PASSWORD_HASH", "ASESOR_E2E_USER_PASSWORD", "ASESOR_E2E_ADMIN_PASSWORD"];
     const missing = required.filter((name) => !env[name]);
@@ -136,6 +139,7 @@ export async function run(options: Options): Promise<void> {
     run.outcome = "passed";
   };
   try {
+    await trackedCommand("npm run build --workspaces --if-present", "npm", ["run", "build", "--workspaces", "--if-present"]);
     await trackedCommand("npm run build", "npm", ["run", "build"]);
     if (options.mode === "fake-model") {
       await trackedCommand("npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target", "npx", ["tsx", "--conditions=react-server", "scripts/migrate-asesor.ts", "--test-target"]);

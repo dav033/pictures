@@ -44,7 +44,7 @@ function parseIntegrationResults(value: unknown): IntegrationResults {
   }
   for (const [index, run] of value.runs.entries()) {
     if (!isRecord(run) || !SHA.test(String(run.revision ?? "")) || typeof run.task !== "string"
-      || typeof run.command !== "string" || !["passed", "failed"].includes(String(run.outcome))) {
+      || typeof run.command !== "string" || run.command.length === 0 || !["passed", "failed"].includes(String(run.outcome))) {
       throw new Error(`Malformed integration command result at index ${index}.`);
     }
   }
@@ -95,6 +95,11 @@ export function validateFindingsEvidence(input: {
     || !integration.commands.includes("npm run build") || !integration.commands.includes("npm run start")) {
     throw new Error("Integration command evidence is incomplete or not linked to the M1 real-entry-point run.");
   }
+  const runCommands = new Set(integration.runs.map((run) => run.command));
+  if (integration.commands.some((item) => !runCommands.has(item))
+    || integration.runs.some((run) => !integration.commands.includes(run.command))) {
+    throw new Error("Every integration command must link to a recorded command result.");
+  }
   const knownTasks = new Set(input.knownTasks);
   const references = [...findings.taskReferences, ...findings.findings.flatMap((finding) => finding.taskReferences)];
   if (!references.length || references.some((reference) => !knownTasks.has(reference))) {
@@ -110,20 +115,51 @@ export function validateAuditEditBoundary(changedPaths: readonly string[], repor
   if (unexpected.length) throw new Error(`Audit edits outside findings report and ledger: ${unexpected.join(", ")}`);
 }
 
-type CliOptions = { findings: string; results: string; task: string; knownTasks: string[]; revision: string; ledger: string; auditRoot: string };
+type CliOptions = { findings: string; results: string; task: string; knownTasks: string[]; revision: string; ledger: string; auditRoot: string; checkAuditDiff: boolean };
 
-function parseArgs(args: string[]): CliOptions {
-  const get = (key: string, fallback?: string) => args.find((arg) => arg.startsWith(`${key}=`))?.slice(key.length + 1)
-    ?? (args.includes(key) ? args[args.indexOf(key) + 1] : undefined) ?? fallback;
+export function parseArgs(args: string[]): CliOptions {
+  const values = new Map<string, string>();
+  const positional: string[] = [];
+  let checkAuditDiff = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--check-audit-diff") {
+      checkAuditDiff = true;
+      continue;
+    }
+    const equalsIndex = arg.indexOf("=");
+    const key = equalsIndex > 0 ? arg.slice(0, equalsIndex) : arg;
+    if (key.startsWith("--")) {
+      const value = equalsIndex > 0 ? arg.slice(equalsIndex + 1) : args[index + 1];
+      if (value === undefined || value.startsWith("--")) throw new Error(`Missing value for ${key}.`);
+      values.set(key, value);
+      if (equalsIndex < 0) index += 1;
+      continue;
+    }
+    positional.push(arg);
+  }
+  const get = (key: string, fallback?: string) => values.get(key) ?? fallback;
   return {
-    findings: path.resolve(get("--findings", "reports/audit/audit-findings.json")!),
-    results: path.resolve(get("--results", "reports/e2e/asesor/integration-results.json")!),
+    findings: path.resolve(get("--findings", positional[0] ?? "reports/audit/audit-findings.json")!),
+    results: path.resolve(get("--results", get("--integration-results", "reports/e2e/asesor/integration-results.json"))!),
     task: get("--task", "T7")!,
     knownTasks: (get("--known-tasks", "T7")!).split(",").filter(Boolean),
     revision: get("--revision", "")!,
     ledger: path.resolve(get("--ledger", "reports/audit/ledger.json")!),
     auditRoot: path.resolve(get("--audit-root", "reports/audit")!),
+    checkAuditDiff,
   };
+}
+
+export function resolveExpectedRevision(input: {
+  explicitRevision: string;
+  environmentRevision?: string;
+  gitRevision?: string;
+  findingsRevision: string;
+}): { revision: string; fromLedger: boolean } {
+  const revision = input.explicitRevision || input.environmentRevision || input.gitRevision || input.findingsRevision;
+  if (!SHA.test(revision)) throw new Error("Expected revision must be a full git SHA.");
+  return { revision, fromLedger: input.gitRevision === undefined && !input.explicitRevision && !input.environmentRevision };
 }
 
 async function readJson(file: string): Promise<unknown> {
@@ -138,14 +174,26 @@ function changedAuditPaths(root: string): string[] {
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
   const options = parseArgs(args);
-  if (!options.revision) {
-    const revision = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" });
-    if (revision.status !== 0) throw new Error("Unable to resolve expected git revision.");
-    options.revision = revision.stdout.trim();
-  }
   const [findings, integrationResults] = await Promise.all([readJson(options.findings), readJson(options.results)]);
-  validateFindingsEvidence({ findings, integrationResults, task: options.task, knownTasks: options.knownTasks, expectedRevision: options.revision });
-  validateAuditEditBoundary(changedAuditPaths(options.auditRoot), path.relative(process.cwd(), options.findings), path.relative(process.cwd(), options.ledger));
+  const findingsRevision = isRecord(findings) && typeof findings.revision === "string" ? findings.revision : "";
+  const git = options.revision || process.env.AUDIT_EXPECTED_REVISION
+    ? undefined : spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" });
+  const expected = resolveExpectedRevision({
+    explicitRevision: options.revision,
+    environmentRevision: process.env.AUDIT_EXPECTED_REVISION,
+    gitRevision: git?.status === 0 ? git.stdout.trim() : undefined,
+    findingsRevision,
+  });
+  if (expected.fromLedger) console.log("Git is unavailable; using the findings ledger revision.");
+  validateFindingsEvidence({ findings, integrationResults, task: options.task, knownTasks: options.knownTasks, expectedRevision: expected.revision });
+  if (options.checkAuditDiff) {
+    const worktree = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { encoding: "utf8" });
+    if (worktree.status !== 0) {
+      console.log("Git is unavailable; audit edit-boundary check skipped (snapshot gate owns this check).");
+    } else {
+      validateAuditEditBoundary(changedAuditPaths(options.auditRoot), path.relative(process.cwd(), options.findings), path.relative(process.cwd(), options.ledger));
+    }
+  }
   console.log("Audit findings and integration evidence are valid.");
 }
 

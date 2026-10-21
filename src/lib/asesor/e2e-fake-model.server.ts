@@ -18,7 +18,8 @@ function callsFor(text: string, history: Mensaje[]): LlamadaHerramienta[] {
         nombre: "save_event_fields",
         args: {
           eventKind: "corporate", eventName: "Encuentro de equipo", date: "2026-11-14", guestCount: 80,
-          venueType: "salón", venueName: "Casa Jardín", city: "Bogotá", budget: 4_000_000,
+          startTime: "18:00", venueType: "salón", venueName: "Casa Jardín", city: "Bogotá", address: "Calle 1 # 1-01",
+          contactName: "Cliente de prueba", contactEmail: "cliente@example.invalid", budget: 4_000_000,
           companyName: "Empresa de prueba", theme: "Jardín clásico", colors: ["verde", "marfil"],
         },
       },

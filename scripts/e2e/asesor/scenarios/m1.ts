@@ -105,7 +105,7 @@ export async function runM1Scenario(options: ScenarioOptions): Promise<{ checks:
   const conversationId = String(conversation.id);
   checks.push("user login and persisted conversation creation");
 
-  const facts = "Evento inicial: evento corporativo el 14 de noviembre de 2026 para 80 personas, en un salón llamado Casa Jardín en Bogotá, presupuesto COP 4000000, colores verde y marfil. La empresa se llama Empresa de prueba y el tema es Jardín clásico. Guarda los datos y propón un resumen para que pueda revisarlo.";
+  const facts = "Evento inicial: evento corporativo el 14 de noviembre de 2026 a las 18:00 para 80 personas, en el salón Casa Jardín en Bogotá, dirección Calle 1 # 1-01, presupuesto COP 4000000, colores verde y marfil. La empresa se llama Empresa de prueba y el tema es Jardín clásico. Mi nombre es Cliente de prueba y mi correo de prueba es cliente@example.invalid; autorizo que me contacten y autorizo compartir mi dirección para este evento. Guarda los datos y propón un resumen para que pueda revisarlo.";
   const firstTurn = requireFinal(await sendTurn(options.origin, userCookie, conversationId, facts), "initial conversation");
   const firstState = await getJson(options.origin, `/api/asesor/conversations/${conversationId}`, userCookie);
   const persisted = firstState.state as Record<string, unknown>;

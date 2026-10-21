@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validateAuditEditBoundary, validateFindingsEvidence } from "../../e2e/asesor/check-findings";
+import { parseArgs, resolveExpectedRevision, validateAuditEditBoundary, validateFindingsEvidence } from "../../e2e/asesor/check-findings";
 
 const revision = "a".repeat(40);
 const findings = {
@@ -70,9 +70,28 @@ test("findings checker links command outcomes, task and revision", () => {
   assert.throws(() => validateFindingsEvidence({ findings, integrationResults: badCommand, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /command evidence is incomplete/);
   const failedCommand = { ...integrationResults, runs: integrationResults.runs.map((run, index) => index === 0 ? { ...run, outcome: "failed" } : run) };
   assert.throws(() => validateFindingsEvidence({ findings, integrationResults: failedCommand, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /Every integration command must pass/);
+  const unlinkedCommand = { ...integrationResults, commands: integrationResults.commands.slice(0, 2) };
+  assert.throws(() => validateFindingsEvidence({ findings, integrationResults: unlinkedCommand, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /link to a recorded command result/);
+  const absentResult = { ...integrationResults, runs: integrationResults.runs.filter((run) => run.command !== "npm run build") };
+  assert.throws(() => validateFindingsEvidence({ findings, integrationResults: absentResult, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /link to a recorded command result/);
 });
 
 test("audit edits are limited to the findings report and ledger", () => {
   assert.doesNotThrow(() => validateAuditEditBoundary(["reports/audit/audit-findings.json", "reports/audit/ledger.json"], "reports/audit/audit-findings.json", "reports/audit/ledger.json"));
   assert.throws(() => validateAuditEditBoundary(["reports/audit/audit-findings.json", "reports/audit/README.md"], "reports/audit/audit-findings.json", "reports/audit/ledger.json"), /outside findings report and ledger/);
+});
+
+test("findings CLI accepts positional reports and the integration-results alias", () => {
+  const options = parseArgs(["docs/req-020/T15.findings.json", "--check-audit-diff", "--integration-results", "docs/req-020/integration-results.json"]);
+  assert.match(options.findings, /docs\/req-020\/T15\.findings\.json$/);
+  assert.match(options.results, /docs\/req-020\/integration-results\.json$/);
+  assert.equal(options.checkAuditDiff, true);
+  assert.match(parseArgs(["docs/findings.json", "--findings", "explicit.json"]).findings, /explicit\.json$/);
+  assert.throws(() => parseArgs(["--integration-results"]), /Missing value for --integration-results/);
+});
+
+test("findings revision falls back to the ledger only when Git is unavailable", () => {
+  assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "", gitRevision: undefined, findingsRevision: revision }), { revision, fromLedger: true });
+  assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "b".repeat(40), gitRevision: undefined, findingsRevision: revision }), { revision: "b".repeat(40), fromLedger: false });
+  assert.throws(() => resolveExpectedRevision({ explicitRevision: "", gitRevision: undefined, findingsRevision: "invalid" }), /full git SHA/);
 });
