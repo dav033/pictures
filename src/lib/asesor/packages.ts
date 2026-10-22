@@ -1,9 +1,17 @@
-import type { AdvisorComposerCard } from "@/components/asesor/conversation-contract";
 import { ADVISOR_ESTIMATE_NOTICE, type EventBrief, type StandardPackageProposal } from "./contracts";
 import type { HappiaCatalogueResult, HappiaPackage } from "./catalogue";
 
+export type AdvisorPackageCard = {
+  kind: "package";
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  estimate: StandardPackageProposal["estimate"];
+};
+
 export type StandardPackageResult =
-  | { status: "proposal"; proposal: StandardPackageProposal; card: Extract<AdvisorComposerCard, { kind: "package" }> }
+  | { status: "proposal"; proposal: StandardPackageProposal; card: AdvisorPackageCard }
   | { status: "no_match"; reason: "catalogue_unavailable" | "no_fitting_package" };
 
 type Coverage = "matches" | "excluded" | "unknown";
@@ -89,7 +97,7 @@ function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<H
   };
 }
 
-export function packageCard(proposal: StandardPackageProposal): Extract<AdvisorComposerCard, { kind: "package" }> {
+export function packageCard(proposal: StandardPackageProposal): AdvisorPackageCard {
   const { estimate } = proposal;
   const price = estimate.status === "available" && estimate.subtotalCop !== null
     ? `Estimado: ${copFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión`

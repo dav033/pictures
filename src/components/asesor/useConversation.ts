@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorComposerCard, type AdvisorMessage, type AdvisorProgress } from "./conversation-contract";
-import type { ComposerCapabilities } from "./Composer";
+import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorProgress } from "./conversation-contract";
+import type { AdvisorComposerOptionCard, ComposerCapabilities } from "./Composer";
 
 type Status = "loading" | "ready" | "sending" | "failed" | "invalid" | "unavailable" | "completed";
 type PendingTurn = { id: string; content: string };
@@ -16,7 +16,7 @@ export function useConversation() {
   const [error, setError] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
-  const [cards, setCards] = useState<AdvisorComposerCard[]>([]);
+  const [cards, setCards] = useState<AdvisorComposerOptionCard[]>([]);
   const activeRequest = useRef<AbortController | null>(null);
   const bootstrapStarted = useRef(false);
 
@@ -143,15 +143,17 @@ export function useConversation() {
                 && (estimate.fetchedAt === null || typeof estimate.fetchedAt === "string")
                 && (estimate.snapshotAgeSeconds === null || (Number.isSafeInteger(estimate.snapshotAgeSeconds) && (estimate.snapshotAgeSeconds as number) >= 0))
                 && typeof estimate.notice === "string";
-              setCards([{
-                kind: "package", id: candidate.id, title: candidate.title, description: candidate.description, content: candidate.content,
-                ...(validEstimate ? { estimate: {
+              if (validEstimate && estimate) {
+                setCards([{
+                  kind: "package", id: candidate.id, title: candidate.title, description: candidate.description, content: candidate.content,
+                  estimate: {
                   status: estimate.status as "available" | "unavailable", subtotalCop: estimate.subtotalCop as number | null,
                   basis: "before_vat_and_commission" as const, source: estimate.source as "postgres" | "seeded_last_good",
                   fetchedAt: estimate.fetchedAt as string | null, snapshotAgeSeconds: estimate.snapshotAgeSeconds as number | null,
                   notice: estimate.notice as string,
-                } } : {}),
-              }]);
+                  },
+                }]);
+              }
             }
           }
         }

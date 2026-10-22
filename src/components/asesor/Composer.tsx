@@ -1,7 +1,8 @@
 "use client";
 
 import { Camera, Mic, Send } from "lucide-react";
-import type { AdvisorComposerCard } from "./conversation-contract";
+import type { AdvisorComposerOptionCard } from "./package-card";
+export type { AdvisorComposerOptionCard } from "./package-card";
 
 export type ComposerCapabilities = { photo: boolean; voice: boolean };
 type Props = {
@@ -9,7 +10,7 @@ type Props = {
   onChange: (value: string) => void;
   onSubmit: (content: string) => void;
   busy: boolean;
-  cards?: readonly AdvisorComposerCard[];
+  cards?: readonly AdvisorComposerOptionCard[];
   capabilities?: ComposerCapabilities;
   onPhoto?: () => void;
   onVoice?: () => void;

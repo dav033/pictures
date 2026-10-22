@@ -4,10 +4,7 @@ export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: 
 export type AdvisorProgress = { complete: boolean; completed: number; required: number; missing: string[] };
 export type AdvisorComposerCard =
   | { kind: "direction"; id: string; title: string; description: string; content: string }
-  | { kind: "package"; id: string; title: string; description: string; content: string; estimate?: {
-    status: "available" | "unavailable"; subtotalCop: number | null; basis: "before_vat_and_commission";
-    source: "postgres" | "seeded_last_good"; fetchedAt: string | null; snapshotAgeSeconds: number | null; notice: string;
-  } };
+  | { kind: "package"; id: string; title: string; description: string; content: string };
 
 export type AdvisorSnapshot = {
   conversationId: string;
