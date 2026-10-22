@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Sparkles } from "lucide-react";
+import Image from "next/image";
 import { Composer } from "./Composer";
 import { useConversation } from "./useConversation";
 import type { AdvisorMessage } from "./conversation-contract";
@@ -63,6 +64,29 @@ export function ChatView() {
           {conversation.streamingText && <li aria-label="Respuesta en curso" className="mr-auto max-w-[90%] whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-[15px] leading-relaxed shadow-sm">{conversation.streamingText}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></li>}
           {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="mr-auto rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-sm text-texto-suave">Estoy pensando…</li>}
         </ol>
+        {conversation.directionOffers.length > 0 && <section aria-label="Direcciones de decoración" className="grid gap-4 sm:grid-cols-2">
+          {conversation.directionOffers.map((direction) => <article key={direction.id} className={`overflow-hidden rounded-2xl border bg-superficie shadow-sm ${conversation.selectedDirectionId === direction.id ? "border-acento ring-2 ring-acento" : "border-borde"}`}>
+            <div className="relative aspect-[4/3] w-full">
+              <Image src={direction.photoUrl} alt={`Referencia visual: ${direction.title}`} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
+            </div>
+            <div className="space-y-2 p-4">
+              <h2 className="font-semibold">{direction.title}</h2>
+              <p className="text-sm text-texto-suave">{direction.description}</p>
+              {direction.provenance.label && <p className="text-xs text-aviso">{direction.provenance.label}</p>}
+              <div className="border-t border-borde pt-2 text-sm">
+                <p className="font-medium">Artículos temáticos verificados</p>
+                {direction.themedItems.status === "unavailable" && <p className="mt-1 text-texto-suave">No fue posible consultar el catálogo de artículos. No se muestran artículos ni precios.</p>}
+                {direction.themedItems.status === "no_verified_matches" && <p className="mt-1 text-texto-suave">No hay artículos del catálogo verificados para esta dirección.</p>}
+                {direction.themedItems.status === "available" && <ul className="mt-1 list-inside list-disc text-texto-suave">
+                  {direction.themedItems.items.map((item) => <li key={`${item.source}:${item.id}`}>{item.name} · {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price)}</li>)}
+                </ul>}
+              </div>
+              <button type="button" disabled={conversation.status === "sending"} onClick={() => conversation.selectDirection(direction.id)} className="min-h-11 w-full rounded-xl bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-60">
+                {conversation.selectedDirectionId === direction.id ? "Dirección elegida" : "Elegir esta dirección"}
+              </button>
+            </div>
+          </article>)}
+        </section>}
         <div ref={transcriptEnd} aria-hidden="true" />
       </section>
 

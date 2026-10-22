@@ -3,11 +3,16 @@ import { z } from "zod";
 import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
 import { calculateBriefProgress } from "./progress";
+import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseStoredDirectionOffers } from "./directions";
+import type { DirectionOffer } from "./directions-contract";
+import type { HappiaCatalogueResult } from "./catalogue";
 
 const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission");
 const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true }).strict();
 const summaryArgsSchema = z.object({}).strict();
 const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
+const noArgsSchema = z.object({}).strict();
+const directionArgsSchema = z.object({ directionId: z.string().refine(isOfferedDirection) }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
   if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
@@ -22,6 +27,8 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "save_event_fields", descripcion: "Guarda campos de evento indicados explícitamente por el cliente.", esquema: { type: "object", additionalProperties: false, properties: Object.fromEntries(fieldNames.map((key) => [key, fieldPropertySchema(key)])) } },
   { nombre: "propose_summary", descripcion: "Solicita al servidor crear el resumen si el brief está completo.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "approve_summary", descripcion: "Registra aprobación del resumen vigente; requiere confirmación explícita del cliente.", esquema: { type: "object", additionalProperties: false, required: ["summaryVersion"], properties: { summaryVersion: { type: "integer", minimum: 1 } } } },
+  { nombre: "show_directions", descripcion: "Muestra las doce direcciones visuales permitidas y sus artículos temáticos verificados; úsala cuando el cliente aún no decide.", esquema: { type: "object", additionalProperties: false, properties: {} } },
+  { nombre: "select_direction", descripcion: "Registra una dirección que el cliente eligió entre las que ya se le mostraron.", esquema: { type: "object", additionalProperties: false, required: ["directionId"], properties: { directionId: { type: "string", enum: ADVISOR_DIRECTION_IDS } } } },
 ];
 
 export type AdvisorToolEffect = { event: "tool"; name: string; result: unknown; state: EventBriefState; progress: ReturnType<typeof calculateBriefProgress> };
@@ -63,12 +70,26 @@ export async function applyAdvisorTool(input: {
   operationId: string;
   currentCustomerText: string;
   mutateBrief: BriefMutator;
+  loadDirectionOffers?: () => Promise<DirectionOffer[]>;
   now?: () => Date;
 }): Promise<AdvisorToolEffect> {
   const { call, currentCustomerText } = input;
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
   let message = "";
   let recordReceipt = true;
+  let directionOffers: DirectionOffer[] | null = null;
+  if (call.nombre === "show_directions" && noArgsSchema.safeParse(call.args).success) {
+    try {
+      if (input.loadDirectionOffers) directionOffers = await input.loadDirectionOffers();
+      else {
+        const catalogueModule = await import("./catalogue");
+        directionOffers = getDirectionOffers(await catalogueModule.getHappiaCatalogue());
+      }
+    } catch {
+      const unavailable: HappiaCatalogueResult = { status: "unavailable", reason: "no_valid_snapshot" };
+      directionOffers = getDirectionOffers(unavailable);
+    }
+  }
   const result = await input.mutateBrief((raw, version) => {
     const state = parseEventBriefState(raw);
     const receipt = state.toolReceipts[input.operationId];
@@ -79,7 +100,9 @@ export async function applyAdvisorTool(input: {
       return state;
     }
     if ((call.nombre === "propose_summary" && !summaryArgsSchema.safeParse(call.args).success)
-      || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)) {
+      || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)
+      || (call.nombre === "show_directions" && !noArgsSchema.safeParse(call.args).success)
+      || (call.nombre === "select_direction" && !directionArgsSchema.safeParse(call.args).success)) {
       message = "Los argumentos de la herramienta no son válidos; no se aplicó ningún cambio.";
       return state;
     }
@@ -96,6 +119,23 @@ export async function applyAdvisorTool(input: {
       state.summary = null;
       state.approval = null;
       message = "Campos guardados. El resumen y la aprobación anteriores quedaron invalidados.";
+    } else if (call.nombre === "show_directions") {
+      const validatedOffers = parseStoredDirectionOffers(directionOffers);
+      if (!validatedOffers) {
+        message = "No están disponibles las direcciones en este momento.";
+        return state;
+      }
+      state.directionOffers = validatedOffers;
+      message = "Direcciones verificadas para mostrar al cliente.";
+    } else if (call.nombre === "select_direction") {
+      const directionId = call.args.directionId;
+      if (!isOfferedDirection(directionId) || !state.directionOffers.some(({ id }) => id === directionId)
+        || !currentCustomerText.includes(directionId)) {
+        message = "La dirección no se ha ofrecido o el cliente no la seleccionó explícitamente.";
+        return state;
+      }
+      state.selectedDirectionId = directionId;
+      message = "Dirección elegida; los demás datos del evento se conservaron.";
     } else if (call.nombre === "propose_summary") {
       const progress = calculateBriefProgress(state.brief);
       if (!progress.complete) { message = `Faltan campos obligatorios: ${progress.missing.join(", ")}.`; return state; }
@@ -157,5 +197,8 @@ export async function applyAdvisorTool(input: {
     return state;
   });
   const state = parseEventBriefState(result.state);
-  return { event: "tool", name: call.nombre, result: { message }, state, progress: calculateBriefProgress(state.brief) };
+  const toolResult = call.nombre === "show_directions" && directionOffers
+    ? { message, directions: state.directionOffers }
+    : { message };
+  return { event: "tool", name: call.nombre, result: toolResult, state, progress: calculateBriefProgress(state.brief) };
 }

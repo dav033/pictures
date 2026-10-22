@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "directions": [
+    { "id": "deco-real-01-305", "title": "Elegante en blanco y negro", "description": "Un arco de entrada sobrio con contraste clásico.", "photoUrl": "/biblioteca-sempertex/referencias/real-01-305.jpg", "themeTerms": ["blanco", "negro", "elegante"] },
+    { "id": "deco-real-02-34722b3ec9978bfe7439a121c16a1db7", "title": "Disfraces en naranja y negro", "description": "Una propuesta intensa para una fiesta de disfraces.", "photoUrl": "/biblioteca-sempertex/referencias/real-02-34722b3ec9978bfe7439a121c16a1db7.jpg", "themeTerms": ["disfraces", "naranja", "negro"] },
+    { "id": "deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "title": "Azul y plateado", "description": "Semiarco moderno con centros de mesa a juego.", "photoUrl": "/biblioteca-sempertex/referencias/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg", "themeTerms": ["azul", "plateado", "plata"] },
+    { "id": "deco-real-04-71mp5umakml-ac-uf894-1000-ql80", "title": "Aventura de dinosaurios", "description": "Una escena selvática para pequeños exploradores.", "photoUrl": "/biblioteca-sempertex/referencias/real-04-71mp5umakml-ac-uf894-1000-ql80.jpg", "themeTerms": ["dinosaurios", "dinosaurio", "selva"] },
+    { "id": "deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec", "title": "Rosa y oro rosa", "description": "Tonos románticos para una celebración especial.", "photoUrl": "/biblioteca-sempertex/referencias/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.jpg", "themeTerms": ["rosa", "oro", "romántico"] },
+    { "id": "deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-", "title": "Arcoíris con dorado", "description": "Colores vivos con un acento dorado.", "photoUrl": "/biblioteca-sempertex/referencias/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.jpg", "themeTerms": ["arcoíris", "colorida", "dorado"] },
+    { "id": "deco-real-08-images-23", "title": "Negro y dorado", "description": "Columnas elegantes para una fiesta de noche.", "photoUrl": "/biblioteca-sempertex/referencias/real-08-images-23.jpg", "themeTerms": ["negro", "dorado", "elegante"] },
+    { "id": "deco-real-09-images-24", "title": "Cumpleaños rosa y dorado", "description": "Una guirnalda alegre en tonos cálidos.", "photoUrl": "/biblioteca-sempertex/referencias/real-09-images-24.jpg", "themeTerms": ["cumpleaños", "rosa", "dorado"] },
+    { "id": "deco-real-10-images-25", "title": "Azul, blanco y plateado", "description": "Semiarco fresco de tonos fríos.", "photoUrl": "/biblioteca-sempertex/referencias/real-10-images-25.jpg", "themeTerms": ["azul", "blanco", "plateado"] },
+    { "id": "deco-real-11-images-26", "title": "Pasteles de primavera", "description": "Rosa, lila y aguamarina en tonos suaves.", "photoUrl": "/biblioteca-sempertex/referencias/real-11-images-26.jpg", "themeTerms": ["pastel", "rosa", "lila"] },
+    { "id": "deco-real-23-sombrero-bruja-halloween", "title": "Halloween encantado", "description": "Una figura de bruja con calabazas para Halloween.", "photoUrl": "/biblioteca-sempertex/referencias/deco-real-23-sombrero-bruja-halloween.jpg", "themeTerms": ["halloween", "bruja", "calabaza"] },
+    { "id": "deco-real-30-columna-balon-futbol", "title": "Celebración de fútbol", "description": "Una columna con balón para amantes del fútbol.", "photoUrl": "/biblioteca-sempertex/referencias/deco-real-30-columna-balon-futbol.jpg", "themeTerms": ["fútbol", "deporte", "balón"] }
+  ]
+}

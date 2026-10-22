@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorComposerCard, type AdvisorMessage, type AdvisorProgress } from "./conversation-contract";
+import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorComposerCard, type AdvisorDirection, type AdvisorMessage, type AdvisorProgress } from "./conversation-contract";
+import { parseDirectionOffers } from "@/lib/asesor/directions-contract";
 import type { ComposerCapabilities } from "./Composer";
 
 type Status = "loading" | "ready" | "sending" | "failed" | "invalid" | "unavailable" | "completed";
@@ -12,6 +13,8 @@ export function useConversation() {
   const [messages, setMessages] = useState<AdvisorMessage[]>([]);
   const [progress, setProgress] = useState<AdvisorProgress | null>(null);
   const [briefVersion, setBriefVersion] = useState(0);
+  const [directionOffers, setDirectionOffers] = useState<AdvisorDirection[]>([]);
+  const [selectedDirectionId, setSelectedDirectionId] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
@@ -27,6 +30,8 @@ export function useConversation() {
     setMessages([]);
     setProgress(created.progress);
     setBriefVersion(created.briefVersion);
+    setDirectionOffers([]);
+    setSelectedDirectionId(null);
     setStatus("ready");
     setError(null);
   }, []);
@@ -63,6 +68,8 @@ export function useConversation() {
       if (!snapshot || snapshot.conversationId !== storedId) throw new Error("La respuesta de conversación no es válida.");
       setConversationId(snapshot.conversationId);
       setMessages(snapshot.messages);
+      setDirectionOffers(snapshot.directionOffers);
+      setSelectedDirectionId(snapshot.selectedDirectionId);
       setProgress(snapshot.progress);
       setBriefVersion(snapshot.briefVersion);
       const lastMessage = snapshot.messages.at(-1);
@@ -124,6 +131,17 @@ export function useConversation() {
           const progressValue = record.progress as AdvisorProgress;
           if (typeof progressValue.complete === "boolean" && Number.isSafeInteger(progressValue.completed) && Number.isSafeInteger(progressValue.required)) setProgress(progressValue);
         }
+        if (record.type === "tool" && record.name === "show_directions" && typeof record.result === "object" && record.result !== null) {
+          setDirectionOffers(parseDirectionOffers(Reflect.get(record.result, "directions")) ?? []);
+        }
+        if (record.type === "tool" || record.type === "final" || record.type === "error") {
+          if (typeof record.state === "object" && record.state !== null && !Array.isArray(record.state)) {
+            const offers = parseDirectionOffers(Reflect.get(record.state, "directionOffers")) ?? [];
+            setDirectionOffers(offers);
+            const selectedId = Reflect.get(record.state, "selectedDirectionId");
+            setSelectedDirectionId(typeof selectedId === "string" && offers.some(({ id }) => id === selectedId) ? selectedId : null);
+          }
+        }
         if (record.type === "final" && typeof record.messageId === "string") {
           terminalReceived = true;
           committed = true;
@@ -169,6 +187,11 @@ export function useConversation() {
     void sendTurn(turn);
   }, [sendTurn, status]);
 
+  const selectDirection = useCallback((directionId: string) => {
+    if (!directionOffers.some(({ id }) => id === directionId)) return;
+    submit(`Quiero elegir esta dirección: ${directionId}`);
+  }, [directionOffers, submit]);
+
   const retry = useCallback(() => { if (pendingTurn) void sendTurn(pendingTurn); }, [pendingTurn, sendTurn]);
   const startFresh = useCallback(async () => {
     window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY);
@@ -180,5 +203,5 @@ export function useConversation() {
 
   const cards: readonly AdvisorComposerCard[] = [];
   const capabilities: ComposerCapabilities = { photo: false, voice: false };
-  return { conversationId, messages, progress, briefVersion, status, error, streamingText, cards, capabilities, submit, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, status, error, streamingText, directionOffers, selectedDirectionId, cards, capabilities, submit, selectDirection, retry, startFresh };
 }
