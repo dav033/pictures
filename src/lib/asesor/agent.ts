@@ -87,6 +87,13 @@ async function* consumeProviderTurn(chat: ChatPort, history: Mensaje[], system: 
   return { text, calls: finish.llamadas };
 }
 
+async function* finishAdvisorTurn(deps: AdvisorTurnDependencies, text: string): AsyncGenerator<AdvisorEvent> {
+  const assistantId = `${deps.turnId}:assistant`;
+  await deps.appendAssistant(assistantId, text);
+  const state = parseEventBriefState(await deps.readBrief());
+  yield { type: "final", state, progress: calculateBriefProgress(state.brief), messageId: assistantId, retryAvailable: false };
+}
+
 /** Provider text is provisional until the stable assistant ID commits; tool receipts make retry effects idempotent. */
 export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGenerator<AdvisorEvent> {
   const current = deps.messages.at(-1);
@@ -105,7 +112,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateBriefProgress(currentState.brief);
-    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.`;
+    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.`;
   };
   let system = modelContext(state);
   let accumulated = "";
@@ -122,21 +129,43 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       }
       if (!turn) throw new Error("provider_stream_incomplete");
       if (turn.calls.length === 0) {
-        const assistantId = `${deps.turnId}:assistant`;
-        await deps.appendAssistant(assistantId, accumulated);
         state = parseEventBriefState(await deps.readBrief());
-        yield { type: "final", state, progress: calculateBriefProgress(state.brief), messageId: assistantId, retryAvailable: false };
+        if (!state.summary && calculateBriefProgress(state.brief).complete) {
+          const effect = await applyAdvisorTool({
+            call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary`,
+            currentCustomerText: current.content, mutateBrief: deps.mutateBrief,
+          });
+          state = effect.state;
+          yield { type: "tool", name: effect.name, result: effect.result, state, progress: effect.progress };
+        }
+        yield* finishAdvisorTurn(deps, accumulated);
         return;
       }
       if (turn.calls.length) history.push({ rol: "asistente", llamadas: turn.calls });
       else if (turn.text) history.push({ rol: "asistente", texto: turn.text });
+      let completedSummaryAction = false;
       for (let index = 0; index < turn.calls.length; index++) {
         const call = turn.calls[index];
+        const previousSummaryVersion = state.summary?.version;
         const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback });
         state = effect.state;
+        if ((call.nombre === "propose_summary" && state.summary && state.summary.version !== previousSummaryVersion)
+          || (call.nombre === "approve_summary" && state.approval && state.approval.summaryVersion === state.summary?.version)) {
+          completedSummaryAction = true;
+        }
         history.push({ rol: "herramienta", nombre: call.nombre, llamadaId: call.id, resultado: effect.result });
         yield { type: "tool", name: call.nombre, result: effect.result, state, progress: effect.progress };
         operations++;
+      }
+      // The persisted summary is already rendered by the client. A further model call can time out after success.
+      // Photo turns still need the model's first-look description before completion.
+      if (completedSummaryAction && state.summary && current.attachments.length === 0) {
+        if (!accumulated.trim()) {
+          accumulated = state.approval ? "Tu resumen quedó aprobado." : "Aquí tienes el resumen actualizado. Revísalo antes de aprobarlo.";
+          yield { type: "text", delta: accumulated };
+        }
+        yield* finishAdvisorTurn(deps, accumulated);
+        return;
       }
       system = modelContext(state);
       if (operations >= 8) throw new Error("advisor_tool_limit");

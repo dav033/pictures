@@ -17,6 +17,8 @@ const noArgsSchema = z.object({}).strict();
 const directionArgsSchema = z.object({ directionId: z.string().refine(isOfferedDirection) }).strict();
 const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100), confirmed: z.boolean(), preference: z.enum(["like", "dislike", "neutral"]) }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
+  if (field === "venueType") return { type: "string", description: "Tipo de lugar indicado por el cliente: salón, casa, restaurante, jardín, colegio, etc. En 'salón Casa Jardín', guarda salón aquí y Casa Jardín en venueName." };
+  if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
   if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
   if (["guestCount", "honoreeAge"].includes(field)) return { type: "integer", minimum: field === "guestCount" ? 1 : 0 };

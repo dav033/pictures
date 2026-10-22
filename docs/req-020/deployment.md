@@ -16,6 +16,9 @@ Configure the same names on Vercel Production and the VPS service:
 
 `ASESOR_E2E_USER_PASSWORD`, `ASESOR_E2E_ADMIN_PASSWORD`, `ASESOR_TEST_DATABASE_URL`, `ASESOR_E2E_FAKE_MODEL`, and `ASESOR_E2E_PROVIDER_FAILURE_TOKEN` are acceptance-test inputs only. Do not configure them in Vercel or the VPS service. The local runner creates its fake credentials and failure token in memory; the live runner reads its E2E passwords from the coordinator's environment and does not print them.
 
+For deployed acceptance, run `scripts/e2e/asesor/run.ts --live --deployed --milestone M1` (then M2) with `ASESOR_E2E_DEPLOYED_URL`, `ASESOR_E2E_DEPLOYED_REVISION` (the exact published SHA), and the coordinator's E2E passwords. M2 also needs `ASESOR_E2E_AUDIO_FILE`. This mode sends requests to the published origin and never builds or starts a local server. A redirect from `/asesor/login` fails before any password is sent. Local provider-failure injection remains a local-only check; deployed reports enumerate only the checks actually performed.
+The deployed runner reads `GET /api/asesor/login` (`asesor-deployment/1`) before and after the scenario and requires its full release SHA to match the requested revision. Unknown identity fails closed. This GET exposes no credentials; POST authentication is unchanged. Deployed reports use the distinct `deployed-integration-results/1` contract and are accepted by `--check-results`; local `integration-results/1` retains its build/start requirements. Reverting the GET/report support disables deployed verification until both sides are rolled forward together; it does not authorize bypassing identity verification.
+
 ## Release gate and revision pinning
 
 Run every gate on one commit and deploy that exact commit or immutable build artifact:

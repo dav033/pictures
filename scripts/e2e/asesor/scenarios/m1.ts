@@ -6,7 +6,7 @@ type ScenarioOptions = {
   userPassword: string;
   adminPassword: string;
   live: boolean;
-  providerFailureToken: string;
+  providerFailureToken?: string;
 };
 
 type SseEvent = { type: string; data: Record<string, unknown> };
@@ -127,7 +127,10 @@ export async function runM1Scenario(options: ScenarioOptions): Promise<{ checks:
   const correctedState = await getJson(options.origin, `/api/asesor/conversations/${conversationId}`, userCookie);
   const corrected = correctedState.state as Record<string, unknown>;
   assert.match(String(briefFrom(corrected).theme).toLowerCase(), /terraza azul/, "corrected theme was not persisted");
-  assert.equal(corrected.summary, null, "field correction did not invalidate the old summary");
+  const regenerated = corrected.summary as Record<string, unknown> | null;
+  assert.ok(regenerated, "field correction did not regenerate the summary");
+  assert.ok(Number(regenerated.version) > Number((persisted.summary as Record<string, unknown>).version), "field correction reused the old summary version");
+  assert.match(String(regenerated.text).toLowerCase(), /terraza azul/, "regenerated summary omitted the corrected theme");
   assert.equal(corrected.approval, null, "field correction did not invalidate the old approval");
   checks.push("correction persisted and invalidated stale summary");
 
@@ -161,7 +164,7 @@ export async function runM1Scenario(options: ScenarioOptions): Promise<{ checks:
   assert.equal(adminPage.status, 200, "admin monitor page did not load");
   checks.push("admin login sees approved brief");
 
-  {
+  if (options.providerFailureToken) {
     const failureConversation = await fetch(`${options.origin}/api/asesor/conversations`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: options.origin, cookie: userCookie },

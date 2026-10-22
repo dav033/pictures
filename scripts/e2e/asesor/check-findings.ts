@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { validateDeployedReport } from "./deployed-report";
 
 type Finding = { id: string; severity: string; status: string; taskReferences: string[] };
 type AuditFindings = { schema: "audit-findings/1"; revision: string; taskReferences: string[]; findings: Finding[] };
@@ -49,6 +50,26 @@ function parseIntegrationResults(value: unknown): IntegrationResults {
     }
   }
   return value as IntegrationResults;
+}
+
+/** Validates a stored integration report on its own: well-formed, every command linked and passed. */
+export function validateIntegrationReport(report: unknown): void {
+  if (isRecord(report) && report.schema === "deployed-integration-results/1") {
+    validateDeployedReport(report);
+    return;
+  }
+  const integration = parseIntegrationResults(report);
+  if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
+  if (integration.runs.length === 0 || integration.runs.some((run) => run.outcome !== "passed")) {
+    throw new Error("Every integration command must have passed.");
+  }
+  const runCommands = new Set(integration.runs.map((run) => run.command));
+  if (integration.commands.some((item) => !runCommands.has(item)) || integration.runs.some((run) => !integration.commands.includes(run.command))) {
+    throw new Error("Every integration command must link to a recorded command result.");
+  }
+  if (!integration.commands.includes("npm run build") || !integration.commands.includes("npm run start")) {
+    throw new Error("Integration report lacks the build and start commands.");
+  }
 }
 
 export function validateFindingsEvidence(input: {
