@@ -117,6 +117,18 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   let system = modelContext(state);
   let accumulated = "";
   let operations = 0;
+  // The server owns summary regeneration: a complete brief without a summary (first completion or a correction that
+  // invalidated it) gets one without depending on a further model round, which can fail or omit the tool call.
+  const customerText = current.content;
+  async function* ensureSummary(): AsyncGenerator<AdvisorEvent> {
+    if (state.summary || !calculateBriefProgress(state.brief).complete) return;
+    const effect = await applyAdvisorTool({
+      call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary`,
+      currentCustomerText: customerText, mutateBrief: deps.mutateBrief,
+    });
+    state = effect.state;
+    yield { type: "tool", name: effect.name, result: effect.result, state, progress: effect.progress };
+  }
   try {
     while (operations < 8) {
       const providerIterator = consumeProviderTurn(deps.chat, history, system, controller.signal)[Symbol.asyncIterator]();
@@ -130,14 +142,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       if (!turn) throw new Error("provider_stream_incomplete");
       if (turn.calls.length === 0) {
         state = parseEventBriefState(await deps.readBrief());
-        if (!state.summary && calculateBriefProgress(state.brief).complete) {
-          const effect = await applyAdvisorTool({
-            call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary`,
-            currentCustomerText: current.content, mutateBrief: deps.mutateBrief,
-          });
-          state = effect.state;
-          yield { type: "tool", name: effect.name, result: effect.result, state, progress: effect.progress };
-        }
+        yield* ensureSummary();
         yield* finishAdvisorTurn(deps, accumulated);
         return;
       }
@@ -157,6 +162,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
         yield { type: "tool", name: call.nombre, result: effect.result, state, progress: effect.progress };
         operations++;
       }
+      yield* ensureSummary();
       // The persisted summary is already rendered by the client. A further model call can time out after success.
       // Photo turns still need the model's first-look description before completion.
       if (completedSummaryAction && state.summary && current.attachments.length === 0) {
@@ -171,6 +177,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       if (operations >= 8) throw new Error("advisor_tool_limit");
     }
   } catch {
+    try { state = parseEventBriefState(await deps.readBrief()); yield* ensureSummary(); } catch { /* saved facts are reported below */ }
     const latest = parseEventBriefState(await deps.readBrief());
     const code = controller.signal.aborted ? (deps.signal?.aborted ? "CANCELLED" : "TIMEOUT") : "PROVIDER_FAILURE";
     yield {

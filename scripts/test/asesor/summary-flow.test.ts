@@ -60,3 +60,28 @@ test("a persisted summary completes without a redundant provider round trip", as
   assert.ok(state.summary);
   assert.equal(state.approval, null);
 });
+
+test("a correction regenerates the summary even when the follow-up model round fails", async () => {
+  let state = parseEventBriefState({ brief: { ...complete, theme: "Jardín" },
+    summary: { version: 4, briefVersion: 1, text: "Old approved summary" }, summarySequence: 4,
+    approval: { summaryVersion: 4, confirmedAt: "2026-10-22T00:00:00Z" } });
+  let version = 1;
+  let count = 0;
+  const chat: ChatPort = {
+    id: "gemini", modelo: "summary-test",
+    async turno() { throw new Error("unused"); },
+    async *turnoStream(): AsyncIterable<FragmentoChat> {
+      if (count++ > 0) throw new Error("provider down");
+      yield { tipo: "fin", texto: "", llamadas: [{ nombre: "save_event_fields", args: { theme: "Terraza azul" } }],
+        modelo: "summary-test", uso: { entrada: 1, salida: 1 } };
+    },
+  };
+  for await (const _ of runAdvisorTurn({ chat, turnId: "summary-turn",
+    messages: [{ id: "summary-turn", role: "user", content: "Corrige el tema a Terraza azul.", attachments: [] }],
+    mutateBrief: async (mutate) => { state = parseEventBriefState(mutate(structuredClone(state), version++)); return { state, version }; },
+    readBrief: async () => state, appendAssistant: async () => {},
+  })) { /* drain */ }
+  assert.equal(state.summary?.version, 5);
+  assert.match(state.summary.text, /Terraza azul/);
+  assert.equal(state.approval, null);
+});
