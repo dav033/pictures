@@ -29,6 +29,13 @@ export function Composer({ value, onChange, onSubmit, busy, cards = [], capabili
               <span className="text-xs font-semibold uppercase tracking-wide text-acento">{card.kind === "direction" ? "Dirección" : "Paquete"}</span>
               <span className="mt-1 block font-medium text-texto">{card.title}</span>
               <span className="mt-1 block text-sm text-texto-suave">{card.description}</span>
+              {card.kind === "package" && card.estimate && <span className="mt-1 block text-xs text-texto-tenue">
+                Fuente: {card.estimate.source === "postgres" ? "catálogo Happia" : "última copia validada"}
+                {card.estimate.fetchedAt ? ` · consultado ${new Date(card.estimate.fetchedAt).toLocaleString("es-CO")}` : " · fecha de actualización no disponible"}
+                {card.estimate.status === "available" && card.estimate.subtotalCop !== null
+                  ? ` · subtotal ${new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(card.estimate.subtotalCop)}`
+                  : " · precio no disponible"}
+              </span>}
             </button>
           ))}
         </section>

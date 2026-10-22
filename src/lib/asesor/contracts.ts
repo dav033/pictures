@@ -45,8 +45,31 @@ export type EventBriefPatch = Partial<Omit<EventBrief, "currency" | "colors" | "
 
 export const emptyEventBrief = (): EventBrief => EventBriefSchema.parse({});
 
+export const ADVISOR_ESTIMATE_NOTICE = "Versión de prueba. Estamos afinando esta asesoría; revisaremos contigo los detalles antes de cerrar la propuesta.";
+
+const coverageSchema = z.enum(["matches", "unknown"]);
+export const StandardPackageProposalSchema = z.object({
+  packageId: z.string().min(1),
+  name: z.string().min(1),
+  baseGuests: z.number().int().positive(),
+  guestCount: z.number().int().positive().nullable(),
+  estimate: z.object({
+    status: z.enum(["available", "unavailable"]),
+    subtotalCop: z.number().finite().nonnegative().nullable(),
+    basis: z.literal("before_vat_and_commission"),
+    source: z.enum(["postgres", "seeded_last_good"]),
+    fetchedAt: z.string().nullable(),
+    snapshotAgeSeconds: z.number().int().nonnegative().nullable(),
+    notice: z.string().min(1),
+  }).strict(),
+  coverage: z.object({ event: coverageSchema, theme: coverageSchema, city: coverageSchema, guests: z.enum(["matches_base", "differs_from_base", "unknown"]) }).strict(),
+  disclosures: z.array(z.string()),
+}).strict();
+export type StandardPackageProposal = z.infer<typeof StandardPackageProposalSchema>;
+
 export type EventBriefState = {
   brief: EventBrief;
+  standardPackage: StandardPackageProposal | null;
   summary: { version: number; text: string; briefVersion: number } | null;
   /** Monotonic counter retained when a field correction invalidates the current summary. */
   summarySequence: number;
@@ -57,7 +80,7 @@ export type EventBriefState = {
 
 export function parseEventBriefState(input: unknown): EventBriefState {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return { brief: emptyEventBrief(), summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
+    return { brief: emptyEventBrief(), standardPackage: null, summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
   }
   const value = input as Record<string, unknown>;
   const parsed = EventBriefSchema.safeParse(value.brief ?? {});
@@ -68,8 +91,10 @@ export function parseEventBriefState(input: unknown): EventBriefState {
       ? Reflect.get(summaryRaw, "version") as number : 0;
   const approvalRaw = value.approval;
   const refusedRaw = value.refused;
+  const standardPackage = StandardPackageProposalSchema.safeParse(value.standardPackage);
   return {
     brief: parsed.success ? parsed.data : emptyEventBrief(),
+    standardPackage: standardPackage.success ? standardPackage.data : null,
     summary: typeof summaryRaw === "object" && summaryRaw !== null && !Array.isArray(summaryRaw)
       && Number.isSafeInteger(Reflect.get(summaryRaw, "version")) && typeof Reflect.get(summaryRaw, "text") === "string"
       && Number.isSafeInteger(Reflect.get(summaryRaw, "briefVersion"))

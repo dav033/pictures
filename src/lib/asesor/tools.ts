@@ -3,9 +3,11 @@ import { z } from "zod";
 import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
 import { calculateBriefProgress } from "./progress";
+import type { HappiaCatalogueResult } from "./catalogue";
+import { packageCard, proposeStandardPackage } from "./packages";
 
-const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission");
-const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true }).strict();
+const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission" && key !== "proposedPackage");
+const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true, proposedPackage: true }).strict();
 const summaryArgsSchema = z.object({}).strict();
 const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
@@ -21,6 +23,7 @@ const fieldPropertySchema = (field: string): Record<string, unknown> => {
 export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "save_event_fields", descripcion: "Guarda campos de evento indicados explícitamente por el cliente.", esquema: { type: "object", additionalProperties: false, properties: Object.fromEntries(fieldNames.map((key) => [key, fieldPropertySchema(key)])) } },
   { nombre: "propose_summary", descripcion: "Solicita al servidor crear el resumen si el brief está completo.", esquema: { type: "object", additionalProperties: false, properties: {} } },
+  { nombre: "propose_standard_package", descripcion: "Pide al servidor el paquete estándar de Happia que mejor encaja con tipo de evento, temática, ciudad e invitados. Úsalo antes de ofrecer servicios a medida. El servidor devuelve el paquete, su estimado en COP y avisos; no indiques IDs ni precios.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "approve_summary", descripcion: "Registra aprobación del resumen vigente; requiere confirmación explícita del cliente.", esquema: { type: "object", additionalProperties: false, required: ["summaryVersion"], properties: { summaryVersion: { type: "integer", minimum: 1 } } } },
 ];
 
@@ -63,9 +66,15 @@ export async function applyAdvisorTool(input: {
   operationId: string;
   currentCustomerText: string;
   mutateBrief: BriefMutator;
+  loadCatalogue?: () => Promise<HappiaCatalogueResult>;
   now?: () => Date;
 }): Promise<AdvisorToolEffect> {
   const { call, currentCustomerText } = input;
+  let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "no_valid_snapshot" };
+  let packageCardValue: unknown;
+  if (call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) {
+    try { catalogue = await (input.loadCatalogue ?? (async () => (await import("./catalogue")).getHappiaCatalogue()))(); } catch { /* Explicit no-match below; never invent a catalogue result. */ }
+  }
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
   let message = "";
   let recordReceipt = true;
@@ -73,12 +82,14 @@ export async function applyAdvisorTool(input: {
     const state = parseEventBriefState(raw);
     const receipt = state.toolReceipts[input.operationId];
     if (receipt) {
-      message = receipt.name === call.nombre && receipt.argsHash === argsHash
+      const matchingReceipt = receipt.name === call.nombre && receipt.argsHash === argsHash;
+      message = matchingReceipt
         ? receipt.message
         : "Este turno ya aplicó una herramienta diferente en este paso. Se conserva el cambio anterior; inicia un turno nuevo para continuar.";
+      if (matchingReceipt && call.nombre === "propose_standard_package" && state.standardPackage) packageCardValue = packageCard(state.standardPackage);
       return state;
     }
-    if ((call.nombre === "propose_summary" && !summaryArgsSchema.safeParse(call.args).success)
+    if (((call.nombre === "propose_summary" || call.nombre === "propose_standard_package") && !summaryArgsSchema.safeParse(call.args).success)
       || (call.nombre === "approve_summary" && !approvalArgsSchema.safeParse(call.args).success)) {
       message = "Los argumentos de la herramienta no son válidos; no se aplicó ningún cambio.";
       return state;
@@ -92,7 +103,9 @@ export async function applyAdvisorTool(input: {
       const suppliedFields = Object.fromEntries(Object.keys(call.args).map((field) => [field, Reflect.get(patch.data, field)]));
       const updated = EventBriefSchema.safeParse({ ...state.brief, ...suppliedFields });
       if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
+      const fitChanged = (["eventKind", "theme", "city", "guestCount"] as const).some((field) => updated.data[field] !== state.brief[field]);
       state.brief = updated.data;
+      if (fitChanged && state.standardPackage) { state.standardPackage = null; state.brief.proposedPackage = null; }
       state.summary = null;
       state.approval = null;
       message = "Campos guardados. El resumen y la aprobación anteriores quedaron invalidados.";
@@ -135,6 +148,24 @@ export async function applyAdvisorTool(input: {
       state.summarySequence = summaryVersion;
       state.approval = null;
       message = `Resumen ${summaryVersion} propuesto. Muéstralo al cliente y espera su confirmación explícita.`;
+    } else if (call.nombre === "propose_standard_package") {
+      const outcome = proposeStandardPackage(catalogue, state.brief);
+      if (outcome.status === "no_match") {
+        state.standardPackage = null;
+        state.brief.proposedPackage = null;
+        state.summary = null;
+        state.approval = null;
+        message = outcome.reason === "catalogue_unavailable"
+          ? "No hay catálogo de paquetes disponible ahora; no ofrezcas un paquete estándar ni inventes precios."
+          : "No hay un paquete estándar de Happia que encaje con este evento; continúa con servicios a medida sin inventar paquetes.";
+      } else {
+        state.standardPackage = outcome.proposal;
+        state.brief.proposedPackage = `${outcome.proposal.name} (${outcome.proposal.packageId})`;
+        packageCardValue = outcome.card;
+        state.summary = null;
+        state.approval = null;
+        message = `Paquete estándar propuesto: ${outcome.proposal.name}. ${outcome.proposal.estimate.status === "available" ? `Estimado ${outcome.proposal.estimate.subtotalCop} COP antes de IVA y comisión.` : "Precio estimado no disponible."} Preséntalo con su aviso y estas salvedades: ${outcome.proposal.disclosures.join(" ") || "ninguna"}`;
+      }
     } else if (call.nombre === "approve_summary") {
       const summaryVersion = call.args.summaryVersion;
       if (!Number.isSafeInteger(summaryVersion) || !state.summary || summaryVersion !== state.summary.version) {
@@ -157,5 +188,5 @@ export async function applyAdvisorTool(input: {
     return state;
   });
   const state = parseEventBriefState(result.state);
-  return { event: "tool", name: call.nombre, result: { message }, state, progress: calculateBriefProgress(state.brief) };
+  return { event: "tool", name: call.nombre, result: { message, ...(packageCardValue ? { card: packageCardValue } : {}) }, state, progress: calculateBriefProgress(state.brief) };
 }

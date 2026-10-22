@@ -16,6 +16,7 @@ export function useConversation() {
   const [error, setError] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
+  const [cards, setCards] = useState<AdvisorComposerCard[]>([]);
   const activeRequest = useRef<AbortController | null>(null);
   const bootstrapStarted = useRef(false);
 
@@ -93,6 +94,7 @@ export function useConversation() {
     setStatus("sending");
     setError(null);
     setStreamingText("");
+    setCards([]);
     const controller = new AbortController();
     activeRequest.current = controller;
     try {
@@ -123,6 +125,35 @@ export function useConversation() {
         if ((record.type === "tool" || record.type === "final" || record.type === "error") && typeof record.progress === "object" && record.progress !== null) {
           const progressValue = record.progress as AdvisorProgress;
           if (typeof progressValue.complete === "boolean" && Number.isSafeInteger(progressValue.completed) && Number.isSafeInteger(progressValue.required)) setProgress(progressValue);
+        }
+        if (record.type === "tool" && typeof record.result === "object" && record.result !== null) {
+          const toolResult = record.result as Record<string, unknown>;
+          const card = toolResult.card;
+          if (typeof card === "object" && card !== null && !Array.isArray(card)) {
+            const candidate = card as Record<string, unknown>;
+            if (candidate.kind === "package" && typeof candidate.id === "string" && typeof candidate.title === "string"
+              && typeof candidate.description === "string" && typeof candidate.content === "string") {
+              const estimateValue = candidate.estimate;
+              const estimate = typeof estimateValue === "object" && estimateValue !== null && !Array.isArray(estimateValue)
+                ? estimateValue as Record<string, unknown> : null;
+              const validEstimate = estimate && (estimate.status === "available" || estimate.status === "unavailable")
+                && (estimate.subtotalCop === null || (typeof estimate.subtotalCop === "number" && Number.isFinite(estimate.subtotalCop)))
+                && estimate.basis === "before_vat_and_commission"
+                && (estimate.source === "postgres" || estimate.source === "seeded_last_good")
+                && (estimate.fetchedAt === null || typeof estimate.fetchedAt === "string")
+                && (estimate.snapshotAgeSeconds === null || (Number.isSafeInteger(estimate.snapshotAgeSeconds) && (estimate.snapshotAgeSeconds as number) >= 0))
+                && typeof estimate.notice === "string";
+              setCards([{
+                kind: "package", id: candidate.id, title: candidate.title, description: candidate.description, content: candidate.content,
+                ...(validEstimate ? { estimate: {
+                  status: estimate.status as "available" | "unavailable", subtotalCop: estimate.subtotalCop as number | null,
+                  basis: "before_vat_and_commission" as const, source: estimate.source as "postgres" | "seeded_last_good",
+                  fetchedAt: estimate.fetchedAt as string | null, snapshotAgeSeconds: estimate.snapshotAgeSeconds as number | null,
+                  notice: estimate.notice as string,
+                } } : {}),
+              }]);
+            }
+          }
         }
         if (record.type === "final" && typeof record.messageId === "string") {
           terminalReceived = true;
@@ -175,10 +206,10 @@ export function useConversation() {
     setConversationId(null);
     setMessages([]);
     setPendingTurn(null);
+    setCards([]);
     await createConversation();
   }, [createConversation]);
 
-  const cards: readonly AdvisorComposerCard[] = [];
   const capabilities: ComposerCapabilities = { photo: false, voice: false };
   return { conversationId, messages, progress, briefVersion, status, error, streamingText, cards, capabilities, submit, retry, startFresh };
 }
