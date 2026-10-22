@@ -11,6 +11,26 @@ function hasToolCall(history: Mensaje[], name: string): boolean {
 
 function callsFor(text: string, history: Mensaje[]): LlamadaHerramienta[] {
   if (/\bPROVIDER_FAILURE\b/.test(text)) throw new Error("e2e_fake_provider_failure");
+  if (/M2_START/.test(text)) {
+    if (hasToolCall(history, "propose_summary")) return [];
+    return [
+      { nombre: "save_event_fields", args: {
+        eventKind: "corporate", eventName: "Evento de aceptación", date: "2026-11-14", guestCount: 24,
+        startTime: "18:00", venueType: "salón", venueName: "Salón de prueba", city: "Bogotá",
+        address: "Dirección de prueba", contactName: "Contacto de prueba", contactEmail: "m2@example.invalid",
+        companyName: "Empresa de prueba", theme: "Jardín", colors: ["verde"],
+      } },
+      { nombre: "propose_summary", args: {} },
+    ];
+  }
+  const m2Correction = text.match(/M2_CORRECT:\s*([^\n.]+)/i);
+  if (m2Correction) return hasToolCall(history, "save_event_fields") ? [] : [{ nombre: "save_event_fields", args: { theme: m2Correction[1].trim() } }];
+  if (/M2_SUMMARY/.test(text)) return hasToolCall(history, "propose_summary") ? [] : [{ nombre: "propose_summary", args: {} }];
+  if (/M2_APPROVE/.test(text)) {
+    if (hasToolCall(history, "approve_summary")) return [];
+    const version = Number(text.match(/version\s+(\d+)/i)?.[1] ?? 1);
+    return [{ nombre: "approve_summary", args: { summaryVersion: version } }];
+  }
   if (/evento inicial/i.test(text)) {
     if (hasToolCall(history, "propose_summary")) return [];
     return [
@@ -50,9 +70,9 @@ export function createE2EFakeAdvisorChat(): ChatPort {
         yield { tipo: "fin", texto: "", llamadas: calls, modelo: "e2e-fake", uso: { entrada: 1, salida: 1 } };
         return;
       }
-      const reply = /apruebo el resumen/i.test(text)
+      const reply = (/M2_APPROVE|apruebo el resumen/i.test(text))
         ? "El resumen corregido quedó aprobado."
-        : /muestra el resumen corregido/i.test(text)
+        : /M2_SUMMARY|muestra el resumen corregido/i.test(text)
           ? "Aquí tienes el resumen corregido para revisar."
           : "Ya guardé la información del evento.";
       yield { tipo: "texto", delta: reply };

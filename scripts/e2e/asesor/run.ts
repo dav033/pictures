@@ -3,15 +3,19 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { createServer, type Server } from "node:http";
 import { loadEnvConfig } from "@next/env";
 import { runM1Scenario } from "./scenarios/m1";
+import { runM2Scenario } from "./scenarios/m2";
+import { loadLiveScenarioAudio } from "./scenarios/voice";
+import { firmarPedido } from "@/lib/voz/firma";
 
 type Mode = "fake-model" | "live";
 type Options = { start: boolean; mode: Mode; milestone: string; reportPath: string; task: string };
 
 function parseArgs(args: string[]): Options {
   if (args.includes("--help")) {
-    console.log("Usage: run.ts --start (--fake-model | --live) --milestone M1 [--task T7] [--report PATH]");
+    console.log("Usage: run.ts --start (--fake-model | --live) --milestone M1|M2 [--task T7] [--report PATH]");
     process.exit(0);
   }
   const value = (name: string, fallback?: string) => args.find((arg) => arg.startsWith(`${name}=`))?.slice(name.length + 1)
@@ -21,7 +25,7 @@ function parseArgs(args: string[]): Options {
   if (!args.includes("--start") || !mode) throw new Error("Required flags: --start and exactly one of --fake-model or --live.");
   if (args.includes("--fake-model") && args.includes("--live")) throw new Error("Choose only one run mode.");
   const milestone = value("--milestone");
-  if (milestone !== "M1") throw new Error("This runner currently supports only --milestone M1.");
+  if (milestone !== "M1" && milestone !== "M2") throw new Error("Supported milestones are --milestone M1 and --milestone M2.");
   const task = value("--task", "T7")!;
   if (!/^T\d+$/.test(task)) throw new Error("--task must be a task reference such as T7.");
   return {
@@ -62,19 +66,24 @@ async function createPasswordHash(password: string): Promise<string> {
   return `scrypt$16384$8$1$${salt.toString("base64url")}$${derived.toString("base64url")}`;
 }
 
-function requiredEnvironment(mode: Mode): { env: NodeJS.ProcessEnv; userPassword: string; adminPassword: string } {
+function requiredEnvironment(mode: Mode, milestone: string): { env: NodeJS.ProcessEnv; userPassword: string; adminPassword: string } {
   // This runner exercises the Vercel production shape, where `next start` is supported.
   const env: NodeJS.ProcessEnv = { ...process.env, VERCEL: "1", NEXT_TELEMETRY_DISABLED: "1", HOSTNAME: "127.0.0.1" };
   if (mode === "live") {
     const required = ["GEMINI_API_KEY", "SUPABASE_DB_URL", "ASESOR_SESSION_SECRET", "ASESOR_USER_PASSWORD_HASH", "ASESOR_ADMIN_PASSWORD_HASH", "ASESOR_E2E_USER_PASSWORD", "ASESOR_E2E_ADMIN_PASSWORD"];
-    const missing = required.filter((name) => !env[name]);
-    if (missing.length) throw new Error(`Live M1 dependencies missing: ${missing.join(", ")}`);
+    if (milestone === "M2") required.push("VOZ_ENABLED", "VOZ_URL", "VOZ_SECRETO", "ASESOR_E2E_AUDIO_FILE");
+    const missing = required.filter((name) => !env[name] || (name === "VOZ_ENABLED" && !/^(1|true|yes|si|sí|on)$/i.test(env[name]!)));
+    if (missing.length) throw new Error(`Live ${milestone} dependencies missing: ${missing.join(", ")}`);
     return { env, userPassword: env.ASESOR_E2E_USER_PASSWORD!, adminPassword: env.ASESOR_E2E_ADMIN_PASSWORD! };
   }
   const testDatabase = env.ASESOR_TEST_DATABASE_URL;
   if (!testDatabase) throw new Error("ASESOR_TEST_DATABASE_URL is required for --fake-model.");
   env.SUPABASE_DB_URL = testDatabase;
   env.ASESOR_E2E_FAKE_MODEL = "1";
+  if (milestone === "M2") {
+    env.VOZ_ENABLED = "true";
+    env.VOZ_SECRETO = randomBytes(32).toString("base64url");
+  }
   env.ASESOR_SESSION_SECRET = randomBytes(48).toString("base64url");
   const userPassword = `e2e-user-${randomBytes(24).toString("hex")}`;
   const adminPassword = `e2e-admin-${randomBytes(24).toString("hex")}`;
@@ -115,7 +124,7 @@ async function waitForReady(origin: string, child: ChildProcess, spawnError: () 
 
 export async function run(options: Options): Promise<void> {
   loadEnvConfig(process.cwd());
-  const setup = requiredEnvironment(options.mode);
+  const setup = requiredEnvironment(options.mode, options.milestone);
   const providerFailureToken = randomBytes(48).toString("base64url");
   setup.env.ASESOR_E2E_PROVIDER_FAILURE_TOKEN = providerFailureToken;
   if (options.mode === "fake-model") {
@@ -129,6 +138,7 @@ export async function run(options: Options): Promise<void> {
   const revision = revisionResult.status === 0 ? revisionResult.stdout.trim() : "unknown";
   const startedAt = new Date().toISOString();
   let child: ChildProcess | undefined;
+  let transcriptionStub: Server | undefined;
   let outcome: "passed" | "failed" = "failed";
   let failure: string | undefined;
   const trackedCommand = async (label: string, command: string, args: string[]) => {
@@ -139,6 +149,34 @@ export async function run(options: Options): Promise<void> {
     run.outcome = "passed";
   };
   try {
+    let audio: Buffer | undefined;
+    if (options.milestone === "M2") {
+      if (options.mode === "fake-model") {
+        audio = Buffer.from([82, 73, 70, 70, 1, 2, 3, 4]);
+        transcriptionStub = createServer(async (request, response) => {
+          const chunks: Buffer[] = [];
+          for await (const chunk of request) chunks.push(Buffer.from(chunk));
+          const body = Buffer.concat(chunks);
+          const timestamp = Number(request.headers["x-voz-timestamp"]);
+          const signature = request.headers["x-voz-firma"];
+          const valid = request.method === "POST" && request.url === "/v1/transcribir"
+            && request.headers["content-type"] === "audio/wav"
+            && Number.isSafeInteger(timestamp)
+            && signature === firmarPedido(setup.env.VOZ_SECRETO!, timestamp, body);
+          response.writeHead(valid ? 200 : 401, { "content-type": "application/json" });
+          response.end(valid ? JSON.stringify({ texto: "Voz de prueba para la recepción.", duracion_s: 1, ms: 1 }) : JSON.stringify({ error: "invalid request" }));
+        });
+        await new Promise<void>((resolve, reject) => {
+          transcriptionStub!.once("error", reject);
+          transcriptionStub!.listen(0, "127.0.0.1", resolve);
+        });
+        const address = transcriptionStub.address();
+        if (!address || typeof address === "string") throw new Error("Unable to start the transcription stub.");
+        setup.env.VOZ_URL = `http://127.0.0.1:${address.port}`;
+      } else {
+        audio = await loadLiveScenarioAudio(setup.env.ASESOR_E2E_AUDIO_FILE!);
+      }
+    }
     await trackedCommand("npm run build --workspaces --if-present", "npm", ["run", "build", "--workspaces", "--if-present"]);
     await trackedCommand("npm run build", "npm", ["run", "build"]);
     if (options.mode === "fake-model") {
@@ -163,13 +201,21 @@ export async function run(options: Options): Promise<void> {
     commands.push(scenarioCommand);
     const scenarioRun: { revision: string; task: string; command: string; outcome: "passed" | "failed" } = { revision, task: options.task, command: scenarioCommand, outcome: "failed" };
     runs.push(scenarioRun);
-    const result = await runM1Scenario({
-      origin,
-      userPassword: setup.userPassword,
-      adminPassword: setup.adminPassword,
-      live: options.mode === "live",
-      providerFailureToken,
-    });
+    const result = options.milestone === "M1"
+      ? await runM1Scenario({
+        origin,
+        userPassword: setup.userPassword,
+        adminPassword: setup.adminPassword,
+        live: options.mode === "live",
+        providerFailureToken,
+      })
+      : await runM2Scenario({
+        origin,
+        userPassword: setup.userPassword,
+        adminPassword: setup.adminPassword,
+        live: options.mode === "live",
+        audio: audio!,
+      });
     checks.push(...result.checks);
     scenarioRun.outcome = "passed";
     outcome = "passed";
@@ -178,6 +224,7 @@ export async function run(options: Options): Promise<void> {
     throw error;
   } finally {
     if (child) await terminate(child);
+    if (transcriptionStub) await new Promise<void>((resolve, reject) => transcriptionStub!.close((error) => error ? reject(error) : resolve()));
     const report = {
       schema: "integration-results/1",
       milestone: options.milestone,
@@ -195,14 +242,14 @@ export async function run(options: Options): Promise<void> {
     };
     await mkdir(path.dirname(options.reportPath), { recursive: true });
     await writeFile(options.reportPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
-    console.log(`M1 ${outcome}; evidence: ${options.reportPath}`);
+    console.log(`${options.milestone} ${outcome}; evidence: ${options.reportPath}`);
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const options = parseArgs(process.argv.slice(2));
   run(options).catch((error: unknown) => {
-    console.error(`[FAIL] asesor M1: ${error instanceof Error ? error.message : "unknown error"}`);
+    console.error(`[FAIL] asesor ${options.milestone}: ${error instanceof Error ? error.message : "unknown error"}`);
     process.exitCode = 1;
   });
 }
