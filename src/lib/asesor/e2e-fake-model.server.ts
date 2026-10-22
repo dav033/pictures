@@ -11,6 +11,9 @@ function hasToolCall(history: Mensaje[], name: string): boolean {
 
 function callsFor(text: string, history: Mensaje[]): LlamadaHerramienta[] {
   if (/\bPROVIDER_FAILURE\b/.test(text)) throw new Error("e2e_fake_provider_failure");
+  if (/aún no sé qué idea elegir/i.test(text)) return [{ nombre: "show_directions", args: {} }];
+  const directionId = text.match(/(deco-real-[a-z0-9-]+)/i)?.[1];
+  if (directionId && /elegir esta dirección/i.test(text)) return [{ nombre: "select_direction", args: { directionId } }];
   if (/M2_START/.test(text)) {
     if (hasToolCall(history, "propose_summary")) return [];
     return [

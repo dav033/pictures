@@ -5,7 +5,9 @@ import { CATALOGUE_GUIDANCE } from "@/lib/asesor/prompts/catalogue";
 
 test("advisor prompt keeps catalogue claims grounded in optional tool results", () => {
   assert.ok(ADVISOR_SYSTEM_PROMPT.includes(CATALOGUE_GUIDANCE));
-  assert.match(CATALOGUE_GUIDANCE, /solo ofertas que devuelva la herramienta/);
+  assert.match(CATALOGUE_GUIDANCE, /solo ofertas y tarjetas devueltas por las herramientas/);
+  assert.match(CATALOGUE_GUIDANCE, /usa show_directions/);
+  assert.match(CATALOGUE_GUIDANCE, /usa propose_standard_package/);
   assert.match(CATALOGUE_GUIDANCE, /precios deben provenir de esos resultados/);
   assert.match(CATALOGUE_GUIDANCE, /no inventes.*identificadores.*precios/i);
   assert.match(CATALOGUE_GUIDANCE, /preferencia del cliente no equivale a seleccionar/i);
