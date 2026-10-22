@@ -29,6 +29,8 @@ function latestState(events: Event[]): Record<string, unknown> {
 
 export async function runDirectionsScenario(options: Options): Promise<string[]> {
   const shown = await send(options, "Aún no sé qué idea elegir.");
+  assert.equal(shown.filter((event) => event.type === "tool" && event.data.name === "show_directions").length, 1,
+    "one customer request must produce one show_directions tool result");
   const shownState = latestState(shown);
   const offers = shownState.directionOffers as Array<Record<string, unknown>>;
   assert.equal(offers.length, 12, "customer did not receive twelve configured directions");
@@ -36,6 +38,8 @@ export async function runDirectionsScenario(options: Options): Promise<string[]>
   const selectedId = String(offers[11]?.id);
   const beforeBrief = shownState.brief as Record<string, unknown>;
   const selected = await send(options, `Quiero elegir esta dirección: ${selectedId}`);
+  assert.equal(selected.filter((event) => event.type === "tool" && event.data.name === "select_direction").length, 1,
+    "one customer selection must produce one select_direction tool result");
   const state = latestState(selected);
   assert.equal(state.selectedDirectionId, selectedId, "offered direction reference was not stored");
   assert.deepEqual(state.brief, beforeBrief, "direction selection changed existing event fields");

@@ -47,7 +47,7 @@ test("migrations are idempotent, keep rows and leave the Neon ledger alone", { s
   await repo.createConversation("idem");
   const again = await applyAsesorMigrations(admin, { schema });
   assert.deepEqual(again.applied, []);
-  assert.equal(again.skipped.length, 1);
+  assert.equal(again.skipped.length, 2, "both advisor migrations should be skipped on the idempotent rerun");
   const { rows } = await admin.query(`SELECT count(*)::int AS n FROM conversations WHERE id = 'idem'`);
   assert.equal(rows[0].n, 1);
   const tables = await admin.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = $1`, [schema]);
