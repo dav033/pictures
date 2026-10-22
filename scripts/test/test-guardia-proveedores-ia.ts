@@ -186,6 +186,8 @@ const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
   "src/app/api/asesor/conversations/[id]/route.ts": "lectura de conversación y brief propios con control de cuenta, sin llamada a proveedor",
   "src/app/api/asesor/conversations/route.ts": "creación/listado de conversaciones propias con control de cuenta, sin llamada a proveedor",
   "src/app/api/asesor/login/route.ts": "autenticación del asesor (no registrar credenciales)",
+  "src/app/api/asesor/photos/route.ts": "carga de fotos del asesor; conserva imágenes y datos personales en el almacenamiento propio del asesor, sin duplicarlos en registros genéricos",
+  "src/app/api/asesor/photos/[id]/route.ts": "lectura de fotos del asesor con control de cuenta; entrega contenido personal desde el almacenamiento propio, sin duplicarlo en registros genéricos",
   "src/app/api/cotizacion-compartida/[token]/route.ts": "cotización compartida pública por token, sin registro de la app todavía (pendiente: envolver con conRegistro)",
   "src/app/api/cotizacion-compartida/[token]/imagen/route.ts": "imagen de la cotización compartida pública por token, sin registro todavía (pendiente)",
   "src/app/api/cotizacion-compartida/[token]/decision/route.ts": "decisión del cliente sobre la cotización compartida por token, sin registro todavía (pendiente)",
