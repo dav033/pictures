@@ -68,6 +68,7 @@ test("Composer owns capability-gated media controls and typed direction/package 
   assert.match(composer, /card\.kind === "direction" \? "Dirección" : "Paquete"/);
   assert.match(composer, /disabled=\{!canPhoto \|\| busy\}/);
   assert.match(composer, /disabled=\{!canVoice \|\| busy\}/);
-  assert.match(hook, /const cards: readonly AdvisorComposerCard\[\] = \[\]/);
+  assert.match(hook, /setCards\(\[\{\s*kind: "package"/);
+  assert.match(composer, /Fuente: \{card\.estimate\.source/);
   assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: false, voice: false \}/);
 });
