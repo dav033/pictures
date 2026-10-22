@@ -58,7 +58,8 @@ test("cold read claims the refresh and stores a validated Happia snapshot withou
   const now = new Date("2026-10-21T12:00:00.000Z");
   const store = fakeStore();
   let providerCalls = 0;
-  const result = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { providerCalls++; return data("one"); } });
+  const source = data("one");
+  const result = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { providerCalls++; return source; } });
 
   assert.equal(result.status, "available");
   if (result.status === "available") {
@@ -66,9 +67,14 @@ test("cold read claims the refresh and stores a validated Happia snapshot withou
     assert.equal(result.snapshotAgeSeconds, 0);
     assert.equal(result.data.services[0]?.id, "service-one");
     assert.equal(result.data.services[0]?.total, 350000);
+    assert.equal(result.data.services[0]?.charge_type, "total");
+    assert.equal(result.data.services[0]?.charge_mode, "unit");
+    assert.deepEqual(result.data.services[0]?.sale_unit, { singular: "hora", plural: "horas" });
     assert.equal(result.data.services[0]?.provider_name, "Proveedor Happia");
     assert.equal(result.data.packages[0]?.package_items[0]?.id, "pkg-one-item");
     assert.equal(result.data.packages[0]?.package_items[0]?.provider_name, "Proveedor del ítem");
+    assert.equal(result.data.packages[0]?.package_items[0]?.total, 80000);
+    assert.equal(result.data.packages[0]?.package_items[0]?.charge_type, "total");
   }
   assert.equal(providerCalls, 1);
   assert.ok(store.snapshot);

@@ -53,7 +53,7 @@ export type HappiaCatalogueResult =
 
 type SnapshotRow = { payload: unknown; fetched_at: Date | string; source: string };
 type CatalogueStore = Pick<AsesorClient, "query">;
-type CatalogueReader = () => Promise<HappiaCatalogueData>;
+type CatalogueReader = () => Promise<unknown>;
 type Clock = () => Date;
 
 function parseData(value: unknown): HappiaCatalogueData | null {
