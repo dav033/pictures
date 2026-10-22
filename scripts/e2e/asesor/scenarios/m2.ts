@@ -104,7 +104,10 @@ export async function runM2Scenario(options: Options): Promise<{ checks: string[
   const correctedState = correctedData.state as JsonObject;
   const correctedBrief = correctedState.brief as JsonObject;
   assert.match(String(correctedBrief.theme).toLowerCase(), /terraza azul/, "corrected theme was not persisted");
-  assert.equal(correctedState.summary, null, "correction did not invalidate the previous summary");
+  const regenerated = correctedState.summary as JsonObject | null;
+  assert.ok(regenerated, "correction did not regenerate the summary");
+  assert.ok(Number(regenerated.version) > Number((restored.state as JsonObject).summarySequence), "correction reused a stale summary version");
+  assert.match(String(regenerated.text).toLowerCase(), /terraza azul/, "regenerated summary omitted the corrected theme");
   assert.equal(correctedState.approval, null, "correction did not invalidate approval");
   const summaryEvent = await sendTurn(options.origin, userCookie, conversationId, crypto.randomUUID(), "M2_SUMMARY. Muestra el resumen corregido para que lo revise.");
   const summaryState = summaryEvent.state as JsonObject;

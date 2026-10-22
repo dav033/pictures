@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { ASESOR_SESSION_COOKIE, advisorCookieOptions, authenticateAdvisor, createAdvisorSessionToken } from "@/lib/asesor/auth";
 import { isSameOriginRequest } from "@/lib/auth/request";
+import { versionCodigo } from "@/lib/registro/version";
+
+/** Public release identity for coordinator checks; no settings or credentials are exposed. */
+export async function GET() {
+  const version = versionCodigo();
+  const headers = { "Cache-Control": "no-store" };
+  if (!version.commit || version.origen === "git-local") {
+    return NextResponse.json({ code: "DEPLOYMENT_IDENTITY_UNAVAILABLE" }, { status: 503, headers });
+  }
+  return NextResponse.json({ schema: "asesor-deployment/1", revision: version.commit }, { headers });
+}
 
 function redirectToLogin(request: Request, failed: boolean): NextResponse {
   const url = new URL("/asesor/login", request.url);

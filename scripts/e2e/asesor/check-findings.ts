@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { validateDeployedReport } from "./deployed-report";
 
 type Finding = { id: string; severity: string; status: string; taskReferences: string[] };
 type AuditFindings = { schema: "audit-findings/1"; revision: string; taskReferences: string[]; findings: Finding[] };
@@ -53,6 +54,10 @@ function parseIntegrationResults(value: unknown): IntegrationResults {
 
 /** Validates a stored integration report on its own: well-formed, every command linked and passed. */
 export function validateIntegrationReport(report: unknown): void {
+  if (isRecord(report) && report.schema === "deployed-integration-results/1") {
+    validateDeployedReport(report);
+    return;
+  }
   const integration = parseIntegrationResults(report);
   if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
   if (integration.runs.length === 0 || integration.runs.some((run) => run.outcome !== "passed")) {
