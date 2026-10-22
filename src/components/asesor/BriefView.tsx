@@ -21,7 +21,7 @@ export function BriefView({ data, conversationId }: { data: BriefViewData; conve
         {entries.map(({ label, value }) => <div className="brief-detail" key={label}><h2>{label}</h2><p>{value}</p></div>)}
       </section>
       {data.photos.length > 0 && <section className="brief-photos"><h2>Fotos de referencia</h2><div className="brief-photo-grid">
-        {data.photos.map((photo) => <figure key={photo.id}><Image src={photo.thumbnailUrl} alt="Foto de referencia del evento" width={240} height={160} unoptimized /><figcaption>Referencia {photo.id.slice(0, 8)}</figcaption></figure>)}
+        {data.photos.map((photo) => <figure key={photo.id}><Image src={photo.thumbnailUrl} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} width={240} height={160} unoptimized /><figcaption>{photo.kind === "venue" ? "Lugar" : "Inspiración"} · confirmación {photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"} · preferencia {photo.preference} · {photo.id.slice(0, 8)}</figcaption></figure>)}
       </div></section>}
       {data.projection === "full" && data.approval && <p className="brief-approved">Aprobado por el cliente</p>}
     </main>

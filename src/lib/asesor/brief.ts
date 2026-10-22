@@ -3,7 +3,7 @@ import { parseEventBriefState } from "./contracts";
 import type { createAsesorRepository } from "./repository";
 
 export type BriefProjection = "full" | "vendor";
-export type BriefPhoto = { id: string; mimeType: string; thumbnailUrl: string };
+export type BriefPhoto = { id: string; mimeType: string; thumbnailUrl: string; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
 export type BriefViewData = {
   projection: BriefProjection;
   summary: { version: number; text: string };
@@ -121,7 +121,7 @@ export async function loadApprovedBrief(input: {
     for (const attachment of message.attachments) {
       if (!attachment.mimeType.startsWith("image/")) continue;
       const thumbnailUrl = await input.thumbnail(attachment.mimeType, attachment.data);
-      if (thumbnailUrl) photos.push({ id: attachment.id, mimeType: attachment.mimeType, thumbnailUrl });
+      if (thumbnailUrl) photos.push({ id: attachment.id, mimeType: attachment.mimeType, thumbnailUrl, kind: attachment.kind ?? "inspiration", confirmed: attachment.confirmed ?? null, preference: attachment.preference ?? "neutral" });
     }
   }
   return { status: "ok", data: createBriefProjection(state, photos, input.projection) };

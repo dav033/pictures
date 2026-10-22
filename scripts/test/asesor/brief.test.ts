@@ -54,7 +54,7 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
     summarySequence: 4,
     approval: { summaryVersion: 4, confirmedAt: "2026-10-20T12:00:00.000Z" },
   });
-  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==" }];
+  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==", kind: "venue" as const, confirmed: true, preference: "dislike" as const }];
   const full = createBriefProjection(state, photos, "full");
   assert.equal(full.brief.budget, 2_500_000);
   assert.equal(full.brief.address, "Calle 18 # 20-30");
@@ -64,6 +64,9 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
   assert.equal(full.brief.honoreeName, "Sofía Pérez");
   assert.equal(full.brief.proposedPackage, "Arco floral");
   assert.equal(full.photos[0].id, "photo-1");
+  assert.equal(full.photos[0].kind, "venue");
+  assert.equal(full.photos[0].confirmed, true);
+  assert.equal(full.photos[0].preference, "dislike");
   assert.ok(getBriefDisplayEntries(full).some((entry) => entry.label === "Homenajeado/a" && entry.value === "Sofía Pérez"));
 
   const echoedPrivateData = parseEventBriefState({ ...state, brief: {
@@ -91,7 +94,7 @@ test("brief API authorizes before storage and returns only the requested server 
     async upsertAccount(externalId: string) { return { id: externalId }; },
     async getConversation(id: string) { return id === "event-1" ? { id, accountId: "advisor:user", title: null, updatedAt: "today" } : null; },
     async latestBrief() { return { conversationId: "event-1", version: 3, state }; },
-    async listMessages() { return [{ id: "photo-message", role: "user" as const, content: "", attachments: [{ id: "photo-1", mimeType: "image/jpeg", byteSize: 1, data: Buffer.from([1]) }] }]; },
+    async listMessages() { return [{ id: "photo-message", role: "user" as const, content: "", attachments: [{ id: "photo-1", mimeType: "image/jpeg", byteSize: 1, data: Buffer.from([1]), kind: "venue" as const, confirmed: true, preference: "dislike" as const }] }]; },
   };
   const handler = createBriefGetHandler({
     authorize: (request) => request.headers.get("authorization") === "Bearer customer" ? { role: "user" } : Response.json({ code: "ADVISOR_UNAUTHENTICATED" }, { status: 401 }),
@@ -103,9 +106,12 @@ test("brief API authorizes before storage and returns only the requested server 
   const response = await handler(new Request("https://example.test/api/asesor/briefs/event-1?projection=vendor", { headers: { authorization: "Bearer customer" } }), { params: Promise.resolve({ id: "event-1" }) });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
-  const body = await response.json() as { projection: string; brief: Record<string, unknown>; photos: Array<{ id: string }> };
+  const body = await response.json() as { projection: string; brief: Record<string, unknown>; photos: Array<{ id: string; kind: string; confirmed: boolean; preference: string }> };
   assert.equal(body.projection, "vendor");
   assert.ok(!("budget" in body.brief));
   assert.ok(!JSON.stringify(body).includes("Ana Pérez"));
   assert.equal(body.photos[0].id, "photo-1");
+  assert.equal(body.photos[0].kind, "venue");
+  assert.equal(body.photos[0].confirmed, true);
+  assert.equal(body.photos[0].preference, "dislike");
 });
