@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseArgs, resolveExpectedRevision, validateAuditEditBoundary, validateFindingsEvidence } from "../../e2e/asesor/check-findings";
+import { parseArgs, resolveExpectedRevision, validateAuditEditBoundary, validateFindingsEvidence, validateIntegrationReport } from "../../e2e/asesor/check-findings";
 
 const revision = "a".repeat(40);
 const findings = {
@@ -94,4 +94,16 @@ test("findings revision falls back to the ledger only when Git is unavailable", 
   assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "", gitRevision: undefined, findingsRevision: revision }), { revision, fromLedger: true });
   assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "b".repeat(40), gitRevision: undefined, findingsRevision: revision }), { revision: "b".repeat(40), fromLedger: false });
   assert.throws(() => resolveExpectedRevision({ explicitRevision: "", gitRevision: undefined, findingsRevision: "invalid" }), /full git SHA/);
+});
+
+test("stored integration report is validated on its own, without a revision match", () => {
+  assert.doesNotThrow(() => validateIntegrationReport(integrationResults));
+  assert.throws(() => validateIntegrationReport({ ...integrationResults, outcome: "failed" }), /must be passed/);
+  assert.throws(() => validateIntegrationReport({ ...integrationResults, runs: integrationResults.runs.map((run, index) => index ? run : { ...run, outcome: "failed" }) }), /must have passed/);
+});
+
+test("run.ts --check-results exits non-zero for a missing report", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const result = spawnSync("npx", ["tsx", "--conditions=react-server", "scripts/e2e/asesor/run.ts", "--check-results", "does-not-exist.json"], { encoding: "utf8" });
+  assert.notEqual(result.status, 0);
 });

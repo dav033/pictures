@@ -1,10 +1,11 @@
 import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createServer, type Server } from "node:http";
 import { loadEnvConfig } from "@next/env";
+import { validateIntegrationReport } from "./check-findings";
 import { runM1Scenario } from "./scenarios/m1";
 import { runM2Scenario } from "./scenarios/m2";
 import { loadLiveScenarioAudio } from "./scenarios/voice";
@@ -247,9 +248,23 @@ export async function run(options: Options): Promise<void> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const options = parseArgs(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  const checkIndex = args.indexOf("--check-results");
+  if (checkIndex >= 0) {
+    const file = args[checkIndex + 1];
+    if (!file || file.startsWith("--")) throw new Error("--check-results requires a report path.");
+    readFile(path.resolve(file), "utf8")
+      .then((text) => validateIntegrationReport(JSON.parse(text) as unknown))
+      .then(() => console.log(`Integration report is valid: ${file}`))
+      .catch((error: unknown) => {
+        console.error(`[FAIL] asesor results: ${error instanceof Error ? error.message : "unknown error"}`);
+        process.exitCode = 1;
+      });
+  } else {
+  const options = parseArgs(args);
   run(options).catch((error: unknown) => {
     console.error(`[FAIL] asesor ${options.milestone}: ${error instanceof Error ? error.message : "unknown error"}`);
     process.exitCode = 1;
   });
+  }
 }

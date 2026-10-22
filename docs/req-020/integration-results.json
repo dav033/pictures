@@ -1,0 +1,63 @@
+{
+  "schema": "integration-results/1",
+  "milestone": "M1",
+  "task": "T7",
+  "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+  "mode": "fake-model",
+  "invocation": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
+  "startedAt": "2026-10-22T19:29:43.025Z",
+  "completedAt": "2026-10-22T19:31:21.266Z",
+  "commands": [
+    "npm run build --workspaces --if-present",
+    "npm run build",
+    "npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
+    "npm run start",
+    "scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7"
+  ],
+  "runs": [
+    {
+      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "task": "T7",
+      "command": "npm run build --workspaces --if-present",
+      "outcome": "passed"
+    },
+    {
+      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "task": "T7",
+      "command": "npm run build",
+      "outcome": "passed"
+    },
+    {
+      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "task": "T7",
+      "command": "npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
+      "outcome": "passed"
+    },
+    {
+      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "task": "T7",
+      "command": "npm run start",
+      "outcome": "passed"
+    },
+    {
+      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "task": "T7",
+      "command": "scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
+      "outcome": "passed"
+    }
+  ],
+  "outcome": "passed",
+  "checks": [
+    "user login and persisted conversation creation",
+    "offline model conversation and proposed summary",
+    "twelve configured direction cards shown",
+    "selected direction persisted while event fields remained unchanged",
+    "same-device reload restores persisted conversation",
+    "correction persisted and invalidated stale summary",
+    "corrected summary has a new version",
+    "approved brief is persisted and visible to the user",
+    "admin API and page deny advisor role",
+    "admin login sees approved brief",
+    "provider failure is reported and the customer message remains persisted"
+  ]
+}

@@ -51,6 +51,22 @@ function parseIntegrationResults(value: unknown): IntegrationResults {
   return value as IntegrationResults;
 }
 
+/** Validates a stored integration report on its own: well-formed, every command linked and passed. */
+export function validateIntegrationReport(report: unknown): void {
+  const integration = parseIntegrationResults(report);
+  if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
+  if (integration.runs.length === 0 || integration.runs.some((run) => run.outcome !== "passed")) {
+    throw new Error("Every integration command must have passed.");
+  }
+  const runCommands = new Set(integration.runs.map((run) => run.command));
+  if (integration.commands.some((item) => !runCommands.has(item)) || integration.runs.some((run) => !integration.commands.includes(run.command))) {
+    throw new Error("Every integration command must link to a recorded command result.");
+  }
+  if (!integration.commands.includes("npm run build") || !integration.commands.includes("npm run start")) {
+    throw new Error("Integration report lacks the build and start commands.");
+  }
+}
+
 export function validateFindingsEvidence(input: {
   findings: unknown;
   integrationResults: unknown;
