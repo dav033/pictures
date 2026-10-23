@@ -142,14 +142,24 @@ export function validateFindingsEvidence(input: {
   const findings = parseFindings(input.findings);
   const { integration, deployed } = parseIntegrationEvidence(input.integrationResults);
   if (!SHA.test(input.expectedRevision)) throw new Error("Expected revision must be a full git SHA.");
+  if (integration.task !== input.task || !findings.taskReferences.includes(input.task)) {
+    throw new Error(`Task linkage is missing for ${input.task}.`);
+  }
+  const knownTasks = new Set(input.knownTasks);
+  const references = [...findings.taskReferences, ...findings.findings.flatMap((finding) => finding.taskReferences)];
+  if (!references.length || references.some((reference) => !knownTasks.has(reference))) {
+    throw new Error("Audit findings contain absent or unknown task references.");
+  }
+  const openBlocker = findings.findings.find((finding) => finding.status === "open" && ["critical", "high"].includes(finding.severity));
+  if (openBlocker) {
+    const producers = openBlocker.taskReferences.join(", ");
+    throw new Error(`Open ${openBlocker.severity} finding: ${openBlocker.id} (producer tasks: ${producers}).`);
+  }
   if (findings.revision !== integration.revision) {
     throw new Error(`Audit ledger revision ${findings.revision} does not match integration evidence revision ${integration.revision}.`);
   }
   if (findings.revision !== input.expectedRevision || integration.revision !== input.expectedRevision) {
     throw new Error(`Audit ledger revision ${findings.revision} and integration evidence revision ${integration.revision} must match expected revision ${input.expectedRevision}.`);
-  }
-  if (integration.task !== input.task || !findings.taskReferences.includes(input.task)) {
-    throw new Error(`Task linkage is missing for ${input.task}.`);
   }
   if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
   if (input.task === "T7" && (deployed || integration.mode !== "live")) throw new Error("T7 acceptance evidence requires the live Gemini and Supabase run.");
@@ -186,13 +196,6 @@ export function validateFindingsEvidence(input: {
     || integration.runs.some((run) => !integration.commands.includes(run.command))) {
     throw new Error("Every integration command must link to a recorded command result.");
   }
-  const knownTasks = new Set(input.knownTasks);
-  const references = [...findings.taskReferences, ...findings.findings.flatMap((finding) => finding.taskReferences)];
-  if (!references.length || references.some((reference) => !knownTasks.has(reference))) {
-    throw new Error("Audit findings contain absent or unknown task references.");
-  }
-  const openBlocker = findings.findings.find((finding) => finding.status === "open" && ["critical", "high"].includes(finding.severity));
-  if (openBlocker) throw new Error(`Open ${openBlocker.severity} finding: ${openBlocker.id}`);
 }
 
 export function validateAuditEditBoundary(changedPaths: readonly string[], reportPath: string, ledgerPath: string): void {
