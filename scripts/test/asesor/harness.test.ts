@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseArgs, resolveExpectedRevision, validateAuditEditBoundary, validateFindingsEvidence, validateIntegrationReport } from "../../e2e/asesor/check-findings";
+import { deployedReport } from "../../e2e/asesor/deployed-report";
 
 const revision = "a".repeat(40);
 const findings = {
@@ -43,6 +44,32 @@ test("findings checker accepts linked audit and integration evidence", () => {
   assert.doesNotThrow(valid);
 });
 
+test("findings checker accepts task aliases, fixed status, and every supported severity", () => {
+  const severities = ["critical", "high", "medium", "low", "info"];
+  const aliasedLedger = {
+    ...findings,
+    taskReferences: undefined,
+    tasks: ["T7"],
+    findings: severities.map((severity, index) => ({
+      id: `OBS-${index + 1}`, severity, status: "fixed", tasks: ["T7"],
+    })),
+  };
+  assert.doesNotThrow(() => validateFindingsEvidence({ findings: aliasedLedger, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: revision }));
+  const mixedAliases = {
+    ...findings,
+    findings: [{ id: "OBS-1", severity: "info", status: "accepted", tasks: ["T7"] }],
+  };
+  assert.doesNotThrow(() => validateFindingsEvidence({ findings: mixedAliases, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: revision }));
+  assert.throws(() => validateFindingsEvidence({
+    findings: { ...findings, taskReferences: ["T7"], tasks: ["T8"] }, integrationResults,
+    task: "T7", knownTasks: ["T7", "T8"], expectedRevision: revision,
+  }), /Malformed audit-findings/);
+  assert.throws(() => validateFindingsEvidence({
+    findings: { ...findings, tasks: ["not-a-task-id"] }, integrationResults,
+    task: "T7", knownTasks: ["T7"], expectedRevision: revision,
+  }), /Malformed audit-findings/);
+});
+
 test("findings checker rejects malformed audit-findings/1 and missing task references", () => {
   assert.throws(() => validateFindingsEvidence({ findings: { ...findings, schema: "audit-findings/0" }, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /Malformed audit-findings/);
   assert.throws(() => validateFindingsEvidence({ findings: { ...findings, taskReferences: [] }, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /Malformed audit-findings/);
@@ -68,7 +95,8 @@ test("T7 findings cannot pass on offline fake-model evidence", () => {
 
 test("findings checker links command outcomes, task and revision", () => {
   assert.throws(() => validateFindingsEvidence({ findings, integrationResults: { ...integrationResults, outcome: "failed" }, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /outcome must be passed/);
-  assert.throws(() => validateFindingsEvidence({ findings, integrationResults: { ...integrationResults, revision: "b".repeat(40) }, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /match the expected revision/);
+  assert.throws(() => validateFindingsEvidence({ findings, integrationResults: { ...integrationResults, revision: "b".repeat(40) }, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /Audit ledger revision a{40} does not match integration evidence revision b{40}/);
+  assert.throws(() => validateFindingsEvidence({ findings, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: "b".repeat(40) }), /ledger revision a{40} and integration evidence revision a{40} must match expected revision b{40}/);
   const badCommand = { ...integrationResults, invocation: "npm run test", runs: [{ revision, task: "T7", command: "npm run test", outcome: "passed" }] };
   assert.throws(() => validateFindingsEvidence({ findings, integrationResults: badCommand, task: "T7", knownTasks: ["T7"], expectedRevision: revision }), /command evidence is incomplete/);
   const failedCommand = { ...integrationResults, runs: integrationResults.runs.map((run, index) => index === 0 ? { ...run, outcome: "failed" } : run) };
@@ -89,14 +117,38 @@ test("findings CLI accepts positional reports and the integration-results alias"
   assert.match(options.findings, /docs\/req-020\/T15\.findings\.json$/);
   assert.match(options.results, /docs\/req-020\/integration-results\.json$/);
   assert.equal(options.checkAuditDiff, true);
+  const defaults = parseArgs([]);
+  assert.equal(defaults.task, "");
+  assert.deepEqual(defaults.knownTasks, []);
+  assert.match(defaults.findings, /docs\/req-020\/T15\.findings\.json$/);
+  assert.match(defaults.results, /docs\/req-020\/integration-results\.json$/);
+  assert.match(defaults.ledger, /docs\/req-020\/T15\.md$/);
   assert.match(parseArgs(["docs/findings.json", "--findings", "explicit.json"]).findings, /explicit\.json$/);
   assert.throws(() => parseArgs(["--integration-results"]), /Missing value for --integration-results/);
 });
 
-test("findings revision falls back to the ledger only when Git is unavailable", () => {
-  assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "", gitRevision: undefined, findingsRevision: revision }), { revision, fromLedger: true });
+test("clean snapshot findings revision falls back to the ledger and validates linked evidence", () => {
+  const expected = resolveExpectedRevision({ explicitRevision: "", environmentRevision: "", gitRevision: undefined, findingsRevision: revision });
+  assert.deepEqual(expected, { revision, fromLedger: true });
+  assert.doesNotThrow(() => validateFindingsEvidence({ findings, integrationResults, task: "T7", knownTasks: ["T7"], expectedRevision: expected.revision }));
+  assert.throws(() => validateFindingsEvidence({
+    findings, integrationResults: { ...integrationResults, revision: "b".repeat(40) },
+    task: "T7", knownTasks: ["T7"], expectedRevision: expected.revision,
+  }), /Audit ledger revision a{40} does not match integration evidence revision b{40}/);
   assert.deepEqual(resolveExpectedRevision({ explicitRevision: "", environmentRevision: "b".repeat(40), gitRevision: undefined, findingsRevision: revision }), { revision: "b".repeat(40), fromLedger: false });
   assert.throws(() => resolveExpectedRevision({ explicitRevision: "", gitRevision: undefined, findingsRevision: "invalid" }), /full git SHA/);
+});
+
+test("findings checker accepts deployed integration evidence", () => {
+  const deployed = deployedReport({
+    revision, verifiedRevision: revision, origin: "https://advisor.example.com", milestone: "M1",
+    startedAt: "2026-10-23T12:00:00.000Z", outcome: "passed", checks: ["advisor route responds"],
+  });
+  const ledger = {
+    schema: "audit-findings/1", revision, tasks: ["T14a"],
+    findings: [{ id: "OBS-1", severity: "low", status: "closed", tasks: ["T14a"] }],
+  };
+  assert.doesNotThrow(() => validateFindingsEvidence({ findings: ledger, integrationResults: deployed, task: "T14a", knownTasks: ["T14a"], expectedRevision: revision }));
 });
 
 test("stored integration report validates evidence integrity without requiring product success", () => {
