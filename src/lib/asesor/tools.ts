@@ -49,8 +49,8 @@ const CUSTOMER_ADDRESS_CONSENT = /\b(?:autorizo (?:usar|compartir) (?:mi )?(?:di
 export function customerConsent(text: string): { contact: boolean; address: boolean; refusedContact: boolean; refusedAddress: boolean } {
   return {
     contact: CUSTOMER_CONTACT_CONSENT.test(text), address: CUSTOMER_ADDRESS_CONSENT.test(text),
-    refusedContact: /\b(?:no (?:quiero|autorizo|acepto) que me contacten|no autorizo compartir (?:mi )?(?:direcci[oó]n|ubicaci[oó]n) ni que me contacten|no (?:quiero|autorizo|acepto|autorizo compartir|comparto) (?:el contacto|mi contacto|mis datos de contacto|mi (?:tel[eé]fono|correo))|prefiero no (?:dar|compartir) (?:mi )?(?:contacto|tel[eé]fono|correo)|no autorizo (?:a )?(?:compartir|usar) (?:mi )?contacto)\b/i.test(text),
-    refusedAddress: /\b(?:no (?:quiero|autorizo|acepto|comparto) (?:dar|compartir|usar)? ?(?:mi )?(?:direcci[oó]n|ubicaci[oó]n)|prefiero no (?:dar|compartir) (?:mi )?(?:direcci[oó]n|ubicaci[oó]n))\b/i.test(text),
+    refusedContact: /\b(?:no (?:quiero|autorizo|acepto) que me contacten|no autorizo compartir (?:mi )?(?:direcci[oó]n|ubicaci[oó]n) ni que me contacten|no (?:quiero|autorizo|acepto|autorizo compartir|comparto) (?:el contacto|mi contacto|mis datos de contacto|mi (?:tel[eé]fono|correo))|prefiero no (?:dar|compartir) (?:mi )?(?:contacto|tel[eé]fono|correo)(?: ni (?:mi )?(?:tel[eé]fono|correo))?|no autorizo (?:a )?(?:compartir|usar) (?:mi )?contacto)\b/i.test(text),
+    refusedAddress: /\b(?:no (?:quiero|autorizo|acepto|comparto) (?:dar|compartir|usar)? ?(?:(?:mi|la|el) )?(?:direcci[oó]n|ubicaci[oó]n)|prefiero no (?:dar|compartir) (?:(?:mi|la|el) )?(?:direcci[oó]n|ubicaci[oó]n))\b/i.test(text),
   };
 }
 
