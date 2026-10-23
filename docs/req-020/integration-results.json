@@ -1,234 +1,284 @@
 {
-  "schema": "integration-results/1",
-  "task": "T14a",
-  "milestone": "M1+M2",
-  "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-  "tree_digest": "sha256:6cc5bb1b8f1134cc514eca51ddd6a64b77820cc4dd9b44f3a39d6b52afc8ddda",
-  "mode": "mixed",
-  "recordedAt": 1792777545.9118817,
-  "invocation": "Supervisor collected exact-snapshot M6 passes, a verified local live receipt and fresh deployed M1/M2 proof; no product acceptance decision.",
-  "commands": [
-    "npm run gate",
-    "npm run happie:test-webhook",
-    "npm run lint",
-    "npm run build --workspaces --if-present",
-    "npx tsc --noEmit",
-    "npm run build",
-    "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1",
-    "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2",
-    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M1",
-    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
-    "npm run start",
-    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --report /home/david/bitacora/pictures/artifacts/req020-supervisor-root-cause/deployed-M1.json",
-    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --report /home/david/bitacora/pictures/artifacts/req020-supervisor-root-cause/deployed-M2.json",
-    "git diff --exit-code 915a75af edc2fcd26404db8da426529dec0d7f5841a236c0 -- packages/happie-package-ia src/app/api/happie/webhook src/lib/happie scripts/test/test-happie-webhook.ts scripts/test/test-happie-controls.ts scripts/test/test-happie-paquete-v1.ts docs/happie-external-integration.md contracts"
-  ],
-  "runs": [
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run gate",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/5c136ffd91547ab96d4d3d66c0722d9acc3c37672745ab05380f1ad2fe00fcd3",
-        "stderr": "m6://artifact/b8082fd76453280ef85c1ff5d8777ee5f3d90c3ca73f8ecdfd69e587d9b148c2"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run happie:test-webhook",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/49150e052241882dc2435388914af0fc3b95ba910c103a61be0198a1b9238428",
-        "stderr": "m6://artifact/6b760be8c928cf1debf66e911be1f54f891714d41bfdec1c1968fd2de9df101d"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run lint",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/d6f5df31be877a141a3f7a9bdd293b01a2b3c636600ee8a2c30bdb1d7b46a8cd",
-        "stderr": "m6://artifact/e6afb161e5873f4b6cf53d896f1437f341617cd2727743fc2bc88c545a7d9cc4"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run build --workspaces --if-present",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/b5d629bcd716d1e9c20552c82ed741aba2d5e43fbf1e048a457f60d3d1da412a",
-        "stderr": "m6://artifact/b3d60c460619c7cf6ebbcdfc91d8d61e217035d1539fae6803cf76e527a55cf3"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npx tsc --noEmit",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/ba0069ee838db3a093448992b251f3f28ebf27fd49abf81be8a0c21270b15121",
-        "stderr": "m6://artifact/3c0f9ea34ab2a1fa2da1836f188dd80917876a1e65b16ccb67ff4866f5d2f6cc"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run build",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/aaf70e53c7349b609c05fee7f224bc221277a10f01c85ce15dbcba68986a178b",
-        "stderr": "m6://artifact/9683c4c29bd14f8e57deeb3e3d49785bb8087593351c99e1058a43309e0c75b8"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/c86fa7f29a3fce3924708fff2db7b924e928cdd23c48f322b1d379ef1019fa7f",
-        "stderr": "m6://artifact/a2556a1c5c4b2dd05122b6beefc6b946bb92e37b788e909daafa37ec2dd2b040"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2",
-      "outcome": "passed",
-      "exitCode": 0,
-      "evidence": {
-        "attempt": "att-0120",
-        "verifier": "M6",
-        "stdout": "m6://artifact/7d65fdf1a87eddea6b1555c783295177f2b1be4d3e50931815cf1ca4f010fdb2",
-        "stderr": "m6://artifact/afee84a5f334260c62373e290b3e93030a87c3e0deffff3ee8d6b2df05281206"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M1",
-      "outcome": "passed",
-      "exitCode": 0,
-      "seconds": 175.9,
-      "evidence": {
-        "receipt": "sha256:56f81d7d1cba375a911244c6d621a61b32574cb9e984a04e6adc917d26e9ec30",
-        "attempt": "att-0120"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
-      "outcome": "passed",
-      "exitCode": 0,
-      "seconds": 83.6,
-      "evidence": {
-        "receipt": "sha256:56f81d7d1cba375a911244c6d621a61b32574cb9e984a04e6adc917d26e9ec30",
-        "attempt": "att-0120"
-      }
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "npm run start",
-      "outcome": "passed",
-      "detail": "Nested production server startup/readiness exercised by each successful --start live scenario; not a standalone process-exit assertion.",
-      "evidence": {
-        "receipt": "sha256:56f81d7d1cba375a911244c6d621a61b32574cb9e984a04e6adc917d26e9ec30"
-      }
-    },
-    {
-      "revision": "c25a5f42fc9727b84f454f166e08348521cca6ad",
-      "task": "T14a",
-      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --report /home/david/bitacora/pictures/artifacts/req020-supervisor-root-cause/deployed-M1.json",
-      "outcome": "passed",
-      "exitCode": 0,
-      "seconds": 40.3,
-      "evidence": "deployed-M1.json"
-    },
-    {
-      "revision": "c25a5f42fc9727b84f454f166e08348521cca6ad",
-      "task": "T14a",
-      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --report /home/david/bitacora/pictures/artifacts/req020-supervisor-root-cause/deployed-M2.json",
-      "outcome": "passed",
-      "exitCode": 0,
-      "seconds": 43.6,
-      "evidence": "deployed-M2.json"
-    },
-    {
-      "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-      "task": "T14a",
-      "command": "git diff --exit-code 915a75af edc2fcd26404db8da426529dec0d7f5841a236c0 -- packages/happie-package-ia src/app/api/happie/webhook src/lib/happie scripts/test/test-happie-webhook.ts scripts/test/test-happie-controls.ts scripts/test/test-happie-paquete-v1.ts docs/happie-external-integration.md contracts",
-      "outcome": "passed",
-      "exitCode": 0,
-      "detail": "Fresh supervisor comparison against the implementation base; no protected source changes."
-    }
-  ],
+ "schema": "integration-results/1",
+ "task": "T14a",
+ "milestone": "M1+M2",
+ "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+ "tree_digest": "sha256:d492c6bdb70fc1da507e01716e789c0160a7994ec044ba4eac5ff62092edc2f5",
+ "mode": "mixed",
+ "recordedAt": 1792791392.7810192,
+ "invocation": "Supervisor ran the deterministic commands in a clean environment, the local live M1/M2 entry-point runs, and deployed M1/M2 on both production origins against the released revision; no product acceptance decision.",
+ "commands": [
+  "npm run gate",
+  "npm run happie:test-webhook",
+  "npm run lint",
+  "npm run build --workspaces --if-present",
+  "npx tsc --noEmit",
+  "npm run build",
+  "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1",
+  "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M1",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
+  "npm run start",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://185-147-157-25.sslip.io",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://185-147-157-25.sslip.io",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://demo-decoracion.vercel.app",
+  "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://demo-decoracion.vercel.app"
+ ],
+ "runs": [
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run gate",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 642,
+    "stdout_sha256": "sha256:eac3d6263e3cd30c08ae96b3aab511d893f5765f081d32a7ff288f5c94fd8098"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run happie:test-webhook",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 10,
+    "stdout_sha256": "sha256:e8a96fdfee8cf5b0e64d7cf343effebf04b334b98fa16dfd0b2c4495fdd6db4f"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run lint",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 99,
+    "stdout_sha256": "sha256:b241f26ddf1d88c74860ece6c6bc67b07afb3006d46e714f52f679189ff3b26e"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run build --workspaces --if-present",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 4,
+    "stdout_sha256": "sha256:ed098657eed6b8c0e14d1ac2c5eb01d368908c2cf3f7ef322b2bcf65e43e1361"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsc --noEmit",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 9,
+    "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run build",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 101,
+    "stdout_sha256": "sha256:1cef66b30729b685ddfe2c476374ccb8958b08071e75f55b2037e8e24c395dca"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 31,
+    "stdout_sha256": "sha256:db2e6f7cefc42c9609bf5e73af395dfa8234809c6b34b1035078ef07008a4842"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "ASESOR_TEST_DATABASE_URL=postgresql://rag:rag_local_only_change_me@127.0.0.1:5432/rag npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "environment": "clean (env -i)",
+    "seconds": 28,
+    "stdout_sha256": "sha256:1023d3e4ba6c715a9e14f7183789f90e5a3db00ded4a07fcc84ae71156b3eca9"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M1",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report_sha256": "sha256:8b01a9361d3374a5f00567ff99f1499d8cf033ad27d161c1fbfd379127ae7543",
+    "startedAt": "2026-10-23T21:33:12.729Z",
+    "completedAt": "2026-10-23T21:34:40.572Z"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report_sha256": "sha256:f6c4a061f074275ed8c1e37c354b37e020af1da6f74252e75dd41cd60a767f98",
+    "startedAt": "2026-10-23T21:34:41.222Z",
+    "completedAt": "2026-10-23T21:35:54.097Z"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npm run start",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "note": "started and exercised by the two local live runs above",
+    "report_sha256": "sha256:8b01a9361d3374a5f00567ff99f1499d8cf033ad27d161c1fbfd379127ae7543"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://185-147-157-25.sslip.io",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report": "deployed-vps-M1.json",
+    "report_sha256": "sha256:bd4bb3e3ee3967be9c50af1ad62243e5c1a4bb7891521f77410544b5c149e535"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://185-147-157-25.sslip.io",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report": "deployed-vps-M2.json",
+    "report_sha256": "sha256:52d50bd79d20e1d38b46049650f49312de80fcc6e3757362fef8063d0529cb2b"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M1 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://demo-decoracion.vercel.app",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report": "deployed-vercel-M1.json",
+    "report_sha256": "sha256:28006ebb5e2459b64a39c19b4ae41c85e6dfb0daf6a32f4861a96fcd64b424c4"
+   }
+  },
+  {
+   "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+   "task": "T14a",
+   "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --live --deployed --milestone M2 --revision fa101a4759feb3f435c2500b3b2bc9684ff2f482 --origin https://demo-decoracion.vercel.app",
+   "outcome": "passed",
+   "exitCode": 0,
+   "evidence": {
+    "runner": "supervisor",
+    "report": "deployed-vercel-M2.json",
+    "report_sha256": "sha256:2698b3fa73e31d4c9894efd6432da485b190e72f4cd3205de593bbc3ca77825b"
+   }
+  }
+ ],
+ "outcome": "passed",
+ "checks": [
+  "user login and persisted conversation creation",
+  "real Gemini text conversation and proposed summary",
+  "twelve configured direction cards shown",
+  "selected direction persisted while event fields remained unchanged",
+  "same-device reload restores persisted conversation",
+  "correction persisted and invalidated stale summary",
+  "corrected summary has a new version",
+  "approved brief is persisted and visible to the user",
+  "admin API and page deny advisor role",
+  "admin login sees approved brief",
+  "provider failure is reported and the customer message remains persisted",
+  "real voice service transcript and original photo persisted in customer messages",
+  "same-device reload restores transcript and received photo bytes",
+  "corrected brief was proposed and approved at its current version",
+  "admin sees the approved brief, voice transcript, and photo attachment"
+ ],
+ "liveEntryPoint": {
   "outcome": "passed",
-  "checks": [
-    "user login and persisted conversation creation",
-    "real Gemini text conversation and proposed summary",
-    "twelve configured direction cards shown",
-    "selected direction persisted while event fields remained unchanged",
-    "same-device reload restores persisted conversation",
-    "correction persisted and invalidated stale summary",
-    "corrected summary has a new version",
-    "approved brief is persisted and visible to the user",
-    "admin API and page deny advisor role",
-    "admin login sees approved brief",
-    "real voice service transcript and original photo persisted in customer messages",
-    "same-device reload restores transcript and received photo bytes",
-    "corrected brief was proposed and approved at its current version",
-    "admin sees the approved brief, voice transcript, and photo attachment"
-  ],
-  "liveEntryPoint": {
-    "outcome": "passed",
-    "revision": "edc2fcd26404db8da426529dec0d7f5841a236c0",
-    "receipt": "sha256:56f81d7d1cba375a911244c6d621a61b32574cb9e984a04e6adc917d26e9ec30",
-    "milestones": [
-      "M1",
-      "M2"
-    ]
-  },
-  "deployedEntryPoint": {
-    "outcome": "passed",
-    "revision": "c25a5f42fc9727b84f454f166e08348521cca6ad",
-    "milestones": [
-      "M1",
-      "M2"
-    ],
-    "evidence": [
-      "deployed-M1.json",
-      "deployed-M2.json"
-    ]
-  },
-  "coverageGaps": [
-    "Physical phone camera/microphone permission, keyboard, retry and reload observations require a person.",
-    "API scenario passes do not establish browser UI photo, card or summary acceptance; independent product audits remain required."
+  "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+  "milestones": [
+   "M1",
+   "M2"
   ]
+ },
+ "deployedEntryPoint": {
+  "outcome": "passed",
+  "revision": "fa101a4759feb3f435c2500b3b2bc9684ff2f482",
+  "milestones": [
+   "M1",
+   "M2"
+  ],
+  "origins": [
+   "https://185-147-157-25.sslip.io",
+   "https://demo-decoracion.vercel.app"
+  ],
+  "evidence": [
+   "deployed-vps-M1.json",
+   "deployed-vps-M2.json",
+   "deployed-vercel-M1.json",
+   "deployed-vercel-M2.json"
+  ]
+ },
+ "liveEvaluation": {
+  "status": "executed",
+  "model": "gemini-3.6-flash",
+  "scenarios": [
+   "birthday",
+   "corporate",
+   "school",
+   "undecided",
+   "photo-led",
+   "contact-refusal",
+   "address-refusal",
+   "off-topic",
+   "prompt-injection"
+  ],
+  "evidence": "live-eval-nine-scenarios.json"
+ },
+ "coverageGaps": [
+  "Physical-phone camera/gallery/microphone permission, keyboard, media, reload and summary approval/print/admin observations require the owner (T15.9).",
+  "Entry-point runs are API/server scenarios; they do not establish mobile browser UI behavior on a real device.",
+  "The nine-scenario live evaluation asserts server-side gates and refusals; it is not a human quality review of free-form wording."
+ ]
 }
