@@ -59,15 +59,28 @@ export function ChatView() {
         {conversation.status === "unavailable" && <div role="alert" className="rounded-2xl border border-error/30 bg-error-suave p-4"><p>{conversation.error}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 min-h-11 rounded-xl border border-borde bg-superficie px-4 font-semibold text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Intentar recuperar de nuevo</button></div>}
 
         <ol className="flex flex-col gap-3" aria-label="Mensajes">
-          {visibleMessages.map((message) => <li key={message.id} className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[82%] ${message.role === "user" ? "ml-auto rounded-br-lg bg-acento text-sobre-acento" : "mr-auto rounded-bl-lg border border-borde bg-superficie text-texto"}`}>{message.content}</li>)}
+          {visibleMessages.map((message) => <li key={message.id} className={`max-w-[90%] rounded-3xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[82%] ${message.role === "user" ? "ml-auto rounded-br-lg bg-acento text-sobre-acento" : "mr-auto rounded-bl-lg border border-borde bg-superficie text-texto"}`}>
+            {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
+            {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
+              <img src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} loading="lazy" className="max-h-64 max-w-full rounded-xl object-cover" />
+              <figcaption className="mt-1 text-xs opacity-80">{photo.kind === "venue" ? "Lugar del evento" : "Inspiración"} · {photo.preference === "neutral" ? "por revisar" : photo.preference === "like" ? "me gusta" : "no me gusta"}</figcaption>
+            </figure>)}
+          </li>)}
           {conversation.streamingText && <li aria-label="Respuesta en curso" className="mr-auto max-w-[90%] whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-[15px] leading-relaxed shadow-sm">{conversation.streamingText}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></li>}
           {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="mr-auto rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-sm text-texto-suave">Estoy pensando…</li>}
+          {conversation.summary && <li aria-label="Resumen actual del evento" className="mr-auto w-full max-w-[90%] rounded-3xl border border-acento/40 bg-superficie p-4 text-sm text-texto shadow-sm sm:max-w-[82%]">
+            <h2 className="font-semibold">Resumen para revisar · versión {conversation.summary.version}</h2>
+            <p className="mt-2 whitespace-pre-wrap">{conversation.summary.text}</p>
+            {conversation.approved
+              ? <a className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento" href={`/asesor/brief/${encodeURIComponent(conversation.conversationId ?? "")}`}>Ver resumen aprobado</a>
+              : <button type="button" disabled={conversation.status === "sending"} onClick={() => conversation.submit(`Apruebo el resumen versión ${conversation.summary?.version}.`)} className="mt-3 min-h-11 rounded-xl bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-50">Aprobar resumen</button>}
+          </li>}
         </ol>
         <div ref={transcriptEnd} aria-hidden="true" />
       </section>
 
       <footer className="sticky bottom-0 z-10 border-t border-borde bg-fondo/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6">
-        <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={!conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable"} cards={conversation.cards} capabilities={conversation.capabilities} onVoiceText={setDraft} error={conversation.status === "failed" ? conversation.error : null} onRetry={conversation.status === "failed" ? conversation.retry : undefined} />
+        <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={!conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable"} cards={conversation.cards} capabilities={conversation.capabilities} photoKind={conversation.photoKind} onPhotoKindChange={conversation.setPhotoKind} onVoiceText={setDraft} error={conversation.status === "failed" ? conversation.error : null} onRetry={conversation.status === "failed" ? conversation.retry : undefined} />
       </footer>
     </main>
   );

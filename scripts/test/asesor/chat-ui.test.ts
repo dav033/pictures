@@ -27,7 +27,7 @@ test("server snapshots restore messages, progress, and the current brief version
   const snapshot = parseAdvisorSnapshot({
     conversation: { id: "conv-1" },
     messages: [{ id: "turn-1", role: "user", content: "Una fiesta" }, { id: "turn-1:assistant", role: "assistant", content: "¡Claro!" }],
-    state: { summary: { briefVersion: 3 } },
+    state: { directionOffers: [], standardPackage: null, summary: null, approval: null },
     progress: { complete: false, completed: 2, required: 5, missing: ["date"] },
     briefVersion: 4,
   });
@@ -37,7 +37,7 @@ test("server snapshots restore messages, progress, and the current brief version
   assert.deepEqual(snapshot?.progress, { complete: false, completed: 2, required: 5, missing: ["date"] });
   assert.equal(snapshot?.briefVersion, 4);
   assert.equal(parseAdvisorSnapshot({ conversation: { id: "conv-1" }, messages: [], progress: {}, briefVersion: 0 }), null);
-  assert.equal(parseCreatedConversation({ conversation: { id: "conv-2" }, progress: { complete: false, completed: 0, required: 5, missing: [] }, briefVersion: 1 })?.conversationId, "conv-2");
+  assert.equal(parseCreatedConversation({ conversation: { id: "conv-2" }, state: { directionOffers: [], standardPackage: null, summary: null, approval: null }, progress: { complete: false, completed: 0, required: 5, missing: [] }, briefVersion: 1 })?.conversationId, "conv-2");
 });
 
 test("only the conversation ID is stored locally and restore/create use authenticated server routes", () => {
@@ -57,18 +57,21 @@ test("only the conversation ID is stored locally and restore/create use authenti
 test("retry reuses the pending turn ID and failed conversation IDs have a recovery action", () => {
   assert.match(hook, /turnId: turn\.id/);
   assert.match(hook, /const retry = useCallback\(\(\) => \{ if \(pendingTurn\) void sendTurn\(pendingTurn\); \}/);
-  assert.match(hook, /current\.filter\(\(message\) => message\.id !== record\.messageId\)/);
+  assert.match(hook, /current\.filter\(\(message\) => message\.id !== event\.messageId\)/);
   assert.match(chatView, /conversation\.status === "invalid"/);
   assert.match(chatView, /Empezar una conversación nueva/);
 });
 
-test("Composer owns capability-gated photo controls, advisor dictation, and typed direction/package cards", () => {
-  assert.match(composer, /capabilities\.photo && onPhoto/);
+test("Composer exposes camera/gallery upload, advisor dictation, and sourced direction/package cards", () => {
   assert.match(composer, /capabilities\.voice && onVoiceText/);
   assert.match(composer, /<BotonVoz/);
   assert.match(composer, /card\.kind === "direction" \? "Dirección" : "Paquete"/);
-  assert.match(composer, /disabled=\{!canPhoto \|\| busy\}/);
-  assert.match(hook, /const cards: readonly AdvisorComposerCard\[\] = \[\]/);
-  assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: false, voice: true \}/);
+  assert.match(composer, /capture="environment"/);
+  assert.match(composer, /Elegir foto de la galería/);
+  assert.match(composer, /card\.imageUrl/);
+  assert.match(hook, /fetch\("\/api\/asesor\/photos"/);
+  assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: true, voice: true \}/);
+  assert.match(chatView, /Resumen para revisar/);
+  assert.match(chatView, /Ver resumen aprobado/);
   assert.match(chatView, /onVoiceText=\{setDraft\}/);
 });
