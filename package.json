@@ -35,7 +35,7 @@
     "contracts:test:cancel": "npm run build --workspace=@sempertex/agente-core && tsx scripts/test/test-cancelacion-agente.ts",
     "contracts:test:python-adapter": "tsx scripts/test/test-python-adapter.ts",
     "contracts:test:ui-error": "tsx --conditions=react-server scripts/test/test-ui-error-contract.ts",
-    "test-proxy-matcher": "tsx scripts/test/test-proxy-matcher.ts",
+    "test-proxy-matcher": "tsx --conditions=react-server scripts/test/test-proxy-matcher.ts",
     "test-comparar-constante": "tsx scripts/test/test-comparar-constante.ts",
     "test-guardia-prerender": "tsx scripts/test/test-guardia-prerender.ts",
     "test-honestidad-forzada": "tsx --conditions=react-server scripts/test/test-honestidad-forzada.ts",
