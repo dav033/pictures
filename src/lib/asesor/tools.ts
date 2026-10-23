@@ -45,6 +45,26 @@ const CUSTOMER_APPROVAL = /\b(?:apruebo|confirmo|acepto)\s+(?:(?:el|la|este|esta
 const CUSTOMER_REJECTION = /\bno (?:apruebo|confirmo|acepto|estoy de acuerdo)\b/i;
 const CUSTOMER_CONTACT_CONSENT = /\b(?:autorizo (?:que me contacten|el contacto)|pueden contactarme|acepto que me contacten)\b/i;
 const CUSTOMER_ADDRESS_CONSENT = /\b(?:autorizo (?:usar|compartir) (?:mi )?(?:direcci[oó]n|ubicaci[oó]n)|pueden usar mi direcci[oó]n)\b/i;
+const packageCopFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+function packageSummaryLines(proposal: EventBriefState["standardPackage"]): string[] {
+  if (!proposal) return [];
+  const { estimate } = proposal;
+  const source = estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado";
+  const price = estimate.status === "available" && estimate.subtotalCop !== null
+    ? `${packageCopFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión`
+    : "no disponible";
+  const freshness = estimate.fetchedAt
+    ? `${estimate.fetchedAt} · antigüedad: ${estimate.snapshotAgeSeconds === null ? "desconocida" : `${estimate.snapshotAgeSeconds} segundos`}`
+    : "fecha de consulta no disponible";
+  return [
+    `Paquete estándar: ${proposal.name} (${proposal.packageId})`,
+    `Estimado del paquete: ${price}`,
+    `Fuente del estimado: ${source}`,
+    `Actualidad del catálogo: ${freshness}`,
+    ...proposal.disclosures.map((disclosure) => `Aviso del paquete: ${disclosure}`),
+  ];
+}
 
 export function customerConsent(text: string): { contact: boolean; address: boolean; refusedContact: boolean; refusedAddress: boolean } {
   return {
@@ -204,7 +224,8 @@ export async function applyAdvisorTool(input: {
         safeBrief.likes ? `Le gusta: ${safeBrief.likes}` : null,
         safeBrief.dislikes ? `No le gusta: ${safeBrief.dislikes}` : null,
         safeBrief.brandRequests ? `Solicitudes: ${safeBrief.brandRequests}` : null,
-        safeBrief.proposedPackage ? `Paquete propuesto: ${safeBrief.proposedPackage}` : null,
+        state.standardPackage ? null : safeBrief.proposedPackage ? `Paquete propuesto: ${safeBrief.proposedPackage}` : null,
+        ...packageSummaryLines(state.standardPackage),
         safeBrief.notes ? `Notas: ${safeBrief.notes}` : null,
         safeBrief.address ? `Dirección autorizada: ${safeBrief.address}` : null,
         safeBrief.contactName ? `Contacto autorizado: ${safeBrief.contactName}` : null,

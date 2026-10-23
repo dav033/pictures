@@ -64,7 +64,7 @@ export function Composer({ value, onChange, onSubmit, busy, cards = [], capabili
             <input ref={galleryInput} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" aria-label="Elegir foto de la galería" onChange={(event) => { if (event.target.files?.length) setPhotos((current) => [...current, ...Array.from(event.target.files ?? [])].slice(0, 4)); event.currentTarget.value = ""; }} />
             {canVoice && <BotonVoz campoId="advisor-message" alTexto={onVoiceText} deshabilitado={busy} variante="cliente" clase="grid size-11 place-items-center rounded-full text-texto-suave transition hover:bg-superficie-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-40" />}
           </div>
-          <button type="submit" disabled={busy || !value.trim()} className="flex min-h-11 items-center gap-2 rounded-full bg-acento px-5 font-semibold text-sobre-acento transition hover:bg-acento-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45">
+          <button type="submit" disabled={busy || (!value.trim() && photos.length === 0)} className="flex min-h-11 items-center gap-2 rounded-full bg-acento px-5 font-semibold text-sobre-acento transition hover:bg-acento-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45">
             <span>{busy ? "Enviando" : "Enviar"}</span><Send aria-hidden="true" className="size-4" />
           </button>
         </div>

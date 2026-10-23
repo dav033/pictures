@@ -1,4 +1,4 @@
-import type { EventBrief, EventBriefState } from "./contracts";
+import type { EventBrief, EventBriefState, StandardPackageProposal } from "./contracts";
 import { parseEventBriefState } from "./contracts";
 import type { createAsesorRepository } from "./repository";
 
@@ -8,6 +8,7 @@ export type BriefViewData = {
   projection: BriefProjection;
   summary: { version: number; text: string };
   brief: Partial<EventBrief>;
+  standardPackage: StandardPackageProposal | null;
   approval: { summaryVersion: number; confirmedAt: string } | null;
   photos: BriefPhoto[];
 };
@@ -96,6 +97,7 @@ export function createBriefProjection(
       text: summaryText(brief),
     },
     brief,
+    standardPackage: state.standardPackage ? structuredClone(state.standardPackage) : null,
     approval: projection === "full" ? state.approval : null,
     photos: photos.map((photo) => ({ ...photo })),
   };

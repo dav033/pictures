@@ -43,8 +43,15 @@ const directionSchema = z.object({
   ]),
 });
 const packageSchema = z.object({
-  packageId: z.string().min(1), name: z.string().min(1), estimate: z.object({ status: z.enum(["available", "unavailable"]), subtotalCop: z.number().finite().nonnegative().nullable(), source: z.enum(["postgres", "seeded_last_good"]), notice: z.string() }),
-});
+  packageId: z.string().min(1), name: z.string().min(1), baseGuests: z.number().int().positive(), guestCount: z.number().int().positive().nullable(),
+  estimate: z.object({
+    status: z.enum(["available", "unavailable"]), subtotalCop: z.number().finite().nonnegative().nullable(),
+    basis: z.literal("before_vat_and_commission"), source: z.enum(["postgres", "seeded_last_good"]),
+    fetchedAt: z.string().nullable(), snapshotAgeSeconds: z.number().int().nonnegative().nullable(), notice: z.string().min(1),
+  }).strict(),
+  coverage: z.object({ event: z.enum(["matches", "unknown"]), theme: z.enum(["matches", "unknown"]), city: z.enum(["matches", "unknown"]), guests: z.enum(["matches_base", "differs_from_base", "unknown"]) }).strict(),
+  disclosures: z.array(z.string()),
+}).strict();
 const stateSchema = z.object({
   directionOffers: z.array(directionSchema), standardPackage: packageSchema.nullable(),
   summary: z.object({ version: z.number().int().positive(), text: z.string().min(1), briefVersion: z.number().int().nonnegative() }).nullable(),
@@ -67,8 +74,16 @@ function cardsFromState(value: unknown): { cards: AdvisorComposerCard[]; summary
   const proposal = parsed.data.standardPackage;
   if (proposal) {
     const estimate = proposal.estimate;
+    const freshness = estimate.fetchedAt
+      ? `Catálogo consultado: ${estimate.fetchedAt}${estimate.snapshotAgeSeconds === null ? "" : ` (hace ${estimate.snapshotAgeSeconds} segundos)`}`
+      : "Fecha de consulta del catálogo no disponible";
     cards.push({ kind: "package", id: proposal.packageId, title: proposal.name,
-      description: estimate.status === "available" && estimate.subtotalCop !== null ? `Estimado: ${copFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión. ${estimate.notice}` : `Precio estimado no disponible. ${estimate.notice}`,
+      description: [
+        estimate.status === "available" && estimate.subtotalCop !== null ? `Estimado: ${copFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión.` : "Precio estimado no disponible.",
+        estimate.notice,
+        freshness,
+        ...proposal.disclosures,
+      ].join(" "),
       content: `Me interesa el paquete ${proposal.name}.`, source: estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado",
       ...(estimate.status === "available" && estimate.subtotalCop !== null ? { price: `${copFormat.format(estimate.subtotalCop)} COP` } : {}) });
   }

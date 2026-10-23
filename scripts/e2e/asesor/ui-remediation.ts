@@ -13,7 +13,10 @@ const progress = { complete: true, completed: 5, required: 5, missing: [] as str
 const initialState = { directionOffers: [], selectedDirectionId: null, standardPackage: null, summary: null, approval: null };
 const gardenDirection = { id: "garden", title: "Jardín luminoso", description: "Flores y globos para una celebración al aire libre.", photoUrl: "/biblioteca-sempertex/referencias/jardin.jpg",
   provenance: { kind: "real", label: "La foto es una referencia visual." }, themedItems: { status: "available", items: [{ id: "catalog-1", name: "Paquete floral", price: 125000, source: "package" }] } };
-const packageProposal = { packageId: "pkg-1", name: "Paquete Fiesta", estimate: { status: "available", subtotalCop: 250000, source: "postgres", notice: "Estimado sujeto a confirmación." } };
+const packageProposal = { packageId: "pkg-1", name: "Paquete Fiesta", baseGuests: 40, guestCount: 80,
+  estimate: { status: "available", subtotalCop: 250000, basis: "before_vat_and_commission", source: "postgres", fetchedAt: "2026-10-23T10:00:00.000Z", snapshotAgeSeconds: 120, notice: "Estimado sujeto a confirmación." },
+  coverage: { event: "unknown", theme: "unknown", city: "unknown", guests: "differs_from_base" },
+  disclosures: ["El catálogo no indica para qué tipo de evento aplica este paquete; hay que confirmarlo.", "El catálogo no indica temáticas para este paquete; no se garantiza que encaje con la temática.", "El catálogo no indica la ciudad de este paquete; no se garantiza cobertura en la ciudad del evento.", "El paquete está pensado para 40 invitados; el costo y la capacidad para 80 se confirman con el equipo."] };
 const imageBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aSZYAAAAASUVORK5CYII=", "base64");
 
 type FixtureState = { directionOffers: typeof gardenDirection[]; selectedDirectionId: string | null; standardPackage: typeof packageProposal | null; summary: { version: number; briefVersion: number; text: string } | null; approval: { summaryVersion: number; confirmedAt: string } | null };
@@ -59,12 +62,12 @@ async function fixture(route: Route): Promise<void> {
       state.summary = { version: (state.summary?.version ?? 0) + 1, briefVersion: 10, text: "Resumen corregido: Terraza azul en Bogotá." };
       state.approval = null;
     }
-    if (body.content.startsWith("Foto para el evento")) {
+    if (body.content === "") {
       state = { directionOffers: [gardenDirection], selectedDirectionId: null, standardPackage: packageProposal, summary: { version: 1, briefVersion: 9, text: "Resumen inicial para revisar." }, approval: null };
     }
     const assistantId = `${body.turnId}:assistant`;
     messages = [...messages.filter((message) => message.id !== body.turnId && message.id !== assistantId),
-      { id: body.turnId, role: "user", content: body.content, attachments: body.content.startsWith("Foto para el evento") ? [{ id: "photo-1", mimeType: "image/png", byteSize: 68, kind: "venue", confirmed: null, preference: "neutral" }] : [] },
+      { id: body.turnId, role: "user", content: body.content, attachments: body.content === "" ? [{ id: "photo-1", mimeType: "image/png", byteSize: 68, kind: "venue", confirmed: null, preference: "neutral" }] : [] },
       { id: assistantId, role: "assistant", content: "Listo, revisemos los detalles." }];
     const text = body.content.startsWith("Apruebo") ? "El resumen quedó aprobado." : body.content.startsWith("Corrige") ? "Actualicé el resumen." : "Listo, revisemos los detalles.";
     await route.fulfill({ status: 200, contentType: "text/event-stream", body: `${event("text", { delta: text })}${event("tool", { name: "fixture_state" })}${event("final", { messageId: assistantId, retryAvailable: false })}` }); return;
@@ -105,7 +108,8 @@ async function main() {
       assert.equal(await page.locator('input[aria-label="Tomar foto"]').getAttribute("capture"), "environment");
       await page.getByLabel("Tipo de foto").selectOption("venue");
       await page.locator('input[aria-label="Elegir foto de la galería"]').setInputFiles({ name: "event-place.png", mimeType: "image/png", buffer: imageBytes });
-      await page.getByRole("textbox", { name: "Tu mensaje" }).fill("Foto para el evento");
+      await page.getByRole("textbox", { name: "Tu mensaje" }).fill("");
+      assert.equal(await page.getByRole("button", { name: "Enviar" }).isEnabled(), true, "a selected photo must enable sending without text");
       await page.getByRole("button", { name: "Enviar" }).click();
       await page.getByRole("alert").getByRole("button", { name: "Reintentar" }).waitFor();
       assert.equal(uploadCalls, 1, "the failed photo upload should not fall through to conversation streaming");
@@ -118,6 +122,10 @@ async function main() {
       await page.locator('img[alt="Foto del lugar del evento"]').evaluate(async (image) => (image as HTMLImageElement).decode());
       assert.equal(await page.getByRole("button", { name: /Jardín luminoso/ }).count(), 1);
       assert.equal(await page.getByRole("button", { name: /Paquete Fiesta/ }).count(), 1);
+      const packageCard = page.getByRole("button", { name: /Paquete Fiesta/ });
+      assert.match(await packageCard.innerText(), /2026-10-23/);
+      assert.match(await packageCard.innerText(), /no indica temáticas/);
+      assert.match(await packageCard.innerText(), /capacidad para 80/);
       const directionCard = page.getByRole("button", { name: /Jardín luminoso/ });
       assert.match(await directionCard.locator("img").getAttribute("src") ?? "", /biblioteca-sempertex/);
       assert.match(await directionCard.innerText(), /Fuente: Catálogo Happia · paquete/);
@@ -140,6 +148,12 @@ async function main() {
       assert.equal(await page.locator('img[alt="Foto del lugar del evento"]').count(), 1, "reload should restore the persisted attachment reference");
       assert.equal(await page.getByRole("button", { name: /Jardín luminoso/ }).count(), 1, "reload should restore sourced direction cards");
       assert.equal(await page.getByRole("button", { name: /Paquete Fiesta/ }).count(), 1, "reload should restore package cards");
+      const restoredPackageCard = page.getByRole("button", { name: /Paquete Fiesta/ });
+      assert.match(await restoredPackageCard.innerText(), /2026-10-23/);
+      assert.match(await restoredPackageCard.innerText(), /no indica para qué tipo de evento/);
+      assert.match(await restoredPackageCard.innerText(), /no indica temáticas/);
+      assert.match(await restoredPackageCard.innerText(), /no indica la ciudad/);
+      assert.match(await restoredPackageCard.innerText(), /capacidad para 80/);
       assert.equal(await page.locator('ol[aria-label="Mensajes"] > li').count() >= 8, true, "reload should restore the transcript without losing turns");
       console.log("Advisor ChatView browser flow passed: camera/gallery controls, authenticated photo retry, SSE cards and summary, correction approval invalidation, brief link, and reload restore.");
       await context.close();

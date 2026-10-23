@@ -17,8 +17,28 @@ function display(value: unknown): string | null {
 }
 
 export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: string; value: string }> {
-  return Object.entries(data.brief)
-    .filter(([key]) => key in LABELS)
+  const entries = Object.entries(data.brief)
+    .filter(([key]) => key in LABELS && !(key === "proposedPackage" && data.standardPackage))
     .map(([key, value]) => ({ label: LABELS[key], value: display(value) }))
     .filter((entry): entry is { label: string; value: string } => entry.value !== null);
+  const proposal = data.standardPackage;
+  if (!proposal) return entries;
+  const { estimate } = proposal;
+  const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  const price = estimate.status === "available" && estimate.subtotalCop !== null
+    ? `${copFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión`
+    : "Precio estimado no disponible";
+  const source = estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado";
+  const freshness = estimate.fetchedAt
+    ? `${estimate.fetchedAt}${estimate.snapshotAgeSeconds === null ? "" : ` · antigüedad: ${estimate.snapshotAgeSeconds} segundos`}`
+    : "Fecha de consulta no disponible";
+  return [
+    ...entries,
+    { label: "Paquete estándar", value: `${proposal.name} (${proposal.packageId})` },
+    { label: "Estimado del paquete", value: price },
+    { label: "Fuente del estimado", value: source },
+    { label: "Actualidad del catálogo", value: freshness },
+    { label: "Nota del estimado", value: estimate.notice },
+    ...proposal.disclosures.map((disclosure, index) => ({ label: `Aviso del paquete ${index + 1}`, value: disclosure })),
+  ];
 }
