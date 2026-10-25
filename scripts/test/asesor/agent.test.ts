@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { ChatPort, FragmentoChat, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { EventBriefSchema, parseEventBriefState } from "@/lib/asesor/contracts";
 import { calculateBriefProgress } from "@/lib/asesor/progress";
-import { applyAdvisorTool, type BriefMutator } from "@/lib/asesor/tools";
+import { ADVISOR_TOOLS, applyAdvisorTool, type BriefMutator } from "@/lib/asesor/tools";
 import { runAdvisorTurn } from "@/lib/asesor/agent";
 import type { StoredMessage } from "@/lib/asesor/repository";
 
@@ -177,4 +177,15 @@ test("model system context omits contact and address without customer consent", 
   for await (const event of runAdvisorTurn({ chat, messages: [user], turnId: user.id, mutateBrief: store.mutateBrief, readBrief: async () => store.read(), appendAssistant: async () => undefined })) void event;
   assert.ok(!system.includes("3001234567"));
   assert.ok(!system.includes("Carrera 1"));
+});
+
+test("an undecided venue is saved for a Happia venue search and does not block the brief on address or venue type", () => {
+  const undecided = EventBriefSchema.parse({ ...requiredFields, venueType: null, address: null, venueUndecided: true,
+    venueSearch: "salón para 10 personas en el norte", contactPermission: true });
+  assert.deepEqual(calculateBriefProgress(undecided).missing, []);
+  assert.equal(calculateBriefProgress(EventBriefSchema.parse({ ...undecided, city: null })).missing.includes("city"), true, "city stays required");
+  assert.equal(EventBriefSchema.parse({}).venueUndecided, false, "stored briefs without the field parse as decided");
+  const tool = (ADVISOR_TOOLS.find((t) => t.nombre === "save_event_fields")?.esquema as { properties: Record<string, { type: string }> }).properties;
+  assert.equal(tool.venueUndecided.type, "boolean");
+  assert.equal(tool.venueSearch.type, "string");
 });

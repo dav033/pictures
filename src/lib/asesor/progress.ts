@@ -4,7 +4,9 @@ export type BriefProgress = { complete: boolean; completed: number; required: nu
 
 /** Required fields and progress are domain-owned; model prose has no influence on this result. */
 export function calculateBriefProgress(brief: EventBrief): BriefProgress {
-  const required: (keyof EventBrief)[] = ["eventKind", "date", "startTime", "guestCount", "venueType", "city", "address", "contactName"];
+  // An undecided venue becomes a venue search: the city stays required, the venue type and address do not.
+  const required = (["eventKind", "date", "startTime", "guestCount", "venueType", "city", "address", "contactName"] as (keyof EventBrief)[])
+    .filter((key) => !brief.venueUndecided || (key !== "venueType" && key !== "address"));
   if (brief.eventKind === "birthday") required.push("honoreeName");
   if (brief.eventKind === "corporate") required.push("companyName");
   if (brief.eventKind === "school") required.push("schoolName");

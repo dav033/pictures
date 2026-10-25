@@ -2,7 +2,7 @@ import type { BriefViewData } from "./brief";
 
 const LABELS: Record<string, string> = {
   eventKind: "Tipo de evento", eventName: "Evento", date: "Fecha", startTime: "Hora de inicio", endTime: "Hora de cierre",
-  guestCount: "Invitados", venueType: "Tipo de lugar", venueName: "Lugar", address: "Dirección", city: "Ciudad", department: "Departamento",
+  guestCount: "Invitados", venueType: "Tipo de lugar", venueName: "Lugar", address: "Dirección", venueSearch: "Lugar por buscar en Happia", city: "Ciudad", department: "Departamento",
   budget: "Presupuesto", contactName: "Contacto", contactPhone: "Teléfono", contactEmail: "Correo",
   honoreeName: "Homenajeado/a", honoreeAge: "Edad del homenajeado", companyName: "Empresa", schoolName: "Institución", grade: "Grado", audience: "Público",
   organiserPriority: "Prioridad", theme: "Tema", colors: "Colores", style: "Estilo", likes: "Le gusta", dislikes: "No le gusta",
@@ -21,6 +21,7 @@ export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: stri
     .filter(([key]) => key in LABELS && !(key === "proposedPackage" && data.standardPackage))
     .map(([key, value]) => ({ label: LABELS[key], value: display(value) }))
     .filter((entry): entry is { label: string; value: string } => entry.value !== null);
+  if (data.brief.venueUndecided) entries.unshift({ label: "Lugar", value: "Por definir: el cliente aún no sabe dónde será" });
   const proposal = data.standardPackage;
   if (!proposal) return entries;
   const { estimate } = proposal;

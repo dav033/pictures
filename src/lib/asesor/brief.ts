@@ -71,7 +71,9 @@ function summaryText(brief: Partial<EventBrief>): string {
     ["Fecha", brief.date],
     ["Hora", [brief.startTime, brief.endTime].filter(Boolean).join("–") || null],
     ["Invitados", brief.guestCount],
-    ["Lugar", [brief.venueName, brief.venueType, brief.city, brief.department].filter(Boolean).join(", ") || null],
+    ["Lugar", brief.venueUndecided
+      ? `por definir en ${[brief.city, brief.department].filter(Boolean).join(", ") || "ciudad sin especificar"}${brief.venueSearch ? ` · buscar en Happia: ${brief.venueSearch}` : ""}`
+      : [brief.venueName, brief.venueType, brief.city, brief.department].filter(Boolean).join(", ") || null],
     ["Tema", brief.theme],
     ["Estilo", brief.style],
     ["Colores", brief.colors?.join(", ") || null],

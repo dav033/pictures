@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { plainChatText } from "../../../src/components/asesor/chat-text";
+import { asksOnlyForStartTime } from "../../../src/components/asesor/start-time";
 import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation } from "../../../src/components/asesor/conversation-contract";
 
 const protectedPage = readFileSync("src/app/asesor/(protected)/page.tsx", "utf8");
@@ -82,4 +83,12 @@ test("advisor replies render as plain text: Markdown emphasis and list markers a
   assert.equal(plainChatText(raw), "Para armar la propuesta:\n\n• Nombre del cumpleañero/a\n• Fecha y hora de inicio\nDetalles\nUn 5*3 y snake_case quedan igual.");
   assert.match(chatView, /plainChatText\(message\.content\)/);
   assert.match(chatView, /plainChatText\(conversation\.streamingText\)/);
+});
+
+test("the animated start-time picker appears only when the start time is the last missing field", () => {
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 9, required: 10, missing: ["startTime"] }), true);
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 8, required: 10, missing: ["startTime", "contactName"] }), false);
+  assert.equal(asksOnlyForStartTime({ complete: true, completed: 10, required: 10, missing: [] }), false);
+  assert.equal(asksOnlyForStartTime(null), false);
+  assert.match(chatView, /<StartTimePicker/);
 });

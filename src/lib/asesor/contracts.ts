@@ -15,6 +15,9 @@ export const EventBriefSchema = z.object({
   venueType: z.string().trim().min(1).max(100).nullable().default(null),
   venueName: z.string().trim().min(1).max(200).nullable().default(null),
   address: z.string().trim().min(1).max(500).nullable().default(null),
+  /** The customer does not know where the event will be yet: kept as a venue search (Happia venues) instead of an address. */
+  venueUndecided: z.boolean().default(false),
+  venueSearch: z.string().trim().min(1).max(500).nullable().default(null),
   city: z.string().trim().min(1).max(120).nullable().default(null),
   department: z.string().trim().min(1).max(120).nullable().default(null),
   budget: z.number().finite().nonnegative().nullable().default(null),

@@ -19,6 +19,8 @@ const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100),
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueType") return { type: "string", description: "Tipo de lugar indicado por el cliente: salón, casa, restaurante, jardín, colegio, etc. En 'salón Casa Jardín', guarda salón aquí y Casa Jardín en venueName." };
   if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
+  if (field === "venueUndecided") return { type: "boolean", description: "true cuando el cliente aún no sabe o no está seguro de dónde será el evento; entonces no se pide dirección." };
+  if (field === "venueSearch") return { type: "string", description: "Qué lugar buscaría si aún no lo tiene: tipo (salón, finca, al aire libre), zona o barrio y capacidad. Sirve para buscar lugares en Happia." };
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
   if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
   if (["guestCount", "honoreeAge"].includes(field)) return { type: "integer", minimum: field === "guestCount" ? 1 : 0 };
@@ -212,7 +214,9 @@ export async function applyAdvisorTool(input: {
         `Fecha: ${safeBrief.date ?? "sin especificar"}`,
         safeBrief.startTime || safeBrief.endTime ? `Horario: ${[safeBrief.startTime, safeBrief.endTime].filter(Boolean).join("–")}` : null,
         `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
-        `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
+        safeBrief.venueUndecided
+          ? `Lugar: por definir en ${safeBrief.city ?? "ciudad sin especificar"}${safeBrief.venueSearch ? ` · buscar en Happia: ${safeBrief.venueSearch}` : ""}`
+          : `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
         safeBrief.department ? `Departamento: ${safeBrief.department}` : null,
         `Presupuesto: ${safeBrief.budget === null ? "sin especificar" : `${safeBrief.currency} ${safeBrief.budget}`}`,
         safeBrief.companyName ? `Empresa: ${safeBrief.companyName}` : null,

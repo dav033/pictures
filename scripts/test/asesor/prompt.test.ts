@@ -27,3 +27,9 @@ test("advisor asks about the event first, leaves contact for the end and writes 
   assert.match(ADVISOR_SYSTEM_PROMPT, /no pidas datos de contacto mientras falten datos del evento/i);
   assert.match(ADVISOR_SYSTEM_PROMPT, /texto plano.*sin Markdown/);
 });
+
+test("advisor keeps an undecided venue as a Happia search and leaves the start time to the picker", () => {
+  assert.match(ADVISOR_SYSTEM_PROMPT, /venueUndecided/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /venueSearch/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /No preguntes la hora de inicio/);
+});

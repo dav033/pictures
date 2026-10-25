@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Sparkles } from "lucide-react";
 import { plainChatText } from "./chat-text";
 import { Composer } from "./Composer";
+import { asksOnlyForStartTime } from "./start-time";
+import { StartTimePicker } from "./StartTimePicker";
 import { useConversation } from "./useConversation";
 import type { AdvisorMessage } from "./conversation-contract";
 
@@ -81,6 +83,7 @@ export function ChatView() {
       </section>
 
       <footer className="sticky bottom-0 z-10 border-t border-borde bg-fondo/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6">
+        {asksOnlyForStartTime(progress) && <StartTimePicker busy={!conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable"} onConfirm={(message) => conversation.submit(message)} />}
         <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={!conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable"} cards={conversation.cards} capabilities={conversation.capabilities} photoKind={conversation.photoKind} onPhotoKindChange={conversation.setPhotoKind} onVoiceText={setDraft} error={conversation.status === "failed" ? conversation.error : null} onRetry={conversation.status === "failed" ? conversation.retry : undefined} />
       </footer>
     </main>
