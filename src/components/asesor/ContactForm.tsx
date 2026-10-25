@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 /** The customer message the contact form sends; the consent phrases are the ones the server recognises. */
 export function contactMessage(input: { name: string; reach: string; address: string | null }): string {
@@ -21,24 +21,24 @@ export function ContactForm({ askAddress, busy, onSend }: Props) {
   const ready = name.trim() && reach.trim() && (!askAddress || address.trim()) && consent;
   const send = () => { if (ready) onSend(contactMessage({ name: name.trim(), reach: reach.trim(), address: askAddress ? address.trim() : null })); };
   return (
-    <section aria-label="Datos de contacto" className="ml-10 flex flex-col gap-3.5 rounded-[22px] border border-borde-suave bg-superficie p-4 shadow-[0_10px_30px_var(--sombra)]">
-      <div className="flex flex-col gap-1.5">
+    <section aria-label="Datos de contacto" className="asesor-sube ml-10 flex flex-col gap-3.5 rounded-[22px] border border-borde-suave bg-superficie p-4 shadow-[0_10px_30px_var(--sombra)]">
+      <div style={{ "--i": 1 } as CSSProperties} className="asesor-sube flex flex-col gap-1.5">
         <label htmlFor="advisor-contact-name" className="text-[13px] font-semibold">Tu nombre</label>
         <input id="advisor-contact-name" autoComplete="name" placeholder="Nombre y apellido" value={name} onChange={(event) => setName(event.target.value)} disabled={busy} className={field} />
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div style={{ "--i": 2 } as CSSProperties} className="asesor-sube flex flex-col gap-1.5">
         <label htmlFor="advisor-contact-reach" className="text-[13px] font-semibold">Teléfono o correo</label>
         <input id="advisor-contact-reach" autoComplete="tel" placeholder="300 123 4567" value={reach} onChange={(event) => setReach(event.target.value)} disabled={busy} className={field} />
       </div>
-      {askAddress && <div className="flex flex-col gap-1.5">
+      {askAddress && <div style={{ "--i": 3 } as CSSProperties} className="asesor-sube flex flex-col gap-1.5">
         <label htmlFor="advisor-contact-address" className="text-[13px] font-semibold">Dirección del evento</label>
         <input id="advisor-contact-address" autoComplete="street-address" placeholder="Calle, número y barrio" value={address} onChange={(event) => setAddress(event.target.value)} disabled={busy} className={field} />
       </div>}
-      <label className="flex items-start gap-2.5 text-[13px] leading-snug text-[#4a4152]">
+      <label style={{ "--i": 4 } as CSSProperties} className="asesor-fade flex items-start gap-2.5 text-[13px] leading-snug text-[#4a4152]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} disabled={busy} className="mt-0.5 size-5 shrink-0 accent-acento" />
         <span>Autorizo a Happia a guardar estos datos, contactarme y usar la dirección del evento solo para esta propuesta.</span>
       </label>
-      <button type="button" disabled={busy || !ready} onClick={send} className="min-h-12 rounded-[14px] bg-acento font-semibold text-sobre-acento disabled:opacity-50">Enviar y ver el resumen</button>
+      <button type="button" disabled={busy || !ready} onClick={send} className="asesor-eleva min-h-12 rounded-[14px] bg-acento font-semibold text-sobre-acento disabled:opacity-50">Enviar y ver el resumen</button>
       <p className="text-xs text-texto-suave">También puedes escribirlo en el chat.</p>
     </section>
   );

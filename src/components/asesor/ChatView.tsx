@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { History, Mic } from "lucide-react";
 import { ADVISOR_DIRECTIONS_ENABLED } from "@/lib/asesor/features";
 import { AdvisorHeader } from "./AdvisorHeader";
-import { plainChatText } from "./chat-text";
+import { AssistantText } from "./AssistantText";
 import { Composer } from "./Composer";
 import { ContactForm } from "./ContactForm";
 import { DirectionCards, PackageCard } from "./OfferCards";
@@ -26,11 +26,13 @@ const welcome: AdvisorMessage = {
 };
 
 function Avatar() {
-  return <span aria-hidden="true" className="asesor-display grid size-7 shrink-0 place-items-center rounded-full bg-acento text-[13px] font-bold text-sobre-acento">H</span>;
+  return <span aria-hidden="true" className="asesor-pop asesor-display grid size-7 shrink-0 place-items-center rounded-full bg-acento text-[13px] font-bold text-sobre-acento">H</span>;
 }
 
+const stagger = (index: number): CSSProperties => ({ "--i": Math.min(index, 6) } as CSSProperties);
+
 function ChangeNotes({ changes }: { changes: AdvisorChange[] }) {
-  return <div className="ml-10 flex items-start gap-2.5 rounded-xl bg-superficie-suave px-3 py-2.5 text-[13px] leading-snug">
+  return <div className="asesor-sube ml-10 flex items-start gap-2.5 rounded-xl bg-superficie-suave px-3 py-2.5 text-[13px] leading-snug">
     <History aria-hidden="true" className="mt-px size-4 shrink-0 text-acento" />
     <div className="flex flex-col gap-0.5">
       <span className="font-semibold text-acento">Cambio anotado</span>
@@ -44,6 +46,25 @@ export function ChatView() {
   const [draft, setDraft] = useState("");
   const [timeDismissedAt, setTimeDismissedAt] = useState<number | null>(null);
   const transcriptEnd = useRef<HTMLDivElement>(null);
+  // Replies being typed out: what hangs off a reply (change notes, cards, quick replies, the summary) waits for it to finish.
+  const [revealing, setRevealing] = useState<ReadonlySet<string>>(() => new Set());
+  const onRevealing = useCallback((id: string, on: boolean) => setRevealing((current) => {
+    if (current.has(id) === on) return current;
+    const next = new Set(current);
+    if (on) next.add(id); else next.delete(id);
+    return next;
+  }), []);
+  const settled = revealing.size === 0;
+  const followFrame = useRef(0);
+  // While a reply types out, keep the end of the transcript in view, but only for someone who is already reading the bottom.
+  const follow = useCallback(() => {
+    if (followFrame.current) return;
+    followFrame.current = requestAnimationFrame(() => {
+      followFrame.current = 0;
+      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 280;
+      if (nearBottom) transcriptEnd.current?.scrollIntoView({ block: "end" });
+    });
+  }, []);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const visibleMessages = conversation.messages.length ? conversation.messages : [welcome];
   const progress = conversation.progress;
@@ -77,10 +98,11 @@ export function ChatView() {
         {conversation.status === "unavailable" && <div role="alert" className="rounded-2xl border border-error/30 bg-error-suave p-4"><p>{conversation.error}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 min-h-11 rounded-xl border border-borde bg-superficie px-4 font-semibold text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Intentar recuperar de nuevo</button></div>}
 
         <ol className="flex flex-col gap-5" aria-label="Mensajes">
-          {visibleMessages.map((message) => {
+          {visibleMessages.map((message, index) => {
             const changes = conversation.changes.filter((change) => change.turnId !== null && `${change.turnId}:assistant` === message.id);
+            const live = conversation.liveReplyIds.includes(message.id);
             return message.role === "user"
-              ? <li key={message.id} className="ml-auto max-w-[80%] rounded-2xl border border-borde-suave bg-superficie px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_1px_2px_var(--sombra)]">
+              ? <li key={message.id} className="asesor-sube-der ml-auto max-w-[80%] rounded-2xl border border-borde-suave bg-superficie px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_1px_2px_var(--sombra)]">
                 {message.inputMode === "voice" && <p className="mb-1 flex items-center gap-1 text-xs text-texto-suave"><Mic aria-hidden="true" className="size-3" />Nota de voz</p>}
                 {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
                 {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
@@ -88,27 +110,27 @@ export function ChatView() {
                   <figcaption className="mt-1 text-xs text-texto-suave">{photo.kind === "venue" ? "Lugar del evento" : "Inspiración"} · {photo.preference === "neutral" ? "por revisar" : photo.preference === "like" ? "me gusta" : "no me gusta"}</figcaption>
                 </figure>)}
               </li>
-              : <li key={message.id} className="flex flex-col gap-2.5">
-                <div className="flex items-start gap-3"><Avatar /><p className="mt-0.5 whitespace-pre-wrap text-base leading-relaxed">{plainChatText(message.content)}</p></div>
-                {changes.length > 0 && <ChangeNotes changes={changes} />}
+              : <li key={message.id} style={live ? undefined : stagger(index)} className={`flex flex-col gap-2.5 ${live ? "" : "asesor-sube"}`}>
+                <div className="flex items-start gap-3"><Avatar /><AssistantText id={message.id} content={message.content} animate={live} onRevealing={onRevealing} onGrow={follow} /></div>
+                {changes.length > 0 && !revealing.has(message.id) && <ChangeNotes changes={changes} />}
               </li>;
           })}
-          {conversation.streamingText && <li aria-label="Respuesta en curso" className="flex items-start gap-3"><Avatar /><p className="mt-0.5 whitespace-pre-wrap text-base leading-relaxed">{plainChatText(conversation.streamingText)}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></p></li>}
-          {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="flex items-center gap-3 text-sm text-texto-suave"><Avatar />Estoy pensando…</li>}
-          {conversation.summary && <SummaryCard summary={conversation.summary} approved={conversation.approved} conversationId={conversation.conversationId} busy={busy}
+          {conversation.streamingText && <li aria-label="Respuesta en curso" className="asesor-sube flex items-start gap-3"><Avatar /><AssistantText id={conversation.streamingId ?? "streaming"} content={conversation.streamingText} animate streaming onRevealing={onRevealing} onGrow={follow} /></li>}
+          {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="asesor-sube flex items-center gap-3 text-sm text-texto-suave"><Avatar />Estoy pensando… <span aria-hidden="true" className="asesor-puntos"><span /><span /><span /></span></li>}
+          {conversation.summary && settled && <SummaryCard summary={conversation.summary} approved={conversation.approved} conversationId={conversation.conversationId} busy={busy}
             onApprove={() => conversation.submit(`Apruebo el resumen versión ${conversation.summary?.version}.`)} onCorrect={correct} />}
         </ol>
 
-        {idle && !conversation.summary && (directions.length > 0 && !conversation.directionChosen || showProposal) && <section aria-label="Opciones para continuar" className="flex flex-col gap-3">
+        {idle && settled && !conversation.summary && (directions.length > 0 && !conversation.directionChosen || showProposal) && <section aria-label="Opciones para continuar" className="flex flex-col gap-3">
           {directions.length > 0 && !conversation.directionChosen && <DirectionCards cards={directions} busy={busy} onPick={conversation.submit} />}
           {showProposal && conversation.proposal && <PackageCard proposal={conversation.proposal} city={conversation.headline.city} busy={busy} onPick={conversation.submit} />}
         </section>}
-        {idle && progress?.ask && <QuickReplies ask={progress.ask} busy={busy} onPick={conversation.submit} />}
-        {idle && progress?.step === "contact" && !conversation.summary && <ContactForm askAddress={progress.missing.includes("address")} busy={busy} onSend={conversation.submit} />}
+        {idle && settled && progress?.ask && <QuickReplies ask={progress.ask} busy={busy} onPick={conversation.submit} />}
+        {idle && settled && progress?.step === "contact" && !conversation.summary && <ContactForm askAddress={progress.missing.includes("address")} busy={busy} onSend={conversation.submit} />}
         <div ref={transcriptEnd} aria-hidden="true" />
       </section>
 
-      {idle && asksOnlyForStartTime(progress) && timeDismissedAt !== conversation.briefVersion
+      {idle && settled && asksOnlyForStartTime(progress) && timeDismissedAt !== conversation.briefVersion
         && <StartTimePicker busy={busy} onConfirm={(message) => conversation.submit(message)} onDismiss={() => setTimeDismissedAt(conversation.briefVersion)} />}
 
       <footer className="sticky bottom-0 z-10 bg-fondo/95 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">

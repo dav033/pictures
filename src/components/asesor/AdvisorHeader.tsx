@@ -24,8 +24,8 @@ export function AdvisorHeader({ headline, progress, onNew }: Props) {
     <header className="sticky top-0 z-10 border-b border-borde-suave bg-fondo/95 px-5 pb-3.5 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="asesor-display line-clamp-2 text-xl font-bold leading-tight">{headline.title ?? "Planeemos tu celebración"}</h1>
-          <p className="truncate text-[13px] text-texto-suave">{headline.facts.length ? headline.facts.join(" · ") : "Asesor Happia · versión de prueba"}</p>
+          <h1 key={headline.title ?? "sin-titulo"} className="asesor-fade asesor-display line-clamp-2 text-xl font-bold leading-tight">{headline.title ?? "Planeemos tu celebración"}</h1>
+          <p key={headline.facts.join("|")} className="asesor-fade truncate text-[13px] text-texto-suave">{headline.facts.length ? headline.facts.join(" · ") : "Asesor Happia · versión de prueba"}</p>
         </div>
         {onNew && <button type="button" onClick={onNew} className="min-h-11 shrink-0 rounded-full border border-borde bg-superficie px-3.5 text-sm font-medium text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Nueva</button>}
       </div>
@@ -33,12 +33,12 @@ export function AdvisorHeader({ headline, progress, onNew }: Props) {
         {STEPS.map(({ key, label }, index) => <Fragment key={key}>
           {index > 0 && index > current && <span aria-hidden="true" className="text-[#b9aea2]">·</span>}
           {index < current
-            ? <span title={label} className="grid size-6 shrink-0 place-items-center rounded-full bg-exito-suave font-bold text-exito"><span aria-hidden="true">✓</span><span className="sr-only">{label} listo</span></span>
+            ? <span key={`${key}:done`} title={label} className="asesor-pop grid size-6 shrink-0 place-items-center rounded-full bg-exito-suave font-bold text-exito"><span aria-hidden="true">✓</span><span className="sr-only">{label} listo</span></span>
             : index === current
-              ? <span aria-current="step" className="rounded-full bg-acento px-2.5 py-1 font-semibold text-sobre-acento">{index + 1} {label}</span>
-              : <span className="text-texto-suave">{label}</span>}
+              ? <span key={`${key}:current`} aria-current="step" className="asesor-pop rounded-full bg-acento px-2.5 py-1 font-semibold text-sobre-acento">{index + 1} {label}</span>
+              : <span key={`${key}:todo`} className="text-texto-suave">{label}</span>}
         </Fragment>)}
-        {current === STEPS.length && <span className="ml-1 font-semibold text-exito">Todo listo: revisa el resumen</span>}
+        {current === STEPS.length && <span className="asesor-fade ml-1 font-semibold text-exito">Todo listo: revisa el resumen</span>}
       </nav>}
     </header>
   );

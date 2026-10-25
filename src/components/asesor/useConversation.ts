@@ -36,6 +36,8 @@ export function useConversation() {
   const [error, setError] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
+  /** Ids of the replies that arrived in this session; only those are typed out, restored history is shown whole. */
+  const [liveReplyIds, setLiveReplyIds] = useState<string[]>([]);
   const [photoKind, setPhotoKind] = useState<"inspiration" | "venue">("inspiration");
   const activeRequest = useRef<AbortController | null>(null);
   const bootstrapStarted = useRef(false);
@@ -101,6 +103,7 @@ export function useConversation() {
 
   const sendTurn = useCallback(async (turn: PendingTurn) => {
     if (!conversationId) return;
+    setLiveReplyIds((current) => current.includes(`${turn.id}:assistant`) ? current : [...current, `${turn.id}:assistant`]);
     setPendingTurn(turn); setStatus("sending"); setError(null); setStreamingText("");
     const controller = new AbortController(); activeRequest.current = controller;
     try {
@@ -165,5 +168,5 @@ export function useConversation() {
     window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setUi(EMPTY_UI); await createConversation();
   }, [createConversation]);
   const capabilities: ComposerCapabilities = { photo: true, voice: true };
-  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, photoKind, setPhotoKind, capabilities, submit, submitVoiceNote, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, streamingId: pendingTurn ? `${pendingTurn.id}:assistant` : null, liveReplyIds, photoKind, setPhotoKind, capabilities, submit, submitVoiceNote, retry, startFresh };
 }

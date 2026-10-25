@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { AdvisorSummary } from "./conversation-contract";
 
 type Row = { label: string; value: string };
@@ -25,11 +26,11 @@ type Props = { summary: AdvisorSummary; approved: boolean; conversationId: strin
 export function SummaryCard({ summary, approved, conversationId, busy, onApprove, onCorrect }: Props) {
   const { rows, changes, conditions } = summarySections(summary.text);
   return (
-    <li aria-label="Resumen actual del evento" className="flex flex-col gap-3">
+    <li aria-label="Resumen actual del evento" className="asesor-sube flex flex-col gap-3">
       <article className="flex flex-col gap-3 rounded-[22px] border border-borde-suave bg-superficie p-4 shadow-[0_10px_30px_var(--sombra)]">
         <h2 className="asesor-display text-lg font-bold">Resumen para revisar · versión {summary.version}</h2>
         <dl className="flex flex-col gap-2.5 text-sm leading-snug">
-          {rows.map((row, index) => <div key={`${row.label}-${index}`} className="flex flex-col gap-px">
+          {rows.map((row, index) => <div key={`${row.label}-${index}`} style={{ "--i": Math.min(index, 10) + 1 } as CSSProperties} className="asesor-sube flex flex-col gap-px">
             {row.label && <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-texto-suave">{row.label}</dt>}
             <dd className="flex items-center justify-between gap-2">{row.value}{row.label === "Presupuesto" && <span className="shrink-0 text-xs text-texto-suave">Solo para Happia</span>}</dd>
           </div>)}
@@ -46,10 +47,10 @@ export function SummaryCard({ summary, approved, conversationId, busy, onApprove
         </details>}
       </article>
       {approved
-        ? <a className="inline-flex min-h-12 items-center justify-center rounded-[14px] bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento" href={`/asesor/brief/${encodeURIComponent(conversationId ?? "")}`}>Ver resumen aprobado</a>
+        ? <a className="asesor-pop asesor-pulso inline-flex min-h-12 items-center justify-center rounded-[14px] bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento" href={`/asesor/brief/${encodeURIComponent(conversationId ?? "")}`}>Ver resumen aprobado</a>
         : <div className="grid grid-cols-2 gap-2">
-          <button type="button" disabled={busy} onClick={onCorrect} className="min-h-12 rounded-[14px] border border-borde bg-superficie font-medium text-texto disabled:opacity-50">Corregir algo</button>
-          <button type="button" disabled={busy} onClick={onApprove} className="min-h-12 rounded-[14px] bg-acento font-semibold text-sobre-acento disabled:opacity-50">Aprobar resumen</button>
+          <button type="button" disabled={busy} onClick={onCorrect} className="asesor-eleva min-h-12 rounded-[14px] border border-borde bg-superficie font-medium text-texto disabled:opacity-50">Corregir algo</button>
+          <button type="button" disabled={busy} onClick={onApprove} className="asesor-eleva min-h-12 rounded-[14px] bg-acento font-semibold text-sobre-acento disabled:opacity-50">Aprobar resumen</button>
         </div>}
     </li>
   );

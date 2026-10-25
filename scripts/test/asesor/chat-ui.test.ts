@@ -86,8 +86,10 @@ test("Composer exposes camera/gallery upload and advisor dictation; offers rende
 test("advisor replies render as plain text: Markdown emphasis and list markers are not shown raw", () => {
   const raw = "Para armar la propuesta:\n\n* **Nombre del cumpleañero/a**\n- **Fecha y hora de inicio**\n## Detalles\nUn 5*3 y snake_case quedan igual.";
   assert.equal(plainChatText(raw), "Para armar la propuesta:\n\n• Nombre del cumpleañero/a\n• Fecha y hora de inicio\nDetalles\nUn 5*3 y snake_case quedan igual.");
-  assert.match(chatView, /plainChatText\(message\.content\)/);
-  assert.match(chatView, /plainChatText\(conversation\.streamingText\)/);
+  const assistantText = readFileSync("src/components/asesor/AssistantText.tsx", "utf8");
+  assert.match(assistantText, /plainChatText\(content\)/);
+  assert.match(chatView, /<AssistantText id=\{message\.id\} content=\{message\.content\}/);
+  assert.match(chatView, /<AssistantText id=\{conversation\.streamingId \?\? "streaming"\} content=\{conversation\.streamingText\}/);
 });
 
 test("the animated start-time picker appears only on the server's start-time step", () => {
@@ -97,4 +99,29 @@ test("the animated start-time picker appears only on the server's start-time ste
   assert.equal(asksOnlyForStartTime({ complete: false, completed: 9, required: 10, missing: ["startTime"] }), false, "no step: older server");
   assert.equal(asksOnlyForStartTime(null), false);
   assert.match(chatView, /<StartTimePicker/);
+});
+
+test("replies type out smoothly and what hangs off a reply waits for it to finish", async () => {
+  const { advanceReveal, revealSpeed, revealedSlice, MIN_CHARS_PER_SECOND, MAX_CHARS_PER_SECOND } = await import("../../../src/components/asesor/reveal");
+  assert.equal(revealSpeed(0), MIN_CHARS_PER_SECOND, "a short reply is typed at a readable pace");
+  assert.equal(revealSpeed(100_000), MAX_CHARS_PER_SECOND, "a long backlog never types faster than the cap");
+  assert.ok(revealSpeed(500) > revealSpeed(50), "it speeds up when it falls behind");
+  const frames = Array.from({ length: 600 }, () => 16);
+  let position = 0;
+  for (const dt of frames) position = advanceReveal(position, 400, dt);
+  assert.equal(position, 400, "a 400-character reply is fully shown well within 10 s of frames");
+  const step = advanceReveal(0, 400, 16);
+  assert.ok(step > 0 && step < 20, "one frame reveals a few characters, not the whole reply");
+  assert.equal(advanceReveal(400, 400, 16), 400);
+  assert.equal(advanceReveal(10, 400, -50), 10, "time never runs backwards");
+  assert.equal(revealedSlice("Hola 😀 mundo", 6), "Hola 😀", "an emoji is never cut in half");
+  assert.equal(revealedSlice("Hola", 99), "Hola");
+  const settledGate = (source: string, marker: RegExp) => assert.match(source, marker);
+  settledGate(chatView, /idle && settled && progress\?\.ask && <QuickReplies/);
+  settledGate(chatView, /idle && settled && progress\?\.step === "contact"/);
+  settledGate(chatView, /idle && settled && asksOnlyForStartTime/);
+  settledGate(chatView, /conversation\.summary && settled && <SummaryCard/);
+  settledGate(chatView, /!revealing\.has\(message\.id\)\) && <ChangeNotes|!revealing\.has\(message\.id\) && <ChangeNotes/);
+  const hook = readFileSync("src/components/asesor/use-revealed-text.ts", "utf8");
+  assert.match(hook, /prefers-reduced-motion: reduce/, "reduced motion gets the whole text at once");
 });

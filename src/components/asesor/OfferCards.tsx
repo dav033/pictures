@@ -1,3 +1,5 @@
+import { useEffect, useState, type CSSProperties } from "react";
+import { prefersReducedMotion } from "./use-revealed-text";
 import type { AdvisorComposerCard, AdvisorProposal } from "./conversation-contract";
 
 const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -11,6 +13,24 @@ export function consultedAt(value: string | null): string | null {
 }
 
 type Fact = { ok: boolean; text: string };
+
+/** A price that counts up to its value (ease-out); with reduced motion it just shows the value. */
+function CountUp({ value, format }: { value: number; format: (value: number) => string }) {
+  const [shown, setShown] = useState(() => (prefersReducedMotion() ? value : 0));
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    let frame = 0;
+    const started = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - started) / 900);
+      setShown(Math.round(value * (1 - (1 - progress) ** 3)));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <>{format(prefersReducedMotion() ? value : shown)}</>;
+}
 
 function proposalFacts(proposal: AdvisorProposal, city: string | null): Fact[] {
   const { coverage, baseGuests, guestCount } = proposal;
@@ -41,7 +61,7 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
   const custom = proposal.kind === "custom";
   const lines = proposal.lines ?? [];
   return (
-    <article aria-label="Paquete propuesto" className="ml-10 overflow-hidden rounded-[22px] border border-borde-suave bg-superficie shadow-[0_10px_30px_var(--sombra)]">
+    <article aria-label="Paquete propuesto" className="asesor-sube ml-10 overflow-hidden rounded-[22px] border border-borde-suave bg-superficie shadow-[0_10px_30px_var(--sombra)]">
       {!custom && (proposal.categories?.length ?? 0) > 0 && <div className="flex flex-col gap-2 bg-superficie-suave px-4 py-3.5">
         <span className="text-xs font-semibold text-texto-suave">Incluye</span>
         <ul aria-label="Categorías del paquete" className="flex flex-wrap gap-1.5">
@@ -53,19 +73,19 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
           <span className="text-xs font-semibold uppercase tracking-[0.08em] text-acento">{custom ? "Propuesta a medida" : "Paquete Happia"}</span>
           <div className="flex items-baseline justify-between gap-2.5">
             <h3 className="asesor-display text-xl font-bold">{proposal.name}</h3>
-            {price && <span className="asesor-display text-xl font-bold">{price}</span>}
+            {price && estimate.subtotalCop !== null && <span className="asesor-display text-xl font-bold tabular-nums"><CountUp value={estimate.subtotalCop} format={(amount) => copFormat.format(amount)} /></span>}
           </div>
           <span className="text-right text-xs text-texto-suave">{price ? "Precio de referencia · COP antes de IVA y comisión" : "Precio no disponible"}</span>
         </div>
         {custom && lines.length > 0 && <ul aria-label="Servicios de la propuesta" className="flex flex-col divide-y divide-borde-suave rounded-2xl bg-superficie-suave px-3 text-sm">
-          {lines.map((line) => <li key={line.serviceId} className="flex items-baseline justify-between gap-3 py-2">
+          {lines.map((line, index) => <li key={line.serviceId} style={{ "--i": index + 1 } as CSSProperties} className="asesor-sube flex items-baseline justify-between gap-3 py-2">
             <span className="min-w-0"><span className="font-medium">{line.name}</span>
               <span className="block text-xs text-texto-suave">{line.provider} · {line.basis === "per_person" ? `${line.quantity} invitados × ${copFormat.format(line.unitPriceCop)}` : line.quantity > 1 ? `${line.quantity} × ${copFormat.format(line.unitPriceCop)}` : "1 unidad"}</span></span>
             <span className="shrink-0 font-semibold">{copFormat.format(line.subtotalCop)}</span>
           </li>)}
         </ul>}
         <ul className="flex flex-col gap-1.5 text-sm text-[#4a4152]">
-          {proposalFacts(proposal, city).map((fact) => <li key={fact.text} className="flex gap-2">
+          {proposalFacts(proposal, city).map((fact, index) => <li key={fact.text} style={{ "--i": lines.length + index + 2 } as CSSProperties} className="asesor-fade flex gap-2">
             <span aria-hidden="true" className={`font-bold ${fact.ok ? "text-exito" : "text-aviso"}`}>{fact.ok ? "✓" : "!"}</span>{fact.text}
           </li>)}
         </ul>
@@ -78,7 +98,7 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
           </div>
         </details>
         <div className="grid gap-2">
-          <button type="button" disabled={busy} onClick={() => onPick(custom ? `Me gusta la propuesta ${proposal.name}.` : `Me gusta el paquete ${proposal.name}.`)} aria-label={custom ? `Me gusta la propuesta ${proposal.name}` : `Me gusta el paquete ${proposal.name}`} className="min-h-11 rounded-[14px] bg-acento text-sm font-semibold text-sobre-acento disabled:opacity-50">Me gusta</button>
+          <button type="button" disabled={busy} onClick={() => onPick(custom ? `Me gusta la propuesta ${proposal.name}.` : `Me gusta el paquete ${proposal.name}.`)} aria-label={custom ? `Me gusta la propuesta ${proposal.name}` : `Me gusta el paquete ${proposal.name}`} className="asesor-eleva min-h-11 rounded-[14px] bg-acento text-sm font-semibold text-sobre-acento disabled:opacity-50">Me gusta</button>
         </div>
       </div>
     </article>

@@ -23,7 +23,7 @@ export function StartTimePicker({ busy, onConfirm, onDismiss }: StartTimePickerP
   const label = timeLabel(minutes);
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center">
-      <button type="button" aria-label="Cerrar selector de hora" onClick={onDismiss} className="absolute inset-0 bg-[var(--overlay)]" />
+      <button type="button" aria-label="Cerrar selector de hora" onClick={onDismiss} className="asesor-fade absolute inset-0 bg-[var(--overlay)]" />
       <section role="dialog" aria-modal="true" aria-label="Hora de inicio del evento" className="asesor-hoja relative flex w-full max-w-2xl flex-col gap-4 rounded-t-[28px] bg-superficie px-5 pb-[max(1.6rem,env(safe-area-inset-bottom))] pt-3.5 shadow-[0_-18px_50px_rgb(34_27_46/0.22)]">
         <div aria-hidden="true" className="h-[5px] w-11 self-center rounded-full bg-borde" />
         <div className="flex flex-col gap-1">
