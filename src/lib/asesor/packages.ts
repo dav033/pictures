@@ -109,7 +109,7 @@ function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<H
   if (pkg.restrictions || pkg.conditions) disclosures.push("El paquete tiene condiciones o restricciones que se revisan al cerrar la propuesta.");
   if (subtotal === null) disclosures.push("El catálogo no trae precios completos para este paquete; no se muestra estimado.");
   return {
-    packageId: pkg.id, name: pkg.name, baseGuests: pkg.base_guests, guestCount: brief.guestCount,
+    kind: "standard", lines: [], packageId: pkg.id, name: pkg.name, baseGuests: pkg.base_guests, guestCount: brief.guestCount,
     estimate: {
       status: subtotal === null ? "unavailable" : "available", subtotalCop: subtotal, basis: "before_vat_and_commission",
       source: catalogue.source, fetchedAt: catalogue.fetchedAt, snapshotAgeSeconds: catalogue.snapshotAgeSeconds, notice: ADVISOR_ESTIMATE_NOTICE,
@@ -128,7 +128,7 @@ export function packageCard(proposal: StandardPackageProposal): AdvisorPackageCa
   return {
     kind: "package", id: proposal.packageId, title: proposal.name,
     description: `${price}. ${estimate.notice}`,
-    content: `Me interesa el paquete ${proposal.name}.`,
+    content: proposal.kind === "custom" ? `Me interesa la propuesta ${proposal.name}.` : `Me interesa el paquete ${proposal.name}.`,
     estimate,
   };
 }

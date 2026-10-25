@@ -54,7 +54,12 @@ const directionSchema = z.object({
     z.object({ status: z.enum(["no_verified_matches", "unavailable"]) }),
   ]),
 });
+const proposalLineSchema = z.object({
+  serviceId: z.string().min(1), name: z.string().min(1), category: z.string(), provider: z.string(), quantity: z.number().int().positive(),
+  basis: z.enum(["per_person", "unit"]), unitPriceCop: z.number().finite().nonnegative(), subtotalCop: z.number().finite().nonnegative(),
+}).strict();
 const packageSchema = z.object({
+  kind: z.enum(["standard", "custom"]).optional(), lines: z.array(proposalLineSchema).optional(),
   packageId: z.string().min(1), name: z.string().min(1), baseGuests: z.number().int().positive(), guestCount: z.number().int().positive().nullable(),
   estimate: z.object({
     status: z.enum(["available", "unavailable"]), subtotalCop: z.number().finite().nonnegative().nullable(),
@@ -126,7 +131,7 @@ function cardsFromState(value: unknown): AdvisorUiState | null {
         freshness,
         ...proposal.disclosures,
       ].join(" "),
-      content: `Me interesa el paquete ${proposal.name}.`, source: estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia",
+      content: proposal.kind === "custom" ? `Me interesa la propuesta ${proposal.name}.` : `Me interesa el paquete ${proposal.name}.`, source: estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia",
       ...(estimate.status === "available" && estimate.subtotalCop !== null ? { price: `${copFormat.format(estimate.subtotalCop)} COP` } : {}) });
   }
   const summary = parsed.data.summary ? { version: parsed.data.summary.version, text: parsed.data.summary.text } : null;

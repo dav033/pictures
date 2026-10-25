@@ -40,8 +40,10 @@ export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: stri
     : "Fecha de consulta no disponible";
   return [
     ...entries,
-    { label: "Paquete estándar", value: `${proposal.name} (${proposal.packageId})` },
-    { label: "Estimado del paquete", value: price },
+    ...(proposal.kind === "custom"
+      ? [{ label: "Propuesta a medida", value: proposal.name }, ...proposal.lines.map((line) => ({ label: `Servicio · ${line.category}`, value: `${line.name} (${line.provider}) x${line.quantity}${line.basis === "per_person" ? " invitados" : ""}: ${copFormat.format(line.subtotalCop)}` }))]
+      : [{ label: "Paquete estándar", value: `${proposal.name} (${proposal.packageId})` }]),
+    { label: proposal.kind === "custom" ? "Total de referencia" : "Estimado del paquete", value: price },
     { label: "Fuente del estimado", value: source },
     { label: "Actualidad del catálogo", value: freshness },
     { label: "Nota del estimado", value: estimate.notice },

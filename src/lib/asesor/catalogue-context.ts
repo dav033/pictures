@@ -1,20 +1,28 @@
 import type { HappiaCatalogueResult, HappiaService } from "./catalogue";
 
-const MAX_SERVICES = 40;
+const MAX_SERVICES = 60;
 const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 function normalise(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-/** Catalogue rows that are not offerable: unnamed, priced at zero or test entries ("Prueba"). */
+/** Below this a price is a data error ("Catering de comida" at $8 per person), not an offer. */
+const MIN_PLAUSIBLE_PRICE_COP = 100;
+
+/** Catalogue rows that are not offerable: unnamed, implausibly priced or test entries ("Prueba"). */
 function offerable(service: HappiaService): service is HappiaService & { name: string } {
-  return typeof service.name === "string" && service.name.trim() !== "" && service.total > 0 && !/\bprueba\b/i.test(`${service.name} ${service.description ?? ""}`);
+  return typeof service.name === "string" && service.name.trim() !== "" && service.total >= MIN_PLAUSIBLE_PRICE_COP && !/\bprueba\b/i.test(`${service.name} ${service.description ?? ""}`);
+}
+
+export function offerableServices(services: readonly HappiaService[]): Array<HappiaService & { name: string }> {
+  return services.filter(offerable);
 }
 
 function serviceLine(service: HappiaService & { name: string }): string {
   const description = service.description?.replace(/\s+/g, " ").trim().slice(0, 140);
-  return `• ${service.name} [${service.category_name}] ${copFormat.format(service.total)}${service.charge_type === "per_person" ? " por persona" : ""}${description ? ` — ${description}` : ""}`;
+  const perPerson = service.charge_type === "per_person" || service.charge_mode === "per_person";
+  return `• id=${service.id} · ${service.name} [${service.category_name}] · ${service.provider_name} · ${copFormat.format(service.total)} ${perPerson ? "por persona (se multiplica por los invitados)" : service.charge_mode === "event" || !service.quantity_editable ? "por evento (1 unidad)" : "por unidad (puedes pedir varias)"}${description ? ` — ${description}` : ""}`;
 }
 
 /**
@@ -25,7 +33,7 @@ export function catalogueForModel(catalogue: HappiaCatalogueResult, city: string
   if (catalogue.status !== "available") {
     return "Catálogo de Happia: no disponible ahora. No propongas servicios, elementos ni precios concretos; conversa solo sobre gustos y colores y di que el equipo confirmará qué se puede hacer.";
   }
-  const services = catalogue.data.services.filter(offerable);
+  const services = offerableServices(catalogue.data.services);
   const cities = [...new Set(services.map((service) => service.city))].sort((a, b) => a.localeCompare(b, "es"));
   if (!city) return `Catálogo de Happia: aún no sabes la ciudad. Happia tiene servicios en: ${cities.join(", ") || "ninguna ciudad"}. No propongas elementos concretos hasta saber la ciudad.`;
   const wanted = normalise(city);
@@ -34,5 +42,5 @@ export function catalogueForModel(catalogue: HappiaCatalogueResult, city: string
     return `Catálogo de Happia: no hay servicios en ${city}. Happia tiene servicios en: ${cities.join(", ")}. Dilo con honestidad; no propongas elementos concretos.`;
   }
   const lines = local.slice(0, MAX_SERVICES).map(serviceLine);
-  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer):\n${lines.join("\n")}`;
+  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer; arma la propuesta con propose_custom_package usando estos id):\n${lines.join("\n")}`;
 }

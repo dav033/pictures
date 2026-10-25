@@ -59,7 +59,23 @@ export const emptyEventBrief = (): EventBrief => EventBriefSchema.parse({});
 export const ADVISOR_ESTIMATE_NOTICE = "Versión de prueba. Estamos afinando esta asesoría; revisaremos contigo los detalles antes de cerrar la propuesta.";
 
 const coverageSchema = z.enum(["matches", "unknown"]);
+/** One Happia service in a custom proposal, priced by the server from the live catalogue. */
+export const ProposalLineSchema = z.object({
+  serviceId: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string(),
+  provider: z.string(),
+  quantity: z.number().int().positive(),
+  basis: z.enum(["per_person", "unit"]),
+  unitPriceCop: z.number().finite().nonnegative(),
+  subtotalCop: z.number().finite().nonnegative(),
+}).strict();
+export type ProposalLine = z.infer<typeof ProposalLineSchema>;
+
 export const StandardPackageProposalSchema = z.object({
+  /** "custom": built by the server from individual services (`lines`); "standard": a closed Happia package. */
+  kind: z.enum(["standard", "custom"]).default("standard"),
+  lines: z.array(ProposalLineSchema).default([]),
   packageId: z.string().min(1),
   name: z.string().min(1),
   baseGuests: z.number().int().positive(),

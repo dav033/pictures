@@ -82,5 +82,6 @@ test("showing and selecting an offered direction preserves event fields and cann
 test("the inspiration gallery is switched off: the model is not offered the direction tools", () => {
   assert.ok(ADVISOR_TOOLS.some((tool) => tool.nombre === "show_directions"));
   assert.ok(!ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "show_directions" || tool.nombre === "select_direction"));
-  assert.ok(ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "propose_standard_package"));
+  assert.ok(!ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "propose_standard_package"), "closed packages are switched off too");
+  assert.ok(ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "propose_custom_package"));
 });

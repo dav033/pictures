@@ -161,7 +161,8 @@ test("the model only gets offerable Happia services of the customer's city", asy
   ] } } as never;
   const text = catalogueForModel(catalogue, "Barranquilla");
   assert.match(text, /lo único que se puede ofrecer/);
-  assert.match(text, /• Decoración Arco con Globos \+ Decorador \[Decoración\]/);
+  assert.match(text, /• id=Decoración Arco con Globos \+ Decorador-Barranquilla · Decoración Arco con Globos \+ Decorador \[Decoración\]/);
+  assert.match(text, /por evento \(1 unidad\)/);
   assert.doesNotMatch(text, /Prueba|Kit Decoración Futbol/, "test rows and other cities are left out");
   assert.match(catalogueForModel(catalogue, null), /aún no sabes la ciudad.*Barranquilla, Bogotá/);
   assert.match(catalogueForModel(catalogue, "Cali"), /no hay servicios en Cali/);

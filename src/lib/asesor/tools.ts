@@ -4,7 +4,8 @@ import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { ADVISOR_ESTIMATE_NOTICE, EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
 import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import type { PhotoPreference } from "./repository";
-import { ADVISOR_DIRECTIONS_ENABLED } from "./features";
+import { ADVISOR_DIRECTIONS_ENABLED, ADVISOR_STANDARD_PACKAGES_ENABLED } from "./features";
+import { buildCustomPackage, MAX_CUSTOM_ITEMS } from "./custom-package";
 import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseStoredDirectionOffers } from "./directions";
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
@@ -16,6 +17,10 @@ const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, 
 const summaryArgsSchema = z.object({}).strict();
 const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
 const noArgsSchema = z.object({}).strict();
+const customPackageArgsSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  items: z.array(z.object({ serviceId: z.string().min(1).max(100), quantity: z.number().int().min(1).max(60).optional() }).strict()).min(1).max(MAX_CUSTOM_ITEMS),
+}).strict();
 const directionArgsSchema = z.object({ directionId: z.string().refine(isOfferedDirection) }).strict();
 const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100), confirmed: z.boolean(), preference: z.enum(["like", "dislike", "neutral"]) }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
@@ -44,10 +49,15 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "show_directions", descripcion: "Muestra las doce direcciones visuales permitidas y sus artículos temáticos verificados; úsala cuando el cliente aún no decide.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "select_direction", descripcion: "Registra una dirección que el cliente eligió entre las que ya se le mostraron.", esquema: { type: "object", additionalProperties: false, required: ["directionId"], properties: { directionId: { type: "string", enum: ADVISOR_DIRECTION_IDS } } } },
   { nombre: "propose_standard_package", descripcion: "Pide al servidor el paquete estándar de Happia que mejor encaja con tipo de evento, temática, ciudad e invitados. Úsalo antes de ofrecer servicios a medida. El servidor devuelve el paquete, su estimado en COP y avisos; no indiques IDs ni precios.", esquema: { type: "object", additionalProperties: false, properties: {} } },
+  { nombre: "propose_custom_package", descripcion: "Arma una propuesta a medida con servicios individuales del «Catálogo de Happia» de la ciudad del evento. Pasa solo los id del catálogo que te dio el servidor y, para los servicios por unidad, la cantidad; el servidor valida cada servicio, fija las cantidades por persona y calcula los precios y el total. Si algún id no existe, no se arma nada.", esquema: { type: "object", additionalProperties: false, required: ["items"], properties: { name: { type: "string", description: "Nombre corto de la propuesta, por ejemplo «Fiesta de fútbol de David»." }, items: { type: "array", minItems: 1, maxItems: MAX_CUSTOM_ITEMS, items: { type: "object", additionalProperties: false, required: ["serviceId"], properties: { serviceId: { type: "string", description: "Identificador (id=...) del servicio en el catálogo." }, quantity: { type: "integer", minimum: 1, description: "Unidades, solo para servicios por unidad; los servicios por persona usan los invitados." } } } } } } },
 ];
 
-/** What the model is offered: the direction tools only exist while the gallery is enabled. */
-export const ADVISOR_MODEL_TOOLS: Herramienta[] = ADVISOR_DIRECTIONS_ENABLED ? ADVISOR_TOOLS : ADVISOR_TOOLS.filter((tool) => tool.nombre !== "show_directions" && tool.nombre !== "select_direction");
+const RETIRED_TOOLS: ReadonlySet<string> = new Set([
+  ...(ADVISOR_DIRECTIONS_ENABLED ? [] : ["show_directions", "select_direction"]),
+  ...(ADVISOR_STANDARD_PACKAGES_ENABLED ? [] : ["propose_standard_package"]),
+]);
+/** What the model is offered: tools of switched-off features (inspiration gallery, closed packages) are not declared. */
+export const ADVISOR_MODEL_TOOLS: Herramienta[] = ADVISOR_TOOLS.filter((tool) => !RETIRED_TOOLS.has(tool.nombre));
 
 export type AdvisorToolEffect = { event: "tool"; name: string; result: unknown; state: EventBriefState; progress: ReturnType<typeof calculateBriefProgress> };
 export type BriefMutator = (mutate: (state: unknown, version: number) => unknown) => Promise<{ version: number; state: unknown }>;
@@ -60,6 +70,15 @@ const packageCopFormat = new Intl.NumberFormat("es-CO", { style: "currency", cur
 
 function packageSummaryLines(proposal: EventBriefState["standardPackage"]): string[] {
   if (!proposal) return [];
+  if (proposal.kind === "custom") {
+    const total = proposal.estimate.status === "available" && proposal.estimate.subtotalCop !== null ? packageCopFormat.format(proposal.estimate.subtotalCop) : "no disponible";
+    return [
+      `Propuesta a medida: ${proposal.name}`,
+      ...proposal.lines.map((line) => `• ${line.name} (${line.provider}) x${line.quantity}${line.basis === "per_person" ? " invitados" : ""}: ${packageCopFormat.format(line.subtotalCop)}`),
+      `Total de referencia (no es una cotización): ${total} COP antes de IVA y comisión`,
+      ...proposal.disclosures.map((disclosure) => `Aviso de la propuesta: ${disclosure}`),
+    ];
+  }
   const { estimate } = proposal;
   const source = estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia";
   const price = estimate.status === "available" && estimate.subtotalCop !== null
@@ -119,7 +138,8 @@ export async function applyAdvisorTool(input: {
   const { call, currentCustomerText } = input;
   let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "request_failed" };
   let packageCardValue: unknown;
-  if (call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) {
+  const customArgs = call.nombre === "propose_custom_package" ? customPackageArgsSchema.safeParse(call.args) : null;
+  if ((call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) || customArgs?.success) {
     try { catalogue = await (input.loadCatalogue ?? (async () => (await import("./catalogue")).getHappiaCatalogue()))(); } catch { /* Explicit no-match below; never invent a catalogue result. */ }
   }
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
@@ -146,12 +166,13 @@ export async function applyAdvisorTool(input: {
       message = matchingReceipt
         ? receipt.message
         : "Este turno ya aplicó una herramienta diferente en este paso. Se conserva el cambio anterior; inicia un turno nuevo para continuar.";
-      if (matchingReceipt && call.nombre === "propose_standard_package" && state.standardPackage) packageCardValue = packageCard(state.standardPackage);
+      if (matchingReceipt && (call.nombre === "propose_standard_package" || call.nombre === "propose_custom_package") && state.standardPackage) packageCardValue = packageCard(state.standardPackage);
       return state;
     }
     if ((call.nombre === "propose_summary" && !summaryArgsSchema.safeParse(call.args).success)
       || ((call.nombre === "approve_summary") && !approvalArgsSchema.safeParse(call.args).success)
       || ((call.nombre === "propose_standard_package") && !summaryArgsSchema.safeParse(call.args).success)
+      || (call.nombre === "propose_custom_package" && !customArgs?.success)
       || (call.nombre === "record_photo_feedback" && !photoFeedbackSchema.safeParse(call.args).success)
       || (call.nombre === "show_directions" && !noArgsSchema.safeParse(call.args).success)
       || (call.nombre === "select_direction" && !directionArgsSchema.safeParse(call.args).success)) {
@@ -210,6 +231,16 @@ export async function applyAdvisorTool(input: {
         const estimate = outcome.proposal.estimate;
         message = `Paquete estándar propuesto: ${outcome.proposal.name}. ${estimate.status === "available" ? `Estimado ${estimate.subtotalCop} COP antes de IVA y comisión.` : "Precio estimado no disponible."} ${ADVISOR_ESTIMATE_NOTICE} ${outcome.proposal.disclosures.join(" ")}`;
       }
+    } else if (call.nombre === "propose_custom_package" && customArgs?.success) {
+      const outcome = buildCustomPackage(catalogue, state.brief, customArgs.data);
+      if (outcome.status === "rejected") { message = outcome.reason; return state; }
+      state.standardPackage = outcome.proposal;
+      state.brief.proposedPackage = `${outcome.proposal.name} (propuesta a medida)`;
+      packageCardValue = outcome.card;
+      state.summary = null;
+      state.approval = null;
+      const total = outcome.proposal.estimate.subtotalCop;
+      message = `Propuesta a medida armada: ${outcome.proposal.name}. Servicios: ${outcome.proposal.lines.map((line) => `${line.name} x${line.quantity} = ${line.subtotalCop} COP`).join("; ")}. Total de referencia ${total} COP antes de IVA y comisión. ${ADVISOR_ESTIMATE_NOTICE} Avisos: ${outcome.proposal.disclosures.join(" ")} Preséntala al cliente con esos servicios y precios exactos; no agregues nada más.`;
     } else if (call.nombre === "propose_summary") {
       const progress = calculateStateProgress(state);
       if (!progress.complete) { message = `Faltan campos obligatorios: ${progress.missing.join(", ")}.`; return state; }
@@ -294,7 +325,7 @@ export async function applyAdvisorTool(input: {
   const toolResult = {
     message,
     ...(call.nombre === "show_directions" && directionOffers ? { directions: state.directionOffers } : {}),
-    ...(call.nombre === "propose_standard_package" && packageCardValue ? { card: packageCardValue } : {}),
+    ...((call.nombre === "propose_standard_package" || call.nombre === "propose_custom_package") && packageCardValue ? { card: packageCardValue } : {}),
   };
   return { event: "tool", name: call.nombre, result: toolResult, state, progress: calculateStateProgress(state) };
 }

@@ -42,9 +42,9 @@ function conversationStep(brief: EventBrief, missing: string[], proposalPresente
   return "summary";
 }
 
-/** Progress of a stored conversation: the proposal counts as presented once a Happia package search ran (match or not). */
+/** Progress of a stored conversation: the proposal counts as presented once a Happia package search or custom proposal ran (match or not). */
 export function calculateStateProgress(state: EventBriefState): BriefProgress {
   const searched = state.standardPackage !== null
-    || Object.values(state.toolReceipts).some((receipt) => receipt.name === "propose_standard_package");
+    || Object.values(state.toolReceipts).some((receipt) => receipt.name === "propose_standard_package" || receipt.name === "propose_custom_package");
   return calculateBriefProgress(state.brief, searched);
 }

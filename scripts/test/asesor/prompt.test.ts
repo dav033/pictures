@@ -8,7 +8,9 @@ test("advisor prompt keeps catalogue claims grounded in optional tool results", 
   assert.match(CATALOGUE_GUIDANCE, /solo ofertas y tarjetas devueltas por las herramientas/);
   assert.doesNotMatch(CATALOGUE_GUIDANCE, /show_directions|select_direction/);
   assert.match(CATALOGUE_GUIDANCE, /nunca ofrezcas ni prometas fotos, ideas o diseños que no vengan de Happia/);
-  assert.match(CATALOGUE_GUIDANCE, /usa propose_standard_package/);
+  assert.doesNotMatch(CATALOGUE_GUIDANCE, /propose_standard_package/);
+  assert.match(CATALOGUE_GUIDANCE, /propose_custom_package únicamente cuando el servidor indique que el paso es «propuesta».*id \(id=\.\.\.\)/);
+  assert.match(CATALOGUE_GUIDANCE, /Solo puedes ofrecer, nombrar o prometer lo que está en ese catálogo/);
   assert.match(CATALOGUE_GUIDANCE, /precios deben provenir de esos resultados/);
   assert.match(CATALOGUE_GUIDANCE, /no inventes.*identificadores.*precios/i);
   assert.match(CATALOGUE_GUIDANCE, /preferencia del cliente no equivale a seleccionar/i);
