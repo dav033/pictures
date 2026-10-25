@@ -14,6 +14,7 @@ import { asksOnlyForStartTime } from "./start-time";
 import { StartTimePicker } from "./StartTimePicker";
 import { SummaryCard } from "./SummaryCard";
 import { useConversation } from "./useConversation";
+import { useStickToBottom } from "./use-stick-to-bottom";
 import type { AdvisorChange, AdvisorMessage } from "./conversation-contract";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-asesor-display" });
@@ -55,16 +56,7 @@ export function ChatView() {
     return next;
   }), []);
   const settled = revealing.size === 0;
-  const followFrame = useRef(0);
-  // While a reply types out, keep the end of the transcript in view, but only for someone who is already reading the bottom.
-  const follow = useCallback(() => {
-    if (followFrame.current) return;
-    followFrame.current = requestAnimationFrame(() => {
-      followFrame.current = 0;
-      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 280;
-      if (nearBottom) transcriptEnd.current?.scrollIntoView({ block: "end" });
-    });
-  }, []);
+  const { follow, snap } = useStickToBottom(transcriptEnd);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const visibleMessages = conversation.messages.length ? conversation.messages : [welcome];
   const progress = conversation.progress;
@@ -77,7 +69,10 @@ export function ChatView() {
   if (proposalId && proposalSeen?.id !== proposalId) setProposalSeen({ id: proposalId, messages: conversation.messages.length });
   const showProposal = Boolean(conversation.proposal) && proposalSeen?.id === proposalId && conversation.messages.length <= (proposalSeen?.messages ?? 0) + 1;
 
-  useEffect(() => { transcriptEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [conversation.messages, conversation.streamingText, progress?.step, progress?.ask]);
+  const lastRole = conversation.messages.at(-1)?.role;
+  // Sending something goes to the end; anything that grows the chat afterwards is followed until the person scrolls up.
+  useEffect(() => { if (lastRole === "user") snap(); else follow(); }, [conversation.messages.length, lastRole, snap, follow]);
+  useEffect(() => { follow(); }, [follow, conversation.streamingText, conversation.status, progress?.step, progress?.ask, settled, conversation.proposal?.packageId, conversation.summary?.version]);
 
   const correct = () => { setDraft("Quiero corregir: "); textarea.current?.focus(); };
 
@@ -127,7 +122,7 @@ export function ChatView() {
         </section>}
         {idle && settled && progress?.ask && <QuickReplies ask={progress.ask} busy={busy} onPick={conversation.submit} />}
         {idle && settled && progress?.step === "contact" && !conversation.summary && <ContactForm askAddress={progress.missing.includes("address")} busy={busy} onSend={conversation.submit} />}
-        <div ref={transcriptEnd} aria-hidden="true" />
+        <div ref={transcriptEnd} aria-hidden="true" className="scroll-mb-36" />
       </section>
 
       {idle && settled && asksOnlyForStartTime(progress) && timeDismissedAt !== conversation.briefVersion

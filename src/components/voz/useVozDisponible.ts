@@ -8,11 +8,14 @@ export function navegadorPuedeGrabar(): boolean {
 }
 
 let consulta: Promise<boolean> | null = null;
+/** La respuesta ya conocida: un botón que se monta de nuevo (p. ej. al pasar de nota de voz a dictado) no parpadea mientras la vuelve a pedir. */
+let habilitadaConocida: boolean | null = null;
 
 /** Pregunta una sola vez por carga de página si el servidor tiene el dictado encendido (`VOZ_ENABLED`). */
 function servidorHabilitado(): Promise<boolean> {
   consulta ??= fetch("/api/voz/transcribir")
     .then(async (r) => (r.ok ? ((await r.json()) as { habilitada?: unknown }).habilitada === true : false))
+    .then((habilitada) => { habilitadaConocida = habilitada; return habilitada; })
     .catch(() => {
       consulta = null;
       return false;
@@ -22,7 +25,7 @@ function servidorHabilitado(): Promise<boolean> {
 
 /** `true` solo si el servidor lo habilitó Y este navegador puede grabar: si no, el botón de dictar ni aparece. */
 export function useVozDisponible(): boolean {
-  const [disponible, setDisponible] = useState(false);
+  const [disponible, setDisponible] = useState(() => habilitadaConocida === true && navegadorPuedeGrabar());
   useEffect(() => {
     if (!navegadorPuedeGrabar()) return;
     let vivo = true;
@@ -36,7 +39,7 @@ export type EstadoVoz = "comprobando" | "sin_navegador" | "apagada" | "lista";
 
 /** Como `useVozDisponible`, pero dice por qué no está: el navegador no puede grabar (p. ej. página sin HTTPS) o el servidor la tiene apagada. */
 export function useEstadoVoz(): EstadoVoz {
-  const [estado, setEstado] = useState<EstadoVoz>("comprobando");
+  const [estado, setEstado] = useState<EstadoVoz>(() => habilitadaConocida === null ? "comprobando" : !navegadorPuedeGrabar() ? "sin_navegador" : habilitadaConocida ? "lista" : "apagada");
   useEffect(() => {
     let vivo = true;
     void (navegadorPuedeGrabar() ? servidorHabilitado().then((habilitada): EstadoVoz => (habilitada ? "lista" : "apagada")) : Promise.resolve<EstadoVoz>("sin_navegador"))

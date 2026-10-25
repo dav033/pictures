@@ -10,7 +10,7 @@ import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseSto
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
 import { packageCard, proposeStandardPackage } from "./packages";
-import { appendBriefChanges, budgetDisplay, diffBrief, EVENT_KIND_LABELS, formatBriefChange, PRIORITY_LABELS } from "./brief-changes";
+import { appendBriefChanges, budgetDisplay, diffBrief, EVENT_KIND_LABELS, formatBriefChange, PRIORITY_LABELS, sameFact } from "./brief-changes";
 
 const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission" && key !== "proposedPackage");
 const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true, proposedPackage: true }).strict();
@@ -189,6 +189,8 @@ export async function applyAdvisorTool(input: {
       const updated = EventBriefSchema.safeParse({ ...state.brief, ...suppliedFields });
       if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
       const fitChanged = (["eventKind", "theme", "city", "guestCount"] as const).some((field) => updated.data[field] !== state.brief[field]);
+      // The same range or amount worded differently keeps the first wording (a quick-pick chip's exact text).
+      if (state.brief.budgetRange && updated.data.budgetRange && sameFact(state.brief.budgetRange, updated.data.budgetRange)) updated.data.budgetRange = state.brief.budgetRange;
       state.changes = appendBriefChanges(state.changes, diffBrief(state.brief, updated.data, input.turnId ?? null));
       state.brief = updated.data;
       if (fitChanged && state.standardPackage) { state.standardPackage = null; state.brief.proposedPackage = null; }

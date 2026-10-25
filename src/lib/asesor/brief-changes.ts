@@ -33,13 +33,19 @@ function displayValue(field: string, value: unknown): string {
   return String(value);
 }
 
+/** The same fact written differently ("$300.000–$600.000" vs "$300.000 - $600.000", "Frozen" vs "frozen") is not a change. */
+export function sameFact(a: string, b: string): boolean {
+  const canonical = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return canonical(a) === canonical(b);
+}
+
 /** Server-owned diff between two brief states: each tracked fact that had a value and now has a different one. */
 export function diffBrief(before: EventBrief, after: EventBrief, turnId: string | null): BriefChange[] {
   const changes: BriefChange[] = [];
   for (const field of Object.keys(TRACKED_FIELDS) as (keyof typeof TRACKED_FIELDS)[]) {
     const from = displayValue(field, before[field]);
     const to = displayValue(field, after[field]);
-    if (!from || from === to) continue;
+    if (!from || from === to || (to !== "" && sameFact(from, to))) continue;
     changes.push({ field, from: from.slice(0, 500), to: (to || "sin definir").slice(0, 500), turnId, impact: PACKAGE_FIT_FIELDS.has(field) ? "Se recalcula la propuesta de Happia" : null });
   }
   return changes;

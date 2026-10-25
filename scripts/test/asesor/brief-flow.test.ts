@@ -168,3 +168,13 @@ test("the model only gets offerable Happia services of the customer's city", asy
   assert.match(catalogueForModel(catalogue, "Cali"), /no hay servicios en Cali/);
   assert.match(catalogueForModel({ status: "unavailable", reason: "request_failed" }, "Barranquilla"), /No propongas servicios, elementos ni precios concretos/);
 });
+
+test("the same budget worded differently is not a change; a different one still is", async () => {
+  const { diffBrief, sameFact } = await import("../../../src/lib/asesor/brief-changes");
+  const base = EventBriefSchema.parse({ ...sofia, budgetRange: "$300.000–$600.000", theme: "Frozen" });
+  assert.deepEqual(diffBrief(base, { ...base, budgetRange: "$300.000 - $600.000" }, "t1"), [], "the en dash and the hyphen are the same range");
+  assert.deepEqual(diffBrief(base, { ...base, theme: "frozen" }, "t1"), [], "case alone is not a change");
+  assert.equal(diffBrief(base, { ...base, budgetRange: "$300.000–$700.000" }, "t1").length, 1);
+  assert.equal(diffBrief(base, { ...base, theme: "Fútbol" }, "t1").length, 1);
+  assert.ok(sameFact("Más de $1.000.000", "mas de $1.000.000"));
+});
