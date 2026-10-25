@@ -105,6 +105,28 @@ test("advisor login issues HttpOnly/Secure production cookies and rejects invali
   assert.equal(options.secure, true);
 });
 
+test("form login redirects relative to the public origin, not the server's bind address", async () => {
+  Reflect.set(process.env, "NODE_ENV", "production");
+  process.env.ASESOR_SESSION_SECRET = "test-session-secret-that-is-at-least-32-bytes";
+  process.env.ASESOR_USER_PASSWORD_HASH = await hashAdvisorPassword(USER_PASSWORD);
+  process.env.ASESOR_ADMIN_PASSWORD_HASH = await hashAdvisorPassword(ADMIN_PASSWORD);
+  // Behind the VPS reverse proxy the standalone server sees its bind address (https://0.0.0.0:3000) as request.url.
+  const form = (password: string) => new Request("https://0.0.0.0:3000/api/asesor/login", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ username: "user", password }),
+  });
+
+  const ok = await login(form(USER_PASSWORD));
+  assert.equal(ok.status, 303);
+  assert.equal(ok.headers.get("location"), "/asesor");
+  assert.match(ok.headers.get("set-cookie") ?? "", /asesor_session=/);
+
+  const failed = await login(form("wrong"));
+  assert.equal(failed.status, 303);
+  assert.equal(failed.headers.get("location"), "/asesor/login?error=1");
+});
+
 test("proxy exclusions are boundary-exact and voice reaches its existing guard without APP_PASSWORD", async () => {
   const matcher = new RegExp(`^${proxyConfig.matcher[0]}$`);
   for (const [path, expected] of [

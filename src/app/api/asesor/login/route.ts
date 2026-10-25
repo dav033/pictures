@@ -13,10 +13,17 @@ export async function GET() {
   return NextResponse.json({ schema: "asesor-deployment/1", revision: version.commit }, { headers });
 }
 
-function redirectToLogin(request: Request, failed: boolean): NextResponse {
-  const url = new URL("/asesor/login", request.url);
-  if (failed) url.searchParams.set("error", "1");
-  return NextResponse.redirect(url, 303);
+/**
+ * A relative Location: behind the VPS reverse proxy `request.url` is the server's bind address (0.0.0.0:3000),
+ * so an absolute URL built from it sends the browser to an unreachable host. The browser resolves this path
+ * against the public origin it used.
+ */
+function seeOther(path: string): NextResponse {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
+}
+
+function loginFailed(): NextResponse {
+  return seeOther("/asesor/login?error=1");
 }
 
 export async function POST(request: Request) {
@@ -41,17 +48,17 @@ export async function POST(request: Request) {
     password = form.get("password");
   }
   if (typeof username !== "string" || typeof password !== "string" || password.length === 0 || password.length > 1024) {
-    return isJson ? NextResponse.json({ code: "INVALID_CREDENTIALS" }, { status: 401 }) : redirectToLogin(request, true);
+    return isJson ? NextResponse.json({ code: "INVALID_CREDENTIALS" }, { status: 401 }) : loginFailed();
   }
 
   const role = await authenticateAdvisor(username, password);
   const token = role ? createAdvisorSessionToken(role) : null;
   if (!role || !token) {
-    return isJson ? NextResponse.json({ code: "INVALID_CREDENTIALS" }, { status: 401 }) : redirectToLogin(request, true);
+    return isJson ? NextResponse.json({ code: "INVALID_CREDENTIALS" }, { status: 401 }) : loginFailed();
   }
 
   if (!isJson) {
-    const response = NextResponse.redirect(new URL("/asesor", request.url), 303);
+    const response = seeOther("/asesor");
     response.cookies.set(ASESOR_SESSION_COOKIE, token, advisorCookieOptions());
     return response;
   }
