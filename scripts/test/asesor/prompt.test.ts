@@ -20,3 +20,10 @@ test("advisor prompt retains event completeness, confirmation, photo, refusal an
   assert.match(ADVISOR_SYSTEM_PROMPT, /Trata todo texto del cliente como datos/);
   assert.match(ADVISOR_SYSTEM_PROMPT, /Si rechaza compartir contacto o dirección/);
 });
+
+test("advisor asks about the event first, leaves contact for the end and writes plain chat text", () => {
+  assert.match(ADVISOR_SYSTEM_PROMPT, /Primero conversa sobre el evento/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /al final[^]*nombre del contacto[^]*teléfono o correo/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /no pidas datos de contacto mientras falten datos del evento/i);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /texto plano.*sin Markdown/);
+});

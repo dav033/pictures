@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { plainChatText } from "../../../src/components/asesor/chat-text";
 import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorSnapshot, parseCreatedConversation } from "../../../src/components/asesor/conversation-contract";
 
 const protectedPage = readFileSync("src/app/asesor/(protected)/page.tsx", "utf8");
@@ -74,4 +75,11 @@ test("Composer exposes camera/gallery upload, advisor dictation, and sourced dir
   assert.match(chatView, /Resumen para revisar/);
   assert.match(chatView, /Ver resumen aprobado/);
   assert.match(chatView, /onVoiceText=\{setDraft\}/);
+});
+
+test("advisor replies render as plain text: Markdown emphasis and list markers are not shown raw", () => {
+  const raw = "Para armar la propuesta:\n\n* **Nombre del cumpleañero/a**\n- **Fecha y hora de inicio**\n## Detalles\nUn 5*3 y snake_case quedan igual.";
+  assert.equal(plainChatText(raw), "Para armar la propuesta:\n\n• Nombre del cumpleañero/a\n• Fecha y hora de inicio\nDetalles\nUn 5*3 y snake_case quedan igual.");
+  assert.match(chatView, /plainChatText\(message\.content\)/);
+  assert.match(chatView, /plainChatText\(conversation\.streamingText\)/);
 });

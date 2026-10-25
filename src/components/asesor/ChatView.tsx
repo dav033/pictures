@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Sparkles } from "lucide-react";
+import { plainChatText } from "./chat-text";
 import { Composer } from "./Composer";
 import { useConversation } from "./useConversation";
 import type { AdvisorMessage } from "./conversation-contract";
@@ -60,13 +61,13 @@ export function ChatView() {
 
         <ol className="flex flex-col gap-3" aria-label="Mensajes">
           {visibleMessages.map((message) => <li key={message.id} className={`max-w-[90%] rounded-3xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[82%] ${message.role === "user" ? "ml-auto rounded-br-lg bg-acento text-sobre-acento" : "mr-auto rounded-bl-lg border border-borde bg-superficie text-texto"}`}>
-            {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
+            {message.content && <p className="whitespace-pre-wrap">{message.role === "user" ? message.content : plainChatText(message.content)}</p>}
             {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
               <img src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} loading="lazy" className="max-h-64 max-w-full rounded-xl object-cover" />
               <figcaption className="mt-1 text-xs opacity-80">{photo.kind === "venue" ? "Lugar del evento" : "Inspiración"} · {photo.preference === "neutral" ? "por revisar" : photo.preference === "like" ? "me gusta" : "no me gusta"}</figcaption>
             </figure>)}
           </li>)}
-          {conversation.streamingText && <li aria-label="Respuesta en curso" className="mr-auto max-w-[90%] whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-[15px] leading-relaxed shadow-sm">{conversation.streamingText}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></li>}
+          {conversation.streamingText && <li aria-label="Respuesta en curso" className="mr-auto max-w-[90%] whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-[15px] leading-relaxed shadow-sm">{plainChatText(conversation.streamingText)}<span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-acento" aria-hidden="true" /></li>}
           {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="mr-auto rounded-3xl rounded-bl-lg border border-borde bg-superficie px-4 py-3 text-sm text-texto-suave">Estoy pensando…</li>}
           {conversation.summary && <li aria-label="Resumen actual del evento" className="mr-auto w-full max-w-[90%] rounded-3xl border border-acento/40 bg-superficie p-4 text-sm text-texto shadow-sm sm:max-w-[82%]">
             <h2 className="font-semibold">Resumen para revisar · versión {conversation.summary.version}</h2>
