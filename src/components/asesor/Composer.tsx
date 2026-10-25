@@ -3,7 +3,7 @@
 import { ArrowUp, Camera, ImagePlus, Paperclip } from "lucide-react";
 import { useRef, useState, type RefObject } from "react";
 import { BotonVoz } from "@/components/voz/BotonVoz";
-import { VoiceNoteButton } from "./VoiceNoteButton";
+import { VoiceNoteButton, type RecordedNote } from "./VoiceNoteButton";
 
 export type ComposerCapabilities = { photo: boolean; voice: boolean };
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
   onPhotoKindChange?: (kind: "inspiration" | "venue") => void;
   onVoiceText?: (text: string) => void;
   /** Voice notes are sent as their own turn while the draft is empty; with a draft the microphone dictates into it. */
-  voiceNote?: { conversationId: string | null; onNote: (turnId: string, text: string) => void };
+  voiceNote?: { conversationId: string | null; onRecorded: (note: RecordedNote) => void; onNote: (turnId: string, text: string) => void; onFailed: (turnId: string, message: string) => void };
   onRetry?: () => void;
   error?: string | null;
   placeholder?: string;
@@ -32,7 +32,8 @@ export function Composer({ value, onChange, onSubmit, busy, capabilities = { pho
   const galleryInput = useRef<HTMLInputElement>(null);
   const canPhoto = capabilities.photo;
   const canVoice = capabilities.voice && onVoiceText !== undefined;
-  const addPhotos = (files: FileList | null) => { if (files?.length) { setPhotos((current) => [...current, ...Array.from(files)].slice(0, 4)); setTrayOpen(false); } };
+  // Copy the live FileList before anything runs later: the inputs are cleared right after, which empties it.
+  const addPhotos = (files: FileList | null) => { const picked = Array.from(files ?? []); if (picked.length) { setPhotos((current) => [...current, ...picked].slice(0, 4)); setTrayOpen(false); } };
   return (
     <div className="mx-auto w-full max-w-2xl">
       {error && (
@@ -61,7 +62,7 @@ export function Composer({ value, onChange, onSubmit, busy, capabilities = { pho
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
           className="max-h-32 min-h-11 min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base text-texto outline-none [field-sizing:content] placeholder:text-texto-suave disabled:opacity-60" />
         {canVoice && (voiceNote && !value.trim()
-          ? <VoiceNoteButton conversationId={voiceNote.conversationId} onNote={voiceNote.onNote} disabled={busy} className={iconButton} />
+          ? <VoiceNoteButton conversationId={voiceNote.conversationId} onRecorded={voiceNote.onRecorded} onNote={voiceNote.onNote} onFailed={voiceNote.onFailed} disabled={busy} className={iconButton} />
           : <BotonVoz campoId="advisor-message" alTexto={onVoiceText} deshabilitado={busy} variante="cliente" clase={iconButton} />)}
         <button type="submit" aria-label="Enviar" disabled={busy || (!value.trim() && photos.length === 0)} className="grid size-11 shrink-0 place-items-center rounded-full bg-acento text-sobre-acento transition hover:bg-acento-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45">
           <ArrowUp aria-hidden="true" className="size-5" />

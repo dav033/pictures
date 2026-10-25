@@ -1733,6 +1733,10 @@ body {
 .asesor-chat .asesor-fade { animation: asesor-aparece 450ms ease-out both; animation-delay: calc(var(--i, 0) * 80ms); }
 .asesor-chat .asesor-pop { animation: asesor-pop 460ms var(--ease-rebote) both; animation-delay: calc(var(--i, 0) * 70ms); }
 .asesor-chat .asesor-pulso { animation: asesor-pulso 900ms var(--ease-out) 1; }
+@keyframes asesor-brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes asesor-barra { from { transform: scaleY(0.2); opacity: 0.3; } to { transform: none; opacity: 1; } }
+.asesor-chat .asesor-brillo { display: block; background: linear-gradient(90deg, var(--borde-suave) 25%, var(--superficie-suave) 50%, var(--borde-suave) 75%); background-size: 200% 100%; animation: asesor-brillo 1.4s linear infinite; }
+.asesor-chat .asesor-barra { transform-origin: center; animation: asesor-barra 380ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 18ms); }
 .asesor-chat .asesor-puntos { display: inline-flex; gap: 4px; align-items: center; }
 .asesor-chat .asesor-puntos span { width: 6px; height: 6px; border-radius: 999px; background: var(--acento); animation: asesor-punto 1.2s ease-in-out infinite; }
 .asesor-chat .asesor-puntos span:nth-child(2) { animation-delay: 0.15s; }
@@ -1743,6 +1747,6 @@ body {
 .asesor-chat .asesor-eleva:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 18px var(--sombra); }
 @media (prefers-reduced-motion: reduce) {
   .asesor-chat .asesor-sube, .asesor-chat .asesor-sube-der, .asesor-chat .asesor-fade, .asesor-chat .asesor-pop, .asesor-chat .asesor-pulso,
-  .asesor-chat .asesor-puntos span, .asesor-chat .asesor-cursor::after { animation: none; }
+  .asesor-chat .asesor-puntos span, .asesor-chat .asesor-cursor::after, .asesor-chat .asesor-brillo, .asesor-chat .asesor-barra { animation: none; }
   .asesor-chat button:not(:disabled):active, .asesor-chat a[href]:active, .asesor-chat .asesor-eleva:not(:disabled):hover { transform: none; }
 }

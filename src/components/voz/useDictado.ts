@@ -24,7 +24,7 @@ type Grabacion = {
 };
 
 /** Manda la grabación al servidor y devuelve su respuesta `{ texto }`; por omisión, el dictado de `/api/voz/transcribir`. */
-export type EnviarAudio = (audio: Blob, signal: AbortSignal) => Promise<Response>;
+export type EnviarAudio = (audio: Blob, signal: AbortSignal, segundos: number) => Promise<Response>;
 
 const enviarADictado: EnviarAudio = (audio, signal) => fetch(RUTA, { method: "POST", headers: { "Content-Type": audio.type || "audio/webm" }, body: audio, signal });
 
@@ -101,12 +101,12 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
     setNivel(0);
   }, []);
 
-  const transcribir = useCallback(async (audio: Blob, miTurno: number) => {
+  const transcribir = useCallback(async (audio: Blob, miTurno: number, segundosGrabados: number) => {
     if (!navigator.onLine) { despachar({ tipo: "fallo", codigo: "sin_conexion" }); return; }
     const control = new AbortController();
     abortador.current = control;
     try {
-      const respuesta = await enviarRef.current(audio, control.signal);
+      const respuesta = await enviarRef.current(audio, control.signal, segundosGrabados);
       if (turno.current !== miTurno) return;
       if (!respuesta.ok) {
         const cuerpo = (await respuesta.json().catch(() => ({}))) as { codigo?: string };
@@ -178,7 +178,7 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
       const audio = new Blob(actual.trozos, { type: grabadora.mimeType || actual.trozos[0]?.type || "audio/webm" });
       soltar();
       if (duracion < MINIMO_MS || audio.size === 0) { despachar({ tipo: "fallo", codigo: "muy_corto" }); return; }
-      void transcribir(audio, miTurno);
+      void transcribir(audio, miTurno, duracion / 1000);
     };
     const medidor = contexto ? medirNivel(flujo, contexto, setNivel) : null;
     if (medidor !== null) actual.relojes.push(medidor);

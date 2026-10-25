@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The dev badge sits over the chat composer (the attach button); it never exists in production.
+  devIndicators: false,
   // Standalone es para la imagen Docker del VPS; en Vercel choca con su adaptador (falta next-server.js.nft.json).
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Next bloquea por defecto las peticiones cross-origin a los recursos de desarrollo

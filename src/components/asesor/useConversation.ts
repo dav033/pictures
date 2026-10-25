@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RecordedNote } from "./VoiceNoteButton";
+import { waveformFromLevels } from "./waveform";
 import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorUiState } from "./conversation-contract";
 import type { ComposerCapabilities } from "./Composer";
 
@@ -41,6 +43,18 @@ export function useConversation() {
   const [photoKind, setPhotoKind] = useState<"inspiration" | "venue">("inspiration");
   const activeRequest = useRef<AbortController | null>(null);
   const bootstrapStarted = useRef(false);
+  const hasPhotos = useRef(false);
+  /** The advisor records "me gusta / no me gusta" on a photo while it answers: pull the saved state back so the caption is current. */
+  const refreshPhotos = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/asesor/conversations/${encodeURIComponent(id)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const snapshot = parseAdvisorSnapshot(await response.json());
+      if (!snapshot) return;
+      const saved = new Map(snapshot.messages.flatMap((message) => message.attachments?.length ? [[message.id, message.attachments] as const] : []));
+      setMessages((current) => current.map((message) => saved.has(message.id) && message.attachments?.length ? { ...message, attachments: saved.get(message.id) } : message));
+    } catch { /* the caption refreshes on the next load */ }
+  }, []);
 
   const acceptCreated = useCallback((value: unknown) => {
     const created = parseCreatedConversation(value);
@@ -81,6 +95,7 @@ export function useConversation() {
       if (!snapshot || snapshot.conversationId !== storedId) throw new Error("La respuesta de conversación no es válida.");
       setConversationId(snapshot.conversationId);
       setMessages(snapshot.messages);
+      hasPhotos.current = snapshot.messages.some((message) => (message.attachments?.length ?? 0) > 0);
       setProgress(snapshot.progress);
       setBriefVersion(snapshot.briefVersion);
       setUi(uiOf(snapshot));
@@ -108,6 +123,7 @@ export function useConversation() {
     const controller = new AbortController(); activeRequest.current = controller;
     try {
       if (turn.photos?.length) {
+        hasPhotos.current = true;
         const form = new FormData();
         form.set("conversationId", conversationId); form.set("turnId", turn.id); form.set("content", turn.content); form.set("kind", turn.photoKind ?? photoKind);
         for (const file of turn.photos) form.append("photos", file, file.name);
@@ -141,12 +157,13 @@ export function useConversation() {
         if (done) break;
       }
       if (buffer.trim()) consume(buffer);
+      if (committed && hasPhotos.current) void refreshPhotos(conversationId);
       if (!committed && !terminalReceived) { setStatus("failed"); setError("La respuesta quedó incompleta. Puedes reintentar este mensaje."); }
     } catch (cause) {
       if (controller.signal.aborted) return;
       setStatus("failed"); setError(cause instanceof Error ? cause.message : "La respuesta se interrumpió. Puedes reintentar."); setStreamingText("");
     } finally { if (activeRequest.current === controller) activeRequest.current = null; }
-  }, [conversationId, photoKind]);
+  }, [conversationId, photoKind, refreshPhotos]);
 
   const submit = useCallback((content: string, photos?: File[]) => {
     const cleaned = content.trim();
@@ -156,17 +173,38 @@ export function useConversation() {
     void sendTurn(turn);
   }, [sendTurn, status, photoKind]);
 
-  /** A voice note the server already stored as turn `turnId`: show it and run the advisor turn with its transcript. */
+  const patchMessage = useCallback((id: string, patch: (message: AdvisorMessage) => AdvisorMessage) => {
+    setMessages((current) => current.map((message) => message.id === id ? patch(message) : message));
+  }, []);
+  /** The recording just ended: show the voice note now (audio, waveform), before its transcript exists. */
+  const recordVoiceNote = useCallback((note: RecordedNote) => {
+    setMessages((current) => [...current, { id: note.turnId, role: "user", content: "", inputMode: "voice", voice: { url: note.url, seconds: note.seconds, waveform: waveformFromLevels(note.levels), state: "transcribing" } }]);
+  }, []);
+  /** The server stored the transcript as turn `turnId`: fill it in under the voice note and run the advisor turn with it. */
   const submitVoiceNote = useCallback((turnId: string, text: string) => {
-    if (status === "sending") return;
-    setMessages((current) => [...current, { id: turnId, role: "user", content: text, inputMode: "voice" }]);
+    patchMessage(turnId, (message) => ({ ...message, content: text, voice: message.voice ? { ...message.voice, state: "ready" } : message.voice }));
     void sendTurn({ id: turnId, content: text });
-  }, [sendTurn, status]);
+  }, [patchMessage, sendTurn]);
+  const failVoiceNote = useCallback((turnId: string, message: string) => {
+    patchMessage(turnId, (current) => ({ ...current, voice: current.voice ? { ...current.voice, state: "failed", error: message } : current.voice }));
+  }, [patchMessage]);
+  const discardVoiceNote = useCallback((turnId: string) => {
+    setMessages((current) => current.filter((message) => message.id !== turnId));
+  }, []);
+  const voicePending = messages.some((message) => message.voice?.state === "transcribing");
+  // Recordings live only in this browser: release them when they leave the screen.
+  const recordedUrls = useRef(new Set<string>());
+  useEffect(() => {
+    for (const message of messages) if (message.voice?.url) recordedUrls.current.add(message.voice.url);
+    const shown = new Set(messages.flatMap((message) => message.voice?.url ? [message.voice.url] : []));
+    for (const url of [...recordedUrls.current]) if (!shown.has(url)) { URL.revokeObjectURL(url); recordedUrls.current.delete(url); }
+  }, [messages]);
+  useEffect(() => { const urls = recordedUrls.current; return () => urls.forEach((url) => URL.revokeObjectURL(url)); }, []);
 
   const retry = useCallback(() => { if (pendingTurn) void sendTurn(pendingTurn); }, [pendingTurn, sendTurn]);
   const startFresh = useCallback(async () => {
     window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setUi(EMPTY_UI); await createConversation();
   }, [createConversation]);
   const capabilities: ComposerCapabilities = { photo: true, voice: true };
-  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, streamingId: pendingTurn ? `${pendingTurn.id}:assistant` : null, liveReplyIds, photoKind, setPhotoKind, capabilities, submit, submitVoiceNote, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, streamingId: pendingTurn ? `${pendingTurn.id}:assistant` : null, liveReplyIds, photoKind, setPhotoKind, capabilities, submit, recordVoiceNote, submitVoiceNote, failVoiceNote, discardVoiceNote, voicePending, retry, startFresh };
 }

@@ -125,3 +125,28 @@ test("replies type out smoothly and what hangs off a reply waits for it to finis
   const hook = readFileSync("src/components/asesor/use-revealed-text.ts", "utf8");
   assert.match(hook, /prefers-reduced-motion: reduce/, "reduced motion gets the whole text at once");
 });
+
+test("a voice note shows as a WhatsApp-style bubble at once, with the transcript filling in under it", async () => {
+  const { waveformFromLevels, placeholderWaveform, clock, WAVEFORM_BARS } = await import("../../../src/components/asesor/waveform");
+  const quiet = waveformFromLevels([0.02, 0.03, 0.02, 0.04]);
+  assert.equal(quiet.length, WAVEFORM_BARS);
+  assert.ok(quiet.every((height) => height >= 0.12 && height <= 1), "heights stay in range even for a quiet recording");
+  assert.ok(Math.max(...quiet) < 0.3, "background noise is not blown up into a loud-looking note");
+  assert.equal(Math.max(...waveformFromLevels([0.1, 0.5, 0.3, 0.2])), 1, "speech is scaled so its loudest bar fills the height");
+  const loud = waveformFromLevels([0, 0, 1, 1, 0, 0, 1, 0.5]);
+  assert.ok(loud[WAVEFORM_BARS - 1] <= loud.reduce((a, b) => Math.max(a, b), 0));
+  assert.equal(waveformFromLevels([]).length, WAVEFORM_BARS, "no samples: a placeholder shape");
+  assert.deepEqual(placeholderWaveform("abc"), placeholderWaveform("abc"), "a restored note always draws the same bars");
+  assert.notDeepEqual(placeholderWaveform("abc"), placeholderWaveform("abd"));
+  assert.equal(clock(7), "0:07"); assert.equal(clock(65.4), "1:05"); assert.equal(clock(-3), "0:00");
+  const bubble = readFileSync("src/components/asesor/VoiceNoteBubble.tsx", "utf8");
+  assert.match(bubble, /aria-label=\{playing \? "Pausar nota de voz" : "Escuchar nota de voz"\}/);
+  assert.match(bubble, /state === "transcribing"[\s\S]*Transcribiendo/);
+  assert.match(bubble, /state === "failed"[\s\S]*Descartar nota de voz/);
+  assert.match(chatView, /<VoiceNoteBubble message=\{message\}/);
+  assert.match(chatView, /conversation\.voicePending \|\| /, "the composer waits while the transcript is pending");
+  assert.match(hook, /state: "transcribing"/);
+  assert.match(hook, /URL\.revokeObjectURL/, "recordings are released when they leave the screen");
+  const button = readFileSync("src/components/asesor/VoiceNoteButton.tsx", "utf8");
+  assert.match(button, /onRecorded\(\{ turnId: id, url: URL\.createObjectURL\(audio\)/, "the recording is reported before the upload starts");
+});

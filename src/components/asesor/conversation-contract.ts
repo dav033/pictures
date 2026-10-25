@@ -4,7 +4,9 @@ import { formatBriefChange } from "@/lib/asesor/brief-changes";
 export const ADVISOR_CONVERSATION_STORAGE_KEY = "asesor.conversationId";
 
 export type AdvisorPhoto = { id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
-export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[]; inputMode?: "voice" };
+/** A voice note this browser recorded: the audio exists only here (the server keeps the transcript), `waveform` is the real loudness shape. */
+export type AdvisorVoiceNote = { url: string | null; seconds: number; waveform: number[]; state: "transcribing" | "ready" | "failed"; error?: string };
+export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[]; inputMode?: "voice"; voice?: AdvisorVoiceNote };
 export type AdvisorProgress = { complete: boolean; completed: number; required: number; missing: string[]; step?: "event" | "preferences" | "start_time" | "proposal" | "contact" | "summary"; ask?: "priority" | "budget" };
 export type AdvisorComposerCard = {
   kind: "direction" | "package";
