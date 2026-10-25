@@ -3,6 +3,7 @@ import path from "node:path";
 import { loadEnvConfig } from "@next/env";
 import { runM1Scenario } from "./scenarios/m1";
 import { runM2Scenario } from "./scenarios/m2";
+import { runPackageScenario } from "./scenarios/package";
 import { loadLiveScenarioAudio } from "./scenarios/voice";
 import { deployedReport, verifiedDeploymentRevision } from "./deployed-report";
 
@@ -16,7 +17,9 @@ export function deployedOptions(args: string[], env: Readonly<Record<string, str
       ?? (index >= 0 ? args[index + 1] : undefined);
   };
   const milestone = value("--milestone");
-  if (milestone !== "M1" && milestone !== "M2") throw new Error("Supported milestones are M1 and M2.");
+  if (milestone !== "M1" && milestone !== "M2" && milestone !== "M3") throw new Error("Supported milestones are M1, M2 and M3.");
+  const task = value("--task");
+  if (task !== undefined && !/^T\d+[a-z]?(?:\.\d+[a-z]?)*$/.test(task)) throw new Error("--task must be a task reference such as T15.11.");
   const url = new URL(value("--origin") ?? env.ASESOR_E2E_DEPLOYED_URL ?? "");
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if ((url.protocol !== "https:" && !(loopback && url.protocol === "http:"))
@@ -28,7 +31,7 @@ export function deployedOptions(args: string[], env: Readonly<Record<string, str
   const userPassword = env.ASESOR_E2E_USER_PASSWORD;
   const adminPassword = env.ASESOR_E2E_ADMIN_PASSWORD;
   if (!userPassword || !adminPassword) throw new Error("Advisor E2E user/admin passwords are required.");
-  return { origin: url.origin, revision, milestone, userPassword, adminPassword,
+  return { origin: url.origin, revision, milestone, ...(task ? { task } : {}), userPassword, adminPassword,
     reportPath: path.resolve(value("--report") ?? `reports/e2e/asesor/deployed-${milestone}.json`) };
 }
 
@@ -52,8 +55,10 @@ export async function runDeployed(args: string[]): Promise<void> {
     verifiedRevision = await readRevision();
     const scenario = options.milestone === "M1"
       ? await runM1Scenario({ ...options, live: true })
-      : await runM2Scenario({ ...options, live: true,
-        audio: await loadLiveScenarioAudio(process.env.ASESOR_E2E_AUDIO_FILE ?? "") });
+      : options.milestone === "M3"
+        ? await runPackageScenario(options)
+        : await runM2Scenario({ ...options, live: true,
+          audio: await loadLiveScenarioAudio(process.env.ASESOR_E2E_AUDIO_FILE ?? "") });
     checks = scenario.checks;
     await readRevision();
     outcome = "passed";
@@ -64,7 +69,7 @@ export async function runDeployed(args: string[]): Promise<void> {
     await mkdir(path.dirname(options.reportPath), { recursive: true });
     await writeFile(options.reportPath, JSON.stringify(deployedReport({
       revision: options.revision, verifiedRevision, origin: options.origin, milestone: options.milestone,
-      startedAt, outcome, checks, ...(failure ? { failure } : {}),
+      startedAt, outcome, checks, ...(options.task ? { task: options.task } : {}), ...(failure ? { failure } : {}),
     }), null, 2) + "\n", { mode: 0o600 });
     console.log(`Deployed ${options.milestone} ${outcome}; evidence: ${options.reportPath}`);
   }

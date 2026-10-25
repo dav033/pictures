@@ -46,7 +46,7 @@ const packageSchema = z.object({
   packageId: z.string().min(1), name: z.string().min(1), baseGuests: z.number().int().positive(), guestCount: z.number().int().positive().nullable(),
   estimate: z.object({
     status: z.enum(["available", "unavailable"]), subtotalCop: z.number().finite().nonnegative().nullable(),
-    basis: z.literal("before_vat_and_commission"), source: z.enum(["postgres", "seeded_last_good"]),
+    basis: z.literal("before_vat_and_commission"), source: z.enum(["happia_api", "postgres", "seeded_last_good"]),
     fetchedAt: z.string().nullable(), snapshotAgeSeconds: z.number().int().nonnegative().nullable(), notice: z.string().min(1),
   }).strict(),
   coverage: z.object({ event: z.enum(["matches", "unknown"]), theme: z.enum(["matches", "unknown"]), city: z.enum(["matches", "unknown"]), guests: z.enum(["matches_base", "differs_from_base", "unknown"]) }).strict(),
@@ -84,7 +84,7 @@ function cardsFromState(value: unknown): { cards: AdvisorComposerCard[]; summary
         freshness,
         ...proposal.disclosures,
       ].join(" "),
-      content: `Me interesa el paquete ${proposal.name}.`, source: estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado",
+      content: `Me interesa el paquete ${proposal.name}.`, source: estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia",
       ...(estimate.status === "available" && estimate.subtotalCop !== null ? { price: `${copFormat.format(estimate.subtotalCop)} COP` } : {}) });
   }
   const summary = parsed.data.summary ? { version: parsed.data.summary.version, text: parsed.data.summary.text } : null;

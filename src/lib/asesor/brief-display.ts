@@ -28,7 +28,7 @@ export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: stri
   const price = estimate.status === "available" && estimate.subtotalCop !== null
     ? `${copFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión`
     : "Precio estimado no disponible";
-  const source = estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado";
+  const source = estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia";
   const freshness = estimate.fetchedAt
     ? `${estimate.fetchedAt}${estimate.snapshotAgeSeconds === null ? "" : ` · antigüedad: ${estimate.snapshotAgeSeconds} segundos`}`
     : "Fecha de consulta no disponible";

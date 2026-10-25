@@ -9,16 +9,16 @@ type ScenarioOptions = {
   providerFailureToken?: string;
 };
 
-type SseEvent = { type: string; data: Record<string, unknown> };
+export type SseEvent = { type: string; data: Record<string, unknown> };
 
-async function jsonResponse(response: Response): Promise<Record<string, unknown>> {
+export async function jsonResponse(response: Response): Promise<Record<string, unknown>> {
   const value: unknown = await response.json();
   assert.equal(typeof value, "object");
   assert.ok(value !== null);
   return value as Record<string, unknown>;
 }
 
-async function login(origin: string, username: "user" | "admin", password: string): Promise<string> {
+export async function login(origin: string, username: "user" | "admin", password: string): Promise<string> {
   const response = await fetch(`${origin}/api/asesor/login`, {
     method: "POST",
     headers: { "content-type": "application/json", origin },
@@ -42,7 +42,7 @@ async function getJson(origin: string, path: string, cookie: string): Promise<Re
   return jsonResponse(response);
 }
 
-async function sendTurn(origin: string, cookie: string, conversationId: string, content: string, providerFailureToken?: string): Promise<SseEvent[]> {
+export async function sendTurn(origin: string, cookie: string, conversationId: string, content: string, providerFailureToken?: string): Promise<SseEvent[]> {
   const headers: Record<string, string> = { "content-type": "application/json", origin, cookie };
   if (providerFailureToken) headers["x-asesor-e2e-token"] = providerFailureToken;
   const response = await fetch(`${origin}/api/asesor/conversar`, {
@@ -77,7 +77,7 @@ function latestState(events: SseEvent[]): Record<string, unknown> {
   return state as Record<string, unknown>;
 }
 
-function requireFinal(events: SseEvent[], label: string): Record<string, unknown> {
+export function requireFinal(events: SseEvent[], label: string): Record<string, unknown> {
   const terminal = events.at(-1);
   assert.ok(terminal);
   assert.equal(terminal.type, "final", `${label} did not complete: ${String(terminal.data.code ?? terminal.type)}`);

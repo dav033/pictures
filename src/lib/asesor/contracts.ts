@@ -59,7 +59,7 @@ export const StandardPackageProposalSchema = z.object({
     status: z.enum(["available", "unavailable"]),
     subtotalCop: z.number().finite().nonnegative().nullable(),
     basis: z.literal("before_vat_and_commission"),
-    source: z.enum(["postgres", "seeded_last_good"]),
+    source: z.enum(["happia_api", "postgres", "seeded_last_good"]),
     fetchedAt: z.string().nullable(),
     snapshotAgeSeconds: z.number().int().nonnegative().nullable(),
     notice: z.string().min(1),

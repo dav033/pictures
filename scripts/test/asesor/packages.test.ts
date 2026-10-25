@@ -20,7 +20,7 @@ function pkg(id: string, extra: Record<string, unknown> = {}, items: { total: nu
 }
 
 const catalogue = (packages: Pkg[], overrides: Partial<Extract<HappiaCatalogueResult, { status: "available" }>> = {}): HappiaCatalogueResult =>
-  ({ status: "available", data: { packages, services: [] }, source: "postgres", snapshotAgeSeconds: 120, fetchedAt: "2026-10-21T10:00:00.000Z", ...overrides });
+  ({ status: "available", data: { packages, services: [] }, source: "happia_api", snapshotAgeSeconds: 0, fetchedAt: "2026-10-21T10:00:00.000Z", ...overrides });
 const brief = (patch: Record<string, unknown> = {}) => EventBriefSchema.parse({ eventKind: "birthday", city: "Barranquilla", guestCount: 20, theme: "Jardín", ...patch });
 
 test("only active packages with active items are candidates; metadata excludes, silence is disclosed", () => {
@@ -58,7 +58,7 @@ test("guest count orders by proximity to base_guests without a hard capacity", (
 
 test("no fit and unavailable catalogue return explicit no-match", () => {
   assert.deepEqual(proposeStandardPackage(catalogue([pkg("x", { city_slug: "cali" })]), brief()), { status: "no_match", reason: "no_fitting_package" });
-  assert.deepEqual(proposeStandardPackage({ status: "unavailable", reason: "no_valid_snapshot" }, brief()), { status: "no_match", reason: "catalogue_unavailable" });
+  assert.deepEqual(proposeStandardPackage({ status: "unavailable", reason: "request_failed" }, brief()), { status: "no_match", reason: "catalogue_unavailable" });
 });
 
 test("estimate is a COP subtotal of active items with source and freshness; missing prices are unavailable", () => {
@@ -66,7 +66,7 @@ test("estimate is a COP subtotal of active items with source and freshness; miss
   assert.ok(priced.status === "proposal");
   if (priced.status !== "proposal") return;
   assert.equal(priced.proposal.estimate.subtotalCop, 200000);
-  assert.deepEqual([priced.proposal.estimate.source, priced.proposal.estimate.snapshotAgeSeconds, priced.proposal.estimate.fetchedAt], ["postgres", 120, "2026-10-21T10:00:00.000Z"]);
+  assert.deepEqual([priced.proposal.estimate.source, priced.proposal.estimate.snapshotAgeSeconds, priced.proposal.estimate.fetchedAt], ["happia_api", 0, "2026-10-21T10:00:00.000Z"]);
   assert.equal(priced.proposal.estimate.notice, ADVISOR_ESTIMATE_NOTICE);
   const free = proposeStandardPackage(catalogue([pkg("z", {}, [{ total: 0 }])]), brief());
   assert.ok(free.status === "proposal" && free.proposal.estimate.status === "unavailable" && free.proposal.estimate.subtotalCop === null);
@@ -92,7 +92,7 @@ test("tool persists the same package, source and subtotal as the card; the model
   assert.deepEqual(card.estimate, saved.estimate);
   assert.equal(saved.estimate.subtotalCop, 400000);
   assert.match(s.read().brief.proposedPackage ?? "", /good/);
-  const replay = await applyAdvisorTool({ call: call("propose_standard_package"), operationId: "t:0:0", currentCustomerText: "Qué paquete hay?", mutateBrief: s.mutateBrief, loadCatalogue: async () => ({ status: "unavailable", reason: "no_valid_snapshot" }) });
+  const replay = await applyAdvisorTool({ call: call("propose_standard_package"), operationId: "t:0:0", currentCustomerText: "Qué paquete hay?", mutateBrief: s.mutateBrief, loadCatalogue: async () => ({ status: "unavailable", reason: "request_failed" }) });
   assert.deepEqual((replay.result as { card: unknown }).card, card);
 
   const forged = await applyAdvisorTool({ call: call("propose_standard_package", { packageId: "fake", price: 1 }), operationId: "t:1:0", currentCustomerText: "x", mutateBrief: s.mutateBrief, loadCatalogue });

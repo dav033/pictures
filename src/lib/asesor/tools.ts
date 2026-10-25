@@ -50,7 +50,7 @@ const packageCopFormat = new Intl.NumberFormat("es-CO", { style: "currency", cur
 function packageSummaryLines(proposal: EventBriefState["standardPackage"]): string[] {
   if (!proposal) return [];
   const { estimate } = proposal;
-  const source = estimate.source === "postgres" ? "Catálogo Happia" : "Último catálogo verificado";
+  const source = estimate.source === "seeded_last_good" ? "Último catálogo verificado" : "Catálogo Happia";
   const price = estimate.status === "available" && estimate.subtotalCop !== null
     ? `${packageCopFormat.format(estimate.subtotalCop)} COP antes de IVA y comisión`
     : "no disponible";
@@ -104,7 +104,7 @@ export async function applyAdvisorTool(input: {
   now?: () => Date;
 }): Promise<AdvisorToolEffect> {
   const { call, currentCustomerText } = input;
-  let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "no_valid_snapshot" };
+  let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "request_failed" };
   let packageCardValue: unknown;
   if (call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) {
     try { catalogue = await (input.loadCatalogue ?? (async () => (await import("./catalogue")).getHappiaCatalogue()))(); } catch { /* Explicit no-match below; never invent a catalogue result. */ }
@@ -121,7 +121,7 @@ export async function applyAdvisorTool(input: {
         directionOffers = getDirectionOffers(await catalogueModule.getHappiaCatalogue());
       }
     } catch {
-      const unavailable: HappiaCatalogueResult = { status: "unavailable", reason: "no_valid_snapshot" };
+      const unavailable: HappiaCatalogueResult = { status: "unavailable", reason: "request_failed" };
       directionOffers = getDirectionOffers(unavailable);
     }
   }

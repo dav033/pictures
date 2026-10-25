@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { execFileSync } from "node:child_process";
+import { before, test } from "node:test";
 import { getHappiaCatalogue, type HappiaCatalogueData } from "../../../src/lib/asesor/catalogue";
-import type { AsesorClient } from "../../../src/lib/asesor/db";
-
-const DAY = 24 * 60 * 60 * 1000;
+import { existsSync, readFileSync } from "node:fs";
 
 function service(id: string, total = 350000): HappiaCatalogueData["services"][number] {
   return {
@@ -28,119 +27,72 @@ function packageRecord(id: string) {
 
 const data = (id: string, total?: number) => ({ packages: [packageRecord(`pkg-${id}`)], services: [service(`service-${id}`, total)] }) as HappiaCatalogueData;
 
-function fakeStore(options: { snapshot?: { data: unknown; fetchedAt: Date }; attemptedAt?: Date } = {}) {
-  let snapshot = options.snapshot;
-  let attemptedAt = options.attemptedAt;
-  const queries: string[] = [];
-  const db: AsesorClient = {
-    async query<Row>(text: string, values?: unknown[]) {
-      queries.push(text);
-      if (text.startsWith("SELECT payload")) {
-        return { rows: snapshot ? [{ payload: snapshot.data, fetched_at: snapshot.fetchedAt, source: "happia_api" }] as Row[] : [], rowCount: snapshot ? 1 : 0 };
-      }
-      if (text.includes("INSERT INTO happia_catalogue_refresh")) {
-        const timestamp = new Date(values?.[0] as string ?? Date.now());
-        const eligible = !attemptedAt || timestamp.getTime() - attemptedAt.getTime() >= DAY;
-        if (eligible) attemptedAt = timestamp;
-        return { rows: eligible ? [{ refresh_key: "all" }] as Row[] : [], rowCount: eligible ? 1 : 0 };
-      }
-      if (text.includes("INSERT INTO happia_catalogue_snapshot")) {
-        snapshot = { data: JSON.parse(values?.[0] as string), fetchedAt: new Date(values?.[1] as Date) };
-        return { rows: [], rowCount: 1 };
-      }
-      throw new Error(`Unexpected SQL: ${text}`);
-    },
-  };
-  return { db, queries, get snapshot() { return snapshot; }, get attemptedAt() { return attemptedAt; } };
-}
-
-test("cold read claims the refresh and stores a validated Happia snapshot without a long transaction", async () => {
-  const now = new Date("2026-10-21T12:00:00.000Z");
-  const store = fakeStore();
-  let providerCalls = 0;
-  const source = data("one");
-  const result = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { providerCalls++; return source; } });
-
-  assert.equal(result.status, "available");
-  if (result.status === "available") {
-    assert.equal(result.source, "postgres");
-    assert.equal(result.snapshotAgeSeconds, 0);
-    assert.equal(result.data.services[0]?.id, "service-one");
-    assert.equal(result.data.services[0]?.total, 350000);
-    assert.equal(result.data.services[0]?.charge_type, "total");
-    assert.equal(result.data.services[0]?.charge_mode, "unit");
-    assert.deepEqual(result.data.services[0]?.sale_unit, { singular: "hora", plural: "horas" });
-    assert.equal(result.data.services[0]?.provider_name, "Proveedor Happia");
-    assert.equal(result.data.packages[0]?.package_items[0]?.id, "pkg-one-item");
-    assert.equal(result.data.packages[0]?.package_items[0]?.provider_name, "Proveedor del ítem");
-    assert.equal(result.data.packages[0]?.package_items[0]?.total, 80000);
-    assert.equal(result.data.packages[0]?.package_items[0]?.charge_type, "total");
+// The default reader loads the workspace package's build output, which a clean checkout does not have yet.
+before(() => {
+  if (!existsSync("packages/happie-package-ia/dist/index.js")) {
+    execFileSync("npm", ["run", "build", "--workspace=@sempertex/happie-package-ia"], { stdio: "ignore" });
   }
-  assert.equal(providerCalls, 1);
-  assert.ok(store.snapshot);
-  assert.equal(store.queries.some((query) => /\bBEGIN\b/.test(query)), false);
-  assert.equal(store.queries.some((query) => query.includes("happia_catalogue_snapshot")), true);
 });
 
-test("a validated snapshot is fresh before the 24-hour boundary and refreshes at the boundary", async () => {
-  const now = new Date("2026-10-21T12:00:00.000Z");
-  const store = fakeStore({ snapshot: { data: data("old"), fetchedAt: new Date(now.getTime() - DAY + 1) } });
-  let providerCalls = 0;
-  const fresh = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { providerCalls++; return data("new"); } });
-  assert.equal(fresh.status, "available");
-  assert.equal(providerCalls, 0);
+const NOW = new Date("2026-10-25T12:00:00.000Z");
 
-  store.snapshot!.fetchedAt = new Date(now.getTime() - DAY);
-  const stale = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { providerCalls++; return data("new"); } });
-  assert.equal(stale.status, "available");
-  assert.equal(providerCalls, 1);
-  if (stale.status === "available") assert.equal(stale.data.services[0]?.id, "service-new");
+test("every call reads packages and services from the provider with no snapshot", async () => {
+  let reads = 0;
+  const readFromHappia = async () => { reads++; return data(String(reads)); };
+  const first = await getHappiaCatalogue({ now: () => NOW, readFromHappia });
+  const second = await getHappiaCatalogue({ now: () => NOW, readFromHappia });
+  assert.equal(reads, 2);
+  assert.deepEqual(first, { status: "available", data: data("1"), source: "happia_api", fetchedAt: NOW.toISOString(), snapshotAgeSeconds: 0 });
+  assert.equal(second.status === "available" && second.data.services[0]?.id, "service-2");
 });
 
-test("concurrent cold reads share the durable daily marker and only one refreshes", async () => {
-  const now = new Date("2026-10-21T12:00:00.000Z");
-  const store = fakeStore();
-  let providerCalls = 0;
-  let releaseProvider!: () => void;
-  const waiting = new Promise<void>((resolve) => { releaseProvider = resolve; });
-  const reader = async () => { providerCalls++; await waiting; return data("shared"); };
-  const options = { db: store.db, now: () => now, readFromHappia: reader };
-  const first = getHappiaCatalogue(options);
-  await new Promise((resolve) => setImmediate(resolve));
-  const second = getHappiaCatalogue(options);
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(providerCalls, 1);
-  releaseProvider();
-  const results = await Promise.all([first, second]);
-  assert.deepEqual(results.map((result) => result.status), ["available", "unavailable"]);
+test("a valid empty catalogue is available with empty arrays", async () => {
+  const result = await getHappiaCatalogue({ now: () => NOW, readFromHappia: async () => ({ packages: [], services: [] }) });
+  assert.deepEqual(result, { status: "available", data: { packages: [], services: [] }, source: "happia_api", fetchedAt: NOW.toISOString(), snapshotAgeSeconds: 0 });
 });
 
-test("API timeout or invalid data preserve the last good snapshot and the marker blocks same-day retries", async () => {
-  const now = new Date("2026-10-21T12:00:00.000Z");
-  const store = fakeStore({ snapshot: { data: data("last-good"), fetchedAt: new Date(now.getTime() - DAY) } });
-  const failed = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { throw new Error("timeout"); } });
-  assert.equal(failed.status, "available");
-  if (failed.status === "available") assert.equal(failed.data.services[0]?.id, "service-last-good");
-
-  let calls = 0;
-  const next = await getHappiaCatalogue({ db: store.db, now: () => now, readFromHappia: async () => { calls++; return { services: [service("invalid", -1)], packages: [] }; } });
-  assert.equal(next.status, "available");
-  assert.equal(calls, 0);
-
-  const invalidStore = fakeStore({ snapshot: { data: data("preserved"), fetchedAt: new Date(now.getTime() - DAY) } });
-  const invalidPayload = await getHappiaCatalogue({
-    db: invalidStore.db, now: () => now,
-    readFromHappia: async () => ({ packages: [], services: [service("invalid", -1)] }),
-  });
-  assert.equal(invalidPayload.status, "available");
-  if (invalidPayload.status === "available") assert.equal(invalidPayload.data.services[0]?.id, "service-preserved");
+test("missing Happia configuration reports not_configured", async () => {
+  const saved = { base: process.env.HAPPIA_API_BASE_URL, key: process.env.HAPPIA_API_KEY };
+  delete process.env.HAPPIA_API_BASE_URL;
+  delete process.env.HAPPIA_API_KEY;
+  try {
+    assert.deepEqual(await getHappiaCatalogue(), { status: "unavailable", reason: "not_configured" });
+  } finally {
+    if (saved.base !== undefined) process.env.HAPPIA_API_BASE_URL = saved.base;
+    if (saved.key !== undefined) process.env.HAPPIA_API_KEY = saved.key;
+  }
 });
 
-test("missing or invalid persisted sources return explicit unavailable without invented items", async () => {
-  const noSource = await getHappiaCatalogue({ db: fakeStore().db, now: () => new Date("2026-10-21T12:00:00Z"), readFromHappia: async () => { throw new Error("offline"); } });
-  assert.deepEqual(noSource, { status: "unavailable", reason: "no_valid_snapshot" });
+test("provider failures report request_failed without leaking details", async () => {
+  const result = await getHappiaCatalogue({ readFromHappia: async () => { throw new Error("HTTP 503 key=secret-value"); } });
+  assert.deepEqual(result, { status: "unavailable", reason: "request_failed" });
+});
 
-  const store = fakeStore({ snapshot: { data: { packages: [{ id: "bad" }], services: [] }, fetchedAt: new Date("2020-01-01T00:00:00Z") } });
-  const result = await getHappiaCatalogue({ db: store.db, now: () => new Date("2026-10-21T12:00:00Z"), readFromHappia: async () => { throw new Error("offline"); } });
-  assert.deepEqual(result, { status: "unavailable", reason: "no_valid_snapshot" });
+test("a read that exceeds the 10 s deadline reports request_failed", async () => {
+  const original = AbortSignal.timeout;
+  const deadlines: number[] = [];
+  AbortSignal.timeout = (ms: number) => { deadlines.push(ms); return AbortSignal.abort(new DOMException("deadline", "TimeoutError")); };
+  try {
+    const result = await getHappiaCatalogue({
+      readFromHappia: (signal) => new Promise((_, reject) => { signal.addEventListener("abort", () => reject(signal.reason), { once: true }); if (signal.aborted) reject(signal.reason); }),
+    });
+    assert.deepEqual(result, { status: "unavailable", reason: "request_failed" });
+    assert.deepEqual(deadlines, [10_000]);
+  } finally {
+    AbortSignal.timeout = original;
+  }
+});
+
+test("data outside the validated schema reports invalid_response", async () => {
+  const bad = await getHappiaCatalogue({ readFromHappia: async () => ({ packages: [], services: [service("invalid", -1)] }) });
+  assert.deepEqual(bad, { status: "unavailable", reason: "invalid_response" });
+  const missing = await getHappiaCatalogue({ readFromHappia: async () => ({ packages: [{ id: "bad" }], services: [] }) });
+  assert.deepEqual(missing, { status: "unavailable", reason: "invalid_response" });
+});
+
+test("the catalogue has no database snapshot, refresh marker or fallback file", () => {
+  const source = readFileSync("src/lib/asesor/catalogue.ts", "utf8");
+  assert.equal(source.includes("happia_catalogue_"), false);
+  assert.equal(/getAsesorPool|createRequire|catalogue-fallback/.test(source), false);
+  assert.equal(existsSync("src/lib/asesor/catalogue-fallback.json"), false);
 });

@@ -138,7 +138,7 @@ test("vendor projection removes private fields and redacts private values echoed
 
 test("direction IDs and package price/source/freshness come from validated server ports", async () => {
   const store = stateStore(null);
-  const directionOffers = getDirectionOffers({ status: "unavailable", reason: "no_valid_snapshot" });
+  const directionOffers = getDirectionOffers({ status: "unavailable", reason: "request_failed" });
   const directions = await applyAdvisorTool({
     call: { nombre: "show_directions", args: {} }, operationId: "directions:0", currentCustomerText: "Ayúdame a elegir.",
     mutateBrief: store.mutateBrief, loadDirectionOffers: async () => directionOffers,
@@ -147,8 +147,8 @@ test("direction IDs and package price/source/freshness come from validated serve
   assert.deepEqual(returnedIds, ADVISOR_DIRECTION_IDS);
 
   const fallback: Extract<HappiaCatalogueResult, { status: "available" }> = {
-    status: "available", data: { packages: [pkg("seeded-package")], services: [] }, source: "seeded_last_good",
-    snapshotAgeSeconds: null, fetchedAt: "2026-10-20T12:00:00.000Z",
+    status: "available", data: { packages: [pkg("seeded-package")], services: [] }, source: "happia_api",
+    snapshotAgeSeconds: 0, fetchedAt: "2026-10-20T12:00:00.000Z",
   };
   const packageEffect = await applyAdvisorTool({
     call: { nombre: "propose_standard_package", args: {} }, operationId: "package:0", currentCustomerText: "¿Qué paquete recomiendas?",
@@ -156,7 +156,7 @@ test("direction IDs and package price/source/freshness come from validated serve
   });
   const result = packageEffect.result as { card: { id: string; estimate: { subtotalCop: number; source: string; snapshotAgeSeconds: number | null; fetchedAt: string | null } } };
   assert.equal(result.card.id, "seeded-package");
-  assert.deepEqual(result.card.estimate, { subtotalCop: 425000, source: "seeded_last_good", snapshotAgeSeconds: null, fetchedAt: "2026-10-20T12:00:00.000Z", status: "available", basis: "before_vat_and_commission", notice: "Versión de prueba. Estamos afinando esta asesoría; revisaremos contigo los detalles antes de cerrar la propuesta." });
+  assert.deepEqual(result.card.estimate, { subtotalCop: 425000, source: "happia_api", snapshotAgeSeconds: 0, fetchedAt: "2026-10-20T12:00:00.000Z", status: "available", basis: "before_vat_and_commission", notice: "Versión de prueba. Estamos afinando esta asesoría; revisaremos contigo los detalles antes de cerrar la propuesta." });
   assert.match((packageEffect.result as { message: string }).message, /425000 COP/);
   assert.doesNotMatch((packageEffect.result as { message: string }).message, /undefined|NaN/);
 });
