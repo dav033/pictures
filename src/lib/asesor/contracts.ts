@@ -21,6 +21,10 @@ export const EventBriefSchema = z.object({
   city: z.string().trim().min(1).max(120).nullable().default(null),
   department: z.string().trim().min(1).max(120).nullable().default(null),
   budget: z.number().finite().nonnegative().nullable().default(null),
+  /** A quick-pick budget band ("Hasta $300.000") when the customer gave a range instead of an amount. */
+  budgetRange: z.string().trim().min(1).max(80).nullable().default(null),
+  /** The customer explicitly preferred not to say a budget; the advisor does not ask again. */
+  budgetUndisclosed: z.boolean().default(false),
   currency: z.enum(["COP", "USD"]).default("COP"),
   honoreeName: z.string().trim().min(1).max(160).nullable().default(null),
   honoreeAge: z.number().int().min(0).max(120).nullable().default(null),
@@ -28,6 +32,8 @@ export const EventBriefSchema = z.object({
   schoolName: z.string().trim().min(1).max(200).nullable().default(null),
   grade: z.string().trim().min(1).max(80).nullable().default(null),
   audience: z.string().trim().min(1).max(300).nullable().default(null),
+  /** Why this celebration matters to the organiser, in their words. */
+  story: z.string().trim().min(1).max(1000).nullable().default(null),
   organiserPriority: z.enum(["impress", "personalise", "simple", "best_price"]).nullable().default(null),
   theme: z.string().trim().min(1).max(200).nullable().default(null),
   colors: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
@@ -69,8 +75,20 @@ export const StandardPackageProposalSchema = z.object({
   }).strict(),
   coverage: z.object({ event: coverageSchema, theme: coverageSchema, city: coverageSchema, guests: z.enum(["matches_base", "differs_from_base", "unknown"]) }).strict(),
   disclosures: z.array(z.string()),
+  /** Happia item categories in the package ("Decoración", "Comida"); proposals stored before this field parse as []. */
+  categories: z.array(z.string()).default([]),
 }).strict();
 export type StandardPackageProposal = z.infer<typeof StandardPackageProposalSchema>;
+
+/** A fact the customer changed after giving it, recorded by the server (never the model) for the brief's change history. */
+export const BriefChangeSchema = z.object({
+  field: z.string().min(1).max(60),
+  from: z.string().max(500),
+  to: z.string().max(500),
+  turnId: z.string().max(200).nullable(),
+  impact: z.string().max(200).nullable(),
+}).strict();
+export type BriefChange = z.infer<typeof BriefChangeSchema>;
 
 export type EventBriefState = {
   brief: EventBrief;
@@ -83,11 +101,12 @@ export type EventBriefState = {
   approval: { summaryVersion: number; confirmedAt: string } | null;
   refused: { contact: boolean; address: boolean };
   toolReceipts: Record<string, { name: string; argsHash: string; message: string }>;
+  changes: BriefChange[];
 };
 
 export function parseEventBriefState(input: unknown): EventBriefState {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return { brief: emptyEventBrief(), standardPackage: null, directionOffers: [], selectedDirectionId: null, summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
+    return { brief: emptyEventBrief(), standardPackage: null, directionOffers: [], selectedDirectionId: null, summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {}, changes: [] };
   }
   const value = input as Record<string, unknown>;
   const parsed = EventBriefSchema.safeParse(value.brief ?? {});
@@ -100,6 +119,7 @@ export function parseEventBriefState(input: unknown): EventBriefState {
   const refusedRaw = value.refused;
   const standardPackage = StandardPackageProposalSchema.safeParse(value.standardPackage);
   const directionOffers = parseStoredDirectionOffers(value.directionOffers) ?? [];
+  const changes = z.array(BriefChangeSchema).safeParse(value.changes);
   return {
     brief: parsed.success ? parsed.data : emptyEventBrief(),
     standardPackage: standardPackage.success ? standardPackage.data : null,
@@ -122,5 +142,6 @@ export function parseEventBriefState(input: unknown): EventBriefState {
     },
     toolReceipts: typeof value.toolReceipts === "object" && value.toolReceipts !== null && !Array.isArray(value.toolReceipts)
       ? value.toolReceipts as EventBriefState["toolReceipts"] : {},
+    changes: changes.success ? changes.data : [],
   };
 }

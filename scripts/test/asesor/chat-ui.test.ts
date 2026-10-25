@@ -18,8 +18,8 @@ test("advisor page places privacy and test notices before the welcome question",
   const preview = chatView.indexOf("aria-label=\"Versión de prueba\"");
   const transcript = chatView.indexOf("{visibleMessages.map");
   assert.ok(privacy >= 0 && preview > privacy && transcript > preview);
-  assert.match(chatView, /¿Qué celebración estás planeando/);
-  assert.match(chatView, /para quién es/);
+  assert.match(chatView, /Cuéntame sobre la celebración que tienes en mente/);
+  assert.match(chatView, /qué celebran y para quién es/);
   assert.match(chatView, /min-h-dvh/);
   assert.match(chatView, /safe-area-inset-bottom/);
   assert.match(composer, /<textarea/);
@@ -64,17 +64,17 @@ test("retry reuses the pending turn ID and failed conversation IDs have a recove
   assert.match(chatView, /Empezar una conversación nueva/);
 });
 
-test("Composer exposes camera/gallery upload, advisor dictation, and sourced direction/package cards", () => {
+test("Composer exposes camera/gallery upload and advisor dictation; offers render in the transcript", () => {
   assert.match(composer, /capabilities\.voice && onVoiceText/);
   assert.match(composer, /<BotonVoz/);
-  assert.match(composer, /card\.kind === "direction" \? "Dirección" : "Paquete"/);
   assert.match(composer, /capture="environment"/);
   assert.match(composer, /Elegir foto de la galería/);
-  assert.match(composer, /card\.imageUrl/);
+  assert.match(chatView, /aria-label="Opciones para continuar"/);
+  assert.match(chatView, /<DirectionCards/);
+  assert.match(chatView, /<PackageCard/);
   assert.match(hook, /fetch\("\/api\/asesor\/photos"/);
   assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: true, voice: true \}/);
-  assert.match(chatView, /Resumen para revisar/);
-  assert.match(chatView, /Ver resumen aprobado/);
+  assert.match(chatView, /<SummaryCard/);
   assert.match(chatView, /onVoiceText=\{setDraft\}/);
 });
 

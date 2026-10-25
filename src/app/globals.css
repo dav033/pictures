@@ -1683,3 +1683,39 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--taller-borde) transparent;
 }
+
+/* Asesor Happia (/asesor): fondo cálido claro, tinta, acento baya y verde azulado (canvas aprobado 2026-10-25).
+   Siempre claro: el asesor es una página de marca para clientes. */
+.asesor-chat {
+  color-scheme: light;
+  --fondo: #fbf7f2;
+  --superficie: #ffffff;
+  --superficie-suave: #f2e9df;
+  --superficie-2: #f2e9df;
+  --borde: #e0d6ca;
+  --borde-suave: #ece4da;
+  --texto: #221b2e;
+  --texto-suave: #6e6578;
+  --texto-tenue: #6e6578;
+  --acento: #b23a4b;
+  --acento-hover: #8f2c3b;
+  --acento-suave: #f6e3e5;
+  --sobre-acento: #ffffff;
+  --exito: #0f6e6b;
+  --exito-suave: #e3f1ef;
+  --aviso: #a35a00;
+  --aviso-suave: #fbefdc;
+  --error: #b23a45;
+  --error-suave: #ffeaec;
+  --sombra: rgb(34 27 46 / 0.08);
+  --overlay: rgb(34 27 46 / 0.28);
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-asesor-texto), system-ui, sans-serif;
+}
+.asesor-chat .asesor-display { font-family: var(--font-asesor-display), var(--font-asesor-texto), sans-serif; letter-spacing: -0.02em; }
+@keyframes asesor-hoja-entra { from { transform: translateY(48px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes asesor-hora-tic { from { transform: translateY(-8px); opacity: 0.3; } to { transform: none; opacity: 1; } }
+.asesor-hoja { animation: asesor-hoja-entra 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.asesor-hora { animation: asesor-hora-tic 0.25s ease-out; }
+@media (prefers-reduced-motion: reduce) { .asesor-hoja, .asesor-hora { animation: none; } }

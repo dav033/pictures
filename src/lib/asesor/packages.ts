@@ -94,6 +94,7 @@ function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<H
     },
     coverage: { event: coverage.event === "matches" ? "matches" : "unknown", theme: coverage.theme === "matches" ? "matches" : "unknown", city: coverage.city === "matches" ? "matches" : "unknown", guests: guestsCoverage },
     disclosures,
+    categories: [...new Set(pkg.package_items.filter((item) => item.is_active).map((item) => item.category_name).filter((name): name is string => typeof name === "string" && name.trim() !== ""))].sort((a, b) => a.localeCompare(b, "es")),
   };
 }
 
@@ -110,17 +111,28 @@ export function packageCard(proposal: StandardPackageProposal): AdvisorPackageCa
   };
 }
 
+/** Highest amount the customer wants to spend: an amount, or the top of a band ("Hasta $300.000", "$300.000–$600.000"); none for "Más de …". */
+export function budgetCeiling(brief: Pick<EventBrief, "budget" | "budgetRange">): number | null {
+  if (brief.budget !== null) return brief.budget;
+  if (!brief.budgetRange || /^m[aá]s de/i.test(brief.budgetRange.trim())) return null;
+  const amounts = brief.budgetRange.match(/\d[\d.]*/g)?.map((amount) => Number(amount.replace(/\./g, ""))).filter(Number.isFinite) ?? [];
+  return amounts.length ? Math.max(...amounts) : null;
+}
+
 /** Picks the standard Happia package that best fits the brief. Candidates come only from the validated catalogue; metadata that excludes a package removes it, missing metadata is disclosed. */
 export function proposeStandardPackage(catalogue: HappiaCatalogueResult, brief: EventBrief): StandardPackageResult {
   if (catalogue.status !== "available") return { status: "no_match", reason: "catalogue_unavailable" };
+  const ceiling = budgetCeiling(brief);
   const candidates = catalogue.data.packages.flatMap((pkg) => {
     if (!pkg.is_active || !pkg.package_items.some((item) => item.is_active)) return [];
     const coverage = { event: eventCoverage(pkg, brief), theme: themeCoverage(pkg, brief), city: cityCoverage(pkg, brief) };
     if (coverage.event === "excluded" || coverage.theme === "excluded" || coverage.city === "excluded") return [];
-    return [{ pkg, coverage, distance: brief.guestCount === null ? 0 : Math.abs(pkg.base_guests - brief.guestCount) }];
+    const subtotal = estimateSubtotal(pkg, brief.guestCount ?? pkg.base_guests);
+    const overBudget = ceiling !== null && subtotal !== null && subtotal > ceiling;
+    return [{ pkg, coverage, overBudget, distance: brief.guestCount === null ? 0 : Math.abs(pkg.base_guests - brief.guestCount) }];
   });
-  // Closest to the guest count first (a soft preference, not a capacity), then featured, then a stable id order.
-  candidates.sort((a, b) => a.distance - b.distance || Number(b.pkg.is_featured) - Number(a.pkg.is_featured) || a.pkg.id.localeCompare(b.pkg.id));
+  // Within the customer's budget first, then closest to the guest count (a soft preference, not a capacity), then featured, then a stable id order.
+  candidates.sort((a, b) => Number(a.overBudget) - Number(b.overBudget) || a.distance - b.distance || Number(b.pkg.is_featured) - Number(a.pkg.is_featured) || a.pkg.id.localeCompare(b.pkg.id));
   const best = candidates[0];
   if (!best) return { status: "no_match", reason: "no_fitting_package" };
   const proposal = proposalFor(best.pkg, brief, catalogue, { event: best.coverage.event as Coverage, theme: best.coverage.theme, city: best.coverage.city });

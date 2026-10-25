@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorComposerCard, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorSummary } from "./conversation-contract";
+import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorUiState } from "./conversation-contract";
 import type { ComposerCapabilities } from "./Composer";
 
 type Status = "loading" | "ready" | "sending" | "failed" | "invalid" | "unavailable" | "completed";
@@ -23,14 +23,15 @@ function parseUploadedPhotos(value: unknown, turnId: string): AdvisorPhoto[] | n
   return attachments;
 }
 
+const EMPTY_UI: AdvisorUiState = { cards: [], summary: null, approved: false, headline: { title: null, facts: [], city: null }, changes: [], proposal: null, directionChosen: false };
+const uiOf = ({ cards, summary, approved, headline, changes, proposal, directionChosen }: AdvisorUiState): AdvisorUiState => ({ cards, summary, approved, headline, changes, proposal, directionChosen });
+
 export function useConversation() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AdvisorMessage[]>([]);
   const [progress, setProgress] = useState<AdvisorProgress | null>(null);
   const [briefVersion, setBriefVersion] = useState(0);
-  const [cards, setCards] = useState<AdvisorComposerCard[]>([]);
-  const [summary, setSummary] = useState<AdvisorSummary | null>(null);
-  const [approved, setApproved] = useState(false);
+  const [ui, setUi] = useState<AdvisorUiState>(EMPTY_UI);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
@@ -47,9 +48,7 @@ export function useConversation() {
     setMessages([]);
     setProgress(created.progress);
     setBriefVersion(created.briefVersion);
-    setCards(created.cards);
-    setSummary(created.summary);
-    setApproved(created.approved);
+    setUi(uiOf(created));
     setStatus("ready");
     setError(null);
   }, []);
@@ -82,9 +81,7 @@ export function useConversation() {
       setMessages(snapshot.messages);
       setProgress(snapshot.progress);
       setBriefVersion(snapshot.briefVersion);
-      setCards(snapshot.cards);
-      setSummary(snapshot.summary);
-      setApproved(snapshot.approved);
+      setUi(uiOf(snapshot));
       const lastMessage = snapshot.messages.at(-1);
       if (lastMessage?.role === "user") {
         setPendingTurn({ id: lastMessage.id, content: lastMessage.content });
@@ -126,7 +123,7 @@ export function useConversation() {
         const event = parseAdvisorEvent(JSON.parse(line.slice(6)) as unknown);
         if (!event) throw new Error("La respuesta de conversación no es válida.");
         if (event.type === "text") { streamed += event.delta; setStreamingText(streamed); return; }
-        setProgress(event.progress); setBriefVersion(event.briefVersion); setCards(event.cards); setSummary(event.summary); setApproved(event.approved);
+        setProgress(event.progress); setBriefVersion(event.briefVersion); setUi(uiOf(event));
         if (event.type === "final") {
           terminalReceived = true; committed = true;
           setMessages((current) => [...current.filter((message) => message.id !== event.messageId), { id: event.messageId, role: "assistant", content: streamed }]);
@@ -158,8 +155,8 @@ export function useConversation() {
 
   const retry = useCallback(() => { if (pendingTurn) void sendTurn(pendingTurn); }, [pendingTurn, sendTurn]);
   const startFresh = useCallback(async () => {
-    window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setCards([]); setSummary(null); setApproved(false); await createConversation();
+    window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setUi(EMPTY_UI); await createConversation();
   }, [createConversation]);
   const capabilities: ComposerCapabilities = { photo: true, voice: true };
-  return { conversationId, messages, progress, briefVersion, cards, summary, approved, status, error, streamingText, photoKind, setPhotoKind, capabilities, submit, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, photoKind, setPhotoKind, capabilities, submit, retry, startFresh };
 }

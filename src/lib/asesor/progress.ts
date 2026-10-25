@@ -2,7 +2,9 @@ import type { EventBrief, EventBriefState } from "./contracts";
 
 /** Where the conversation is: event facts, preferences, the start-time picker, the Happia proposal, and the contact last. */
 export type ConversationStep = "event" | "preferences" | "start_time" | "proposal" | "contact" | "summary";
-export type BriefProgress = { complete: boolean; completed: number; required: number; missing: string[]; step: ConversationStep };
+/** Inside the preferences step, after the taste: what the organiser cares most about, then the budget (quick-pick chips). */
+export type PreferenceAsk = "priority" | "budget";
+export type BriefProgress = { complete: boolean; completed: number; required: number; missing: string[]; step: ConversationStep; ask?: PreferenceAsk };
 
 const LATE_FIELDS = new Set(["startTime", "contactName", "contactPhoneOrEmail"]);
 
@@ -17,13 +19,23 @@ export function calculateBriefProgress(brief: EventBrief, proposalPresented = tr
   const missing = required.filter((key) => brief[key] === null || brief[key] === "") as string[];
   if (!brief.contactPhone && !brief.contactEmail) missing.push("contactPhoneOrEmail");
   const count = required.length + 1;
-  return { complete: missing.length === 0, completed: count - missing.length, required: count, missing, step: conversationStep(brief, missing, proposalPresented) };
+  const step = conversationStep(brief, missing, proposalPresented);
+  const ask = step === "preferences" ? preferenceAsk(brief) : null;
+  return { complete: missing.length === 0, completed: count - missing.length, required: count, missing, step, ...(ask ? { ask } : {}) };
+}
+
+const hasTaste = (brief: EventBrief) => Boolean(brief.theme || brief.style || brief.likes || brief.dislikes || brief.colors.length > 0);
+const budgetAnswered = (brief: EventBrief) => brief.budget !== null || brief.budgetRange !== null || brief.budgetUndisclosed;
+
+function preferenceAsk(brief: EventBrief): PreferenceAsk | null {
+  if (!hasTaste(brief) || budgetAnswered(brief)) return null;
+  return brief.organiserPriority === null ? "priority" : "budget";
 }
 
 function conversationStep(brief: EventBrief, missing: string[], proposalPresented: boolean): ConversationStep {
   if (missing.some((field) => !LATE_FIELDS.has(field))) return "event";
-  const preferences = brief.theme || brief.style || brief.likes || brief.dislikes || brief.colors.length > 0;
-  if (!preferences && missing.length > 0) return "preferences";
+  // The budget is optional for the brief but always asked: an amount, a band or an explicit "prefiero no decir".
+  if ((!hasTaste(brief) || !budgetAnswered(brief)) && missing.length > 0) return "preferences";
   if (missing.includes("startTime")) return "start_time";
   if (!proposalPresented && missing.length > 0) return "proposal";
   if (missing.length > 0) return "contact";

@@ -8,6 +8,7 @@ import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseSto
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
 import { packageCard, proposeStandardPackage } from "./packages";
+import { appendBriefChanges, budgetDisplay, diffBrief, EVENT_KIND_LABELS, formatBriefChange, PRIORITY_LABELS } from "./brief-changes";
 
 const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission" && key !== "proposedPackage");
 const fieldsSchema = EventBriefSchema.partial().omit({ contactPermission: true, addressPermission: true, proposedPackage: true }).strict();
@@ -20,7 +21,11 @@ const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueType") return { type: "string", description: "Tipo de lugar indicado por el cliente: salón, casa, restaurante, jardín, colegio, etc. En 'salón Casa Jardín', guarda salón aquí y Casa Jardín en venueName." };
   if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
   if (field === "venueUndecided") return { type: "boolean", description: "true cuando el cliente aún no sabe o no está seguro de dónde será el evento; entonces no se pide dirección." };
-  if (field === "venueSearch") return { type: "string", description: "Qué lugar buscaría si aún no lo tiene: tipo (salón, finca, al aire libre), zona o barrio y capacidad. Sirve para buscar lugares en Happia." };
+  if (field === "budgetUndisclosed") return { type: "boolean", description: "true cuando el cliente prefiere no decir el presupuesto; no vuelvas a preguntarlo." };
+  if (field === "venueSearch") return { type: "string", description: "Qué lugar buscaría si aún no lo tiene: tipo (salón, finca, al aire libre), zona o barrio y capacidad. Se le pasa a Happia para ayudar a buscar el lugar; no hay búsqueda automática." };
+  if (field === "story") return { type: "string", description: "Por qué es especial esta celebración para quien organiza, en sus palabras." };
+  if (field === "budgetRange") return { type: "string", description: "Rango de presupuesto cuando el cliente da un rango y no un monto, por ejemplo: Hasta $300.000." };
+  if (field === "brandRequests") return { type: "string", description: "Marcas o proveedores que el cliente pide expresamente." };
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
   if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
   if (["guestCount", "honoreeAge"].includes(field)) return { type: "integer", minimum: field === "guestCount" ? 1 : 0 };
@@ -60,8 +65,8 @@ function packageSummaryLines(proposal: EventBriefState["standardPackage"]): stri
     ? `${estimate.fetchedAt} · antigüedad: ${estimate.snapshotAgeSeconds === null ? "desconocida" : `${estimate.snapshotAgeSeconds} segundos`}`
     : "fecha de consulta no disponible";
   return [
-    `Paquete estándar: ${proposal.name} (${proposal.packageId})`,
-    `Estimado del paquete: ${price}`,
+    `Paquete estándar: ${proposal.name}`,
+    `Precio de referencia del paquete (no es una cotización): ${price}`,
     `Fuente del estimado: ${source}`,
     `Actualidad del catálogo: ${freshness}`,
     ...proposal.disclosures.map((disclosure) => `Aviso del paquete: ${disclosure}`),
@@ -104,6 +109,8 @@ export async function applyAdvisorTool(input: {
   photoIds?: ReadonlySet<string>;
   savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
   now?: () => Date;
+  /** The customer turn this tool runs in; links recorded changes to that turn's reply. */
+  turnId?: string | null;
 }): Promise<AdvisorToolEffect> {
   const { call, currentCustomerText } = input;
   let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "request_failed" };
@@ -157,6 +164,7 @@ export async function applyAdvisorTool(input: {
       const updated = EventBriefSchema.safeParse({ ...state.brief, ...suppliedFields });
       if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
       const fitChanged = (["eventKind", "theme", "city", "guestCount"] as const).some((field) => updated.data[field] !== state.brief[field]);
+      state.changes = appendBriefChanges(state.changes, diffBrief(state.brief, updated.data, input.turnId ?? null));
       state.brief = updated.data;
       if (fitChanged && state.standardPackage) { state.standardPackage = null; state.brief.proposedPackage = null; }
       state.summary = null;
@@ -209,25 +217,26 @@ export async function applyAdvisorTool(input: {
         contactEmail: state.brief.contactPermission && !state.refused.contact ? state.brief.contactEmail : null,
       };
       const summaryLines = [
-        `Evento: ${safeBrief.eventName ?? safeBrief.eventKind ?? "sin especificar"}`,
+        `Evento: ${safeBrief.eventName ?? (safeBrief.eventKind ? EVENT_KIND_LABELS[safeBrief.eventKind] : "sin especificar")}`,
         safeBrief.honoreeName ? `Homenajeado/a: ${safeBrief.honoreeName}` : null,
+        safeBrief.story ? `Por qué es especial: ${safeBrief.story}` : null,
         `Fecha: ${safeBrief.date ?? "sin especificar"}`,
         safeBrief.startTime || safeBrief.endTime ? `Horario: ${[safeBrief.startTime, safeBrief.endTime].filter(Boolean).join("–")}` : null,
         `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
         safeBrief.venueUndecided
-          ? `Lugar: por definir en ${safeBrief.city ?? "ciudad sin especificar"}${safeBrief.venueSearch ? ` · buscar en Happia: ${safeBrief.venueSearch}` : ""}`
+          ? `Lugar: por definir en ${safeBrief.city ?? "ciudad sin especificar"}${safeBrief.venueSearch ? ` · busca: ${safeBrief.venueSearch}` : ""}`
           : `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
         safeBrief.department ? `Departamento: ${safeBrief.department}` : null,
-        `Presupuesto: ${safeBrief.budget === null ? "sin especificar" : `${safeBrief.currency} ${safeBrief.budget}`}`,
+        `Presupuesto: ${budgetDisplay(safeBrief) ?? "sin especificar"}`,
         safeBrief.companyName ? `Empresa: ${safeBrief.companyName}` : null,
         safeBrief.schoolName ? `Institución educativa: ${safeBrief.schoolName}${safeBrief.grade ? `, ${safeBrief.grade}` : ""}` : null,
         safeBrief.theme ? `Tema: ${safeBrief.theme}` : null,
         safeBrief.colors.length ? `Colores: ${safeBrief.colors.join(", ")}` : null,
         safeBrief.style ? `Estilo: ${safeBrief.style}` : null,
-        safeBrief.organiserPriority ? `Prioridad: ${safeBrief.organiserPriority}` : null,
+        safeBrief.organiserPriority ? `Lo más importante: ${PRIORITY_LABELS[safeBrief.organiserPriority]}` : null,
         safeBrief.likes ? `Le gusta: ${safeBrief.likes}` : null,
         safeBrief.dislikes ? `No le gusta: ${safeBrief.dislikes}` : null,
-        safeBrief.brandRequests ? `Solicitudes: ${safeBrief.brandRequests}` : null,
+        safeBrief.brandRequests ? `Marcas o proveedores: ${safeBrief.brandRequests}` : null,
         state.standardPackage ? null : safeBrief.proposedPackage ? `Paquete propuesto: ${safeBrief.proposedPackage}` : null,
         ...packageSummaryLines(state.standardPackage),
         safeBrief.notes ? `Notas: ${safeBrief.notes}` : null,
@@ -235,6 +244,8 @@ export async function applyAdvisorTool(input: {
         safeBrief.contactName ? `Contacto autorizado: ${safeBrief.contactName}` : null,
         safeBrief.contactPhone ? `Teléfono autorizado: ${safeBrief.contactPhone}` : null,
         safeBrief.contactEmail ? `Correo autorizado: ${safeBrief.contactEmail}` : null,
+        ...state.changes.filter((change) => !["contactName", "contactPhone", "contactEmail", "address"].includes(change.field))
+          .map((change) => `Cambio: ${formatBriefChange(change)}${change.impact ? ` (${change.impact})` : ""}`),
       ].filter((line): line is string => line !== null);
       state.summary = { version: summaryVersion, briefVersion: version + 1, text: summaryLines.join("\n") };
       state.summarySequence = summaryVersion;

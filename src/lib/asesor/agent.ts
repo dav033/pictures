@@ -6,6 +6,7 @@ import { applyAdvisorTool, ADVISOR_TOOLS, applyCustomerConsentToState, type Brie
 import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
 import type { PhotoPreference } from "./repository";
+import { applyQuickReplyToState } from "./quick-replies";
 
 export type AdvisorEvent =
   | { type: "text"; delta: string }
@@ -23,6 +24,8 @@ export type AdvisorTurnDependencies = {
   savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** Clock for the date given to the model; tests pin it. */
+  now?: () => Date;
 };
 
 async function toHistory(messages: StoredMessage[]): Promise<Mensaje[]> {
@@ -98,11 +101,23 @@ async function* finishAdvisorTurn(deps: AdvisorTurnDependencies, text: string): 
 /** What the advisor may ask on each server-computed step; the contact is always the last thing asked. */
 const STEP_GUIDANCE: Record<ReturnType<typeof calculateStateProgress>["step"], string> = {
   event: "datos del evento. Pregunta solo por los datos del evento pendientes; no pidas hora ni datos de contacto todavía.",
-  preferences: "gustos. Pregunta por temática, colores, estilo o lo que le gusta; si no tiene preferencias, guarda likes con eso. No pidas hora ni contacto todavía.",
+  preferences: "gustos. Pregunta por temática, colores, estilo o lo que le gusta y propón ideas concretas que encajen; si no tiene preferencias, guarda likes con eso. No pidas hora ni contacto todavía.",
   start_time: "hora. La pantalla muestra ahora el selector de hora de inicio; invita al cliente a elegirla ahí. No pidas datos de contacto todavía.",
-  proposal: "propuesta. Busca en Happia con propose_standard_package y presenta el paquete que encaja con su precio estimado; si no hay paquete, dilo y ofrece seguir a medida; si el lugar está por definir, recuerda que buscaremos lugar en Happia. No pidas datos de contacto todavía.",
+  proposal: "propuesta. Busca en Happia con propose_standard_package y presenta el paquete que encaja con su precio estimado; si no hay paquete, dilo y ofrece seguir a medida; preséntalo como precio de referencia del catálogo, no como cotización: el decorador la confirma con el brief; si el lugar está por definir, recuerda que se lo pasamos a Happia para ayudarle a buscarlo, sin prometer lugares. No pidas datos de contacto todavía.",
   contact: "contacto. Ahora sí, como último paso, pide el nombre del contacto, su teléfono o correo y su autorización.",
   summary: "resumen. Todos los datos obligatorios están; sigue el flujo del resumen.",
+};
+
+/** The model has no clock: without today's date it resolves "10 de diciembre" to a past year. */
+export function todayContext(now: Date): string {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  return `Fecha de hoy en Colombia: ${today}. Si el cliente da día y mes sin año, guarda la próxima fecha futura con ese día y mes; nunca una fecha pasada.`;
+}
+
+/** The preferences step asks, after the taste, what matters most and then the budget; the screen shows chips for both. */
+const ASK_GUIDANCE: Record<NonNullable<ReturnType<typeof calculateStateProgress>["ask"]>, string> = {
+  priority: " Ahora pregunta qué es lo más importante para quien organiza: impresionar, personalizarla, algo sencillo o el mejor precio (la pantalla muestra esas opciones) y guarda organiserPriority. Después pregunta si tiene en mente alguna marca o proveedor (brandRequests); si no, sigue.",
+  budget: " Ahora pregunta cuánto le gustaría invertir en la decoración (la pantalla muestra rangos y «Prefiero no decir»). Guarda budget si da un monto, budgetRange si da un rango, o budgetUndisclosed=true si prefiere no decirlo. Aclara que el presupuesto no se comparte con los decoradores.",
 };
 
 export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGenerator<AdvisorEvent> {
@@ -113,8 +128,9 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   deps.signal?.addEventListener("abort", abort, { once: true });
   const timeout = setTimeout(() => controller.abort(), deps.timeoutMs ?? 45_000);
   const consentWrite = await deps.mutateBrief((raw) => {
-    const state = parseEventBriefState(raw);
-    return applyCustomerConsentToState(state, current.content);
+    const state = applyCustomerConsentToState(parseEventBriefState(raw), current.content);
+    applyQuickReplyToState(state, current.content, deps.turnId);
+    return state;
   });
   let state = parseEventBriefState(consentWrite.state);
   // Do not send prior turns to tools; they are contextual input only. The model has no access to other conversations.
@@ -122,7 +138,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateStateProgress(currentState);
-    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}`;
+    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}${progress.ask ? ASK_GUIDANCE[progress.ask] : ""}\n${todayContext(deps.now?.() ?? new Date())}`;
   };
   let system = modelContext(state);
   let accumulated = "";
@@ -165,7 +181,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       for (let index = 0; index < turn.calls.length; index++) {
         const call = turn.calls[index];
         const previousSummaryVersion = state.summary?.version;
-        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback });
+        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback, turnId: deps.turnId });
         state = effect.state;
         if ((call.nombre === "propose_summary" && state.summary && state.summary.version !== previousSummaryVersion)
           || (call.nombre === "approve_summary" && state.approval && state.approval.summaryVersion === state.summary?.version)) {

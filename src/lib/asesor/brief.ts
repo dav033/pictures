@@ -1,5 +1,6 @@
-import type { EventBrief, EventBriefState, StandardPackageProposal } from "./contracts";
+import type { BriefChange, EventBrief, EventBriefState, StandardPackageProposal } from "./contracts";
 import { parseEventBriefState } from "./contracts";
+import { EVENT_KIND_LABELS, PRIORITY_LABELS } from "./brief-changes";
 import type { createAsesorRepository } from "./repository";
 
 export type BriefProjection = "full" | "vendor";
@@ -11,13 +12,14 @@ export type BriefViewData = {
   standardPackage: StandardPackageProposal | null;
   approval: { summaryVersion: number; confirmedAt: string } | null;
   photos: BriefPhoto[];
+  changes: BriefChange[];
 };
 type BriefRepository = Pick<ReturnType<typeof createAsesorRepository>, "upsertAccount" | "getConversation" | "latestBrief" | "listMessages">;
 export type BriefLoadResult = { status: "ok"; data: BriefViewData } | { status: "not_found" | "not_approved" };
 
 const VENDOR_EXCLUDED_FIELDS = new Set([
   "contactName", "contactPhone", "contactEmail", "contactPermission", "addressPermission",
-  "address", "budget", "honoreeName",
+  "address", "budget", "budgetRange", "budgetUndisclosed", "honoreeName",
 ]);
 
 function escapeRegExp(value: string): string {
@@ -67,18 +69,19 @@ function vendorBrief(brief: EventBrief): Partial<EventBrief> {
 
 function summaryText(brief: Partial<EventBrief>): string {
   const fields: Array<[string, string | number | null | undefined]> = [
-    ["Evento", brief.eventName ?? brief.eventKind],
+    ["Evento", brief.eventName ?? (brief.eventKind ? EVENT_KIND_LABELS[brief.eventKind] : null)],
     ["Fecha", brief.date],
     ["Hora", [brief.startTime, brief.endTime].filter(Boolean).join("–") || null],
     ["Invitados", brief.guestCount],
     ["Lugar", brief.venueUndecided
       ? `por definir en ${[brief.city, brief.department].filter(Boolean).join(", ") || "ciudad sin especificar"}${brief.venueSearch ? ` · buscar en Happia: ${brief.venueSearch}` : ""}`
       : [brief.venueName, brief.venueType, brief.city, brief.department].filter(Boolean).join(", ") || null],
+    ["Por qué es especial", brief.story],
     ["Tema", brief.theme],
     ["Estilo", brief.style],
     ["Colores", brief.colors?.join(", ") || null],
-    ["Prioridad", brief.organiserPriority],
-    ["Solicitudes", brief.brandRequests],
+    ["Lo más importante", brief.organiserPriority ? PRIORITY_LABELS[brief.organiserPriority] : null],
+    ["Marcas o proveedores", brief.brandRequests],
     ["Notas", brief.notes],
     ["Paquete propuesto", brief.proposedPackage],
   ];
@@ -102,6 +105,9 @@ export function createBriefProjection(
     standardPackage: state.standardPackage ? structuredClone(state.standardPackage) : null,
     approval: projection === "full" ? state.approval : null,
     photos: photos.map((photo) => ({ ...photo })),
+    changes: projection === "full" ? state.changes.map((change) => ({ ...change }))
+      : state.changes.filter((change) => !VENDOR_EXCLUDED_FIELDS.has(change.field))
+        .map((change) => redactFreeText(change, personalValues(state.brief)) as BriefChange),
   };
 }
 

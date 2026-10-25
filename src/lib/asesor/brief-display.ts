@@ -1,12 +1,13 @@
 import type { BriefViewData } from "./brief";
+import { budgetDisplay, formatBriefChange, PRIORITY_LABELS } from "./brief-changes";
 
 const LABELS: Record<string, string> = {
   eventKind: "Tipo de evento", eventName: "Evento", date: "Fecha", startTime: "Hora de inicio", endTime: "Hora de cierre",
   guestCount: "Invitados", venueType: "Tipo de lugar", venueName: "Lugar", address: "Dirección", venueSearch: "Lugar por buscar en Happia", city: "Ciudad", department: "Departamento",
-  budget: "Presupuesto", contactName: "Contacto", contactPhone: "Teléfono", contactEmail: "Correo",
+  budget: "Presupuesto", budgetRange: "Presupuesto", story: "Por qué es especial", contactName: "Contacto", contactPhone: "Teléfono", contactEmail: "Correo",
   honoreeName: "Homenajeado/a", honoreeAge: "Edad del homenajeado", companyName: "Empresa", schoolName: "Institución", grade: "Grado", audience: "Público",
-  organiserPriority: "Prioridad", theme: "Tema", colors: "Colores", style: "Estilo", likes: "Le gusta", dislikes: "No le gusta",
-  brandRequests: "Solicitudes", notes: "Notas", proposedPackage: "Paquete propuesto",
+  organiserPriority: "Lo más importante", theme: "Tema", colors: "Colores", style: "Estilo", likes: "Le gusta", dislikes: "No le gusta",
+  brandRequests: "Marcas o proveedores", notes: "Notas", proposedPackage: "Paquete propuesto",
 };
 
 function display(value: unknown): string | null {
@@ -18,10 +19,14 @@ function display(value: unknown): string | null {
 
 export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: string; value: string }> {
   const entries = Object.entries(data.brief)
-    .filter(([key]) => key in LABELS && !(key === "proposedPackage" && data.standardPackage))
-    .map(([key, value]) => ({ label: LABELS[key], value: display(value) }))
+    .filter(([key]) => key in LABELS && !(key === "proposedPackage" && data.standardPackage) && key !== "budget" && key !== "budgetRange")
+    .map(([key, value]) => ({ label: LABELS[key], value: key === "organiserPriority" && typeof value === "string" ? PRIORITY_LABELS[value as keyof typeof PRIORITY_LABELS] ?? value : display(value) }))
     .filter((entry): entry is { label: string; value: string } => entry.value !== null);
   if (data.brief.venueUndecided) entries.unshift({ label: "Lugar", value: "Por definir: el cliente aún no sabe dónde será" });
+  // Budget fields are absent from the vendor projection, so this shows only in the full brief.
+  const budget = "budget" in data.brief || "budgetRange" in data.brief || "budgetUndisclosed" in data.brief
+    ? budgetDisplay({ budget: data.brief.budget ?? null, budgetRange: data.brief.budgetRange ?? null, budgetUndisclosed: data.brief.budgetUndisclosed ?? false, currency: data.brief.currency ?? "COP" }) : null;
+  if (budget) entries.push({ label: "Presupuesto", value: budget });
   const proposal = data.standardPackage;
   if (!proposal) return entries;
   const { estimate } = proposal;
@@ -42,4 +47,9 @@ export function getBriefDisplayEntries(data: BriefViewData): Array<{ label: stri
     { label: "Nota del estimado", value: estimate.notice },
     ...proposal.disclosures.map((disclosure, index) => ({ label: `Aviso del paquete ${index + 1}`, value: disclosure })),
   ];
+}
+
+/** The brief's change history: what the customer changed after first saying it, oldest first. */
+export function getBriefChangeLines(data: BriefViewData): string[] {
+  return data.changes.map((change) => `${formatBriefChange(change)}${change.impact ? `. ${change.impact}` : ""}`);
 }
