@@ -78,6 +78,7 @@ test("Composer exposes camera/gallery upload and advisor dictation; offers rende
   assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: true, voice: true \}/);
   assert.match(chatView, /<SummaryCard/);
   assert.match(chatView, /onVoiceText=\{setDraft\}/);
+  assert.match(chatView, /ADVISOR_DIRECTIONS_ENABLED \? conversation\.cards\.filter/);
   assert.match(chatView, /onNote: conversation\.submitVoiceNote/);
   assert.match(hook, /const submitVoiceNote = useCallback\(\(turnId: string, text: string\)/);
 });

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { History, Mic } from "lucide-react";
+import { ADVISOR_DIRECTIONS_ENABLED } from "@/lib/asesor/features";
 import { AdvisorHeader } from "./AdvisorHeader";
 import { plainChatText } from "./chat-text";
 import { Composer } from "./Composer";
@@ -48,7 +49,7 @@ export function ChatView() {
   const progress = conversation.progress;
   const busy = !conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable";
   const idle = !busy && conversation.status !== "failed";
-  const directions = conversation.cards.filter((card) => card.kind === "direction");
+  const directions = ADVISOR_DIRECTIONS_ENABLED ? conversation.cards.filter((card) => card.kind === "direction") : [];
   // The package card belongs to the reply that presents it: once the customer answers, it leaves the screen.
   const [proposalSeen, setProposalSeen] = useState<{ id: string; messages: number } | null>(null);
   const proposalId = conversation.proposal?.packageId ?? null;

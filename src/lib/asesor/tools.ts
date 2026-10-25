@@ -4,6 +4,7 @@ import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { ADVISOR_ESTIMATE_NOTICE, EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
 import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import type { PhotoPreference } from "./repository";
+import { ADVISOR_DIRECTIONS_ENABLED } from "./features";
 import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseStoredDirectionOffers } from "./directions";
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
@@ -44,6 +45,9 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "select_direction", descripcion: "Registra una dirección que el cliente eligió entre las que ya se le mostraron.", esquema: { type: "object", additionalProperties: false, required: ["directionId"], properties: { directionId: { type: "string", enum: ADVISOR_DIRECTION_IDS } } } },
   { nombre: "propose_standard_package", descripcion: "Pide al servidor el paquete estándar de Happia que mejor encaja con tipo de evento, temática, ciudad e invitados. Úsalo antes de ofrecer servicios a medida. El servidor devuelve el paquete, su estimado en COP y avisos; no indiques IDs ni precios.", esquema: { type: "object", additionalProperties: false, properties: {} } },
 ];
+
+/** What the model is offered: the direction tools only exist while the gallery is enabled. */
+export const ADVISOR_MODEL_TOOLS: Herramienta[] = ADVISOR_DIRECTIONS_ENABLED ? ADVISOR_TOOLS : ADVISOR_TOOLS.filter((tool) => tool.nombre !== "show_directions" && tool.nombre !== "select_direction");
 
 export type AdvisorToolEffect = { event: "tool"; name: string; result: unknown; state: EventBriefState; progress: ReturnType<typeof calculateBriefProgress> };
 export type BriefMutator = (mutate: (state: unknown, version: number) => unknown) => Promise<{ version: number; state: unknown }>;

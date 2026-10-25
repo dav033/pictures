@@ -60,9 +60,8 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
             {proposal.disclosures.map((disclosure) => <p key={disclosure}>{disclosure}</p>)}
           </div>
         </details>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2">
           <button type="button" disabled={busy} onClick={() => onPick(`Me gusta el paquete ${proposal.name}.`)} aria-label={`Me gusta el paquete ${proposal.name}`} className="min-h-11 rounded-[14px] bg-acento text-sm font-semibold text-sobre-acento disabled:opacity-50">Me gusta</button>
-          <button type="button" disabled={busy} onClick={() => onPick("Muéstrame otras opciones.")} className="min-h-11 rounded-[14px] border border-borde bg-superficie text-sm font-medium text-texto disabled:opacity-50">Otras opciones</button>
         </div>
       </div>
     </article>

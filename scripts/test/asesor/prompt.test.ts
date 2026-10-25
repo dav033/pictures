@@ -6,7 +6,8 @@ import { CATALOGUE_GUIDANCE } from "@/lib/asesor/prompts/catalogue";
 test("advisor prompt keeps catalogue claims grounded in optional tool results", () => {
   assert.ok(ADVISOR_SYSTEM_PROMPT.includes(CATALOGUE_GUIDANCE));
   assert.match(CATALOGUE_GUIDANCE, /solo ofertas y tarjetas devueltas por las herramientas/);
-  assert.match(CATALOGUE_GUIDANCE, /usa show_directions/);
+  assert.doesNotMatch(CATALOGUE_GUIDANCE, /show_directions|select_direction/);
+  assert.match(CATALOGUE_GUIDANCE, /nunca ofrezcas ni prometas fotos, ideas o diseños que no vengan de Happia/);
   assert.match(CATALOGUE_GUIDANCE, /usa propose_standard_package/);
   assert.match(CATALOGUE_GUIDANCE, /precios deben provenir de esos resultados/);
   assert.match(CATALOGUE_GUIDANCE, /no inventes.*identificadores.*precios/i);

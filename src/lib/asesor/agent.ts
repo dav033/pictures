@@ -2,7 +2,7 @@ import type { ChatPort, FragmentoChat, LlamadaHerramienta, Mensaje } from "@/lib
 import type { StoredMessage } from "./repository";
 import { ADVISOR_SYSTEM_PROMPT } from "./prompts/base";
 import { calculateBriefProgress, calculateStateProgress } from "./progress";
-import { applyAdvisorTool, ADVISOR_TOOLS, applyCustomerConsentToState, type BriefMutator } from "./tools";
+import { applyAdvisorTool, ADVISOR_MODEL_TOOLS, applyCustomerConsentToState, type BriefMutator } from "./tools";
 import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
 import type { PhotoPreference } from "./repository";
@@ -69,7 +69,7 @@ function briefForModel(state: EventBriefState) {
 async function* consumeProviderTurn(chat: ChatPort, history: Mensaje[], system: string, signal: AbortSignal): AsyncGenerator<string, { text: string; calls: LlamadaHerramienta[] }, void> {
   let text = "";
   let finish: Extract<FragmentoChat, { tipo: "fin" }> | undefined;
-  const iterator = chat.turnoStream({ sistema: system, historial: history, herramientas: ADVISOR_TOOLS, signal })[Symbol.asyncIterator]();
+  const iterator = chat.turnoStream({ sistema: system, historial: history, herramientas: ADVISOR_MODEL_TOOLS, signal })[Symbol.asyncIterator]();
   let abortListener: (() => void) | undefined;
   const abort = new Promise<never>((_resolve, reject) => {
     if (signal.aborted) reject(new Error("advisor_cancelled"));

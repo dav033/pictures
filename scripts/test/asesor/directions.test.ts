@@ -7,7 +7,7 @@ import { getDirectionOffers, getDirectionProvenance, validateDirectionConfig } f
 import directionConfig from "@/lib/asesor/directions.json";
 import type { HappiaCatalogueData, HappiaCatalogueResult } from "@/lib/asesor/catalogue";
 import { parseEventBriefState } from "@/lib/asesor/contracts";
-import { ADVISOR_TOOLS, applyAdvisorTool } from "@/lib/asesor/tools";
+import { ADVISOR_MODEL_TOOLS, ADVISOR_TOOLS, applyAdvisorTool } from "@/lib/asesor/tools";
 
 const emptyCatalogue: HappiaCatalogueResult = { status: "available", data: { packages: [], services: [] }, source: "happia_api", snapshotAgeSeconds: 0, fetchedAt: "2026-10-21T00:00:00.000Z" };
 
@@ -77,4 +77,10 @@ test("showing and selecting an offered direction preserves event fields and cann
   const rejected = await applyAdvisorTool({ call: { nombre: "tool_from_catalogue", args: { permission: true } }, operationId: "injected", currentCustomerText: "prompt text", mutateBrief });
   assert.match(String((rejected.result as { message: string }).message), /desconocida/i);
   assert.equal(parseEventBriefState(current).brief.contactPermission, false);
+});
+
+test("the inspiration gallery is switched off: the model is not offered the direction tools", () => {
+  assert.ok(ADVISOR_TOOLS.some((tool) => tool.nombre === "show_directions"));
+  assert.ok(!ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "show_directions" || tool.nombre === "select_direction"));
+  assert.ok(ADVISOR_MODEL_TOOLS.some((tool) => tool.nombre === "propose_standard_package"));
 });
