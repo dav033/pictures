@@ -85,10 +85,11 @@ test("advisor replies render as plain text: Markdown emphasis and list markers a
   assert.match(chatView, /plainChatText\(conversation\.streamingText\)/);
 });
 
-test("the animated start-time picker appears only when the start time is the last missing field", () => {
-  assert.equal(asksOnlyForStartTime({ complete: false, completed: 9, required: 10, missing: ["startTime"] }), true);
-  assert.equal(asksOnlyForStartTime({ complete: false, completed: 8, required: 10, missing: ["startTime", "contactName"] }), false);
-  assert.equal(asksOnlyForStartTime({ complete: true, completed: 10, required: 10, missing: [] }), false);
+test("the animated start-time picker appears only on the server's start-time step", () => {
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 7, required: 10, missing: ["startTime", "contactName", "contactPhoneOrEmail"], step: "start_time" }), true);
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 8, required: 10, missing: ["startTime", "date"], step: "event" }), false);
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 9, required: 10, missing: ["contactName"], step: "contact" }), false);
+  assert.equal(asksOnlyForStartTime({ complete: false, completed: 9, required: 10, missing: ["startTime"] }), false, "no step: older server");
   assert.equal(asksOnlyForStartTime(null), false);
   assert.match(chatView, /<StartTimePicker/);
 });

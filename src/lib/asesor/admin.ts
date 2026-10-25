@@ -16,7 +16,7 @@ export type AdminConversationSnapshot = {
   title: string | null;
   updatedAt: string;
   status: "in_progress" | "brief_ready" | "approved";
-  progress: ReturnType<typeof calculateBriefProgress>;
+  progress: Omit<ReturnType<typeof calculateBriefProgress>, "step">;
   lastQuestion: string | null;
 };
 

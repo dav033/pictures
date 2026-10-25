@@ -1,6 +1,6 @@
 import type { AdvisorProgress } from "./conversation-contract";
 
-/** The start time is asked last, with the picker, once every other required field is in the brief. */
+/** The start time is asked with the picker on the server's start-time step: after event facts and preferences, before the contact. */
 export function asksOnlyForStartTime(progress: AdvisorProgress | null): boolean {
-  return !!progress && progress.missing.length === 1 && progress.missing[0] === "startTime";
+  return progress?.step === "start_time";
 }

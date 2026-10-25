@@ -41,7 +41,7 @@ test("EventBrief accepts birthday, corporate, school, and validates all R3 field
 
 test("server progress requires event facts and conditional organization fields", () => {
   const base = EventBriefSchema.parse({ ...requiredFields, eventKind: "corporate", startTime: "18:00", contactPermission: true, addressPermission: true });
-  assert.deepEqual(calculateBriefProgress(base), { complete: true, completed: 10, required: 10, missing: [] });
+  assert.deepEqual(calculateBriefProgress(base), { complete: true, completed: 10, required: 10, missing: [], step: "summary" });
   assert.equal(calculateBriefProgress(EventBriefSchema.parse({ ...base, budget: null })).complete, true, "budget is optional");
   const school = EventBriefSchema.parse({ ...requiredFields, eventKind: "school", schoolName: null });
   assert.equal(calculateBriefProgress(school).complete, false);
@@ -188,4 +188,14 @@ test("an undecided venue is saved for a Happia venue search and does not block t
   const tool = (ADVISOR_TOOLS.find((t) => t.nombre === "save_event_fields")?.esquema as { properties: Record<string, { type: string }> }).properties;
   assert.equal(tool.venueUndecided.type, "boolean");
   assert.equal(tool.venueSearch.type, "string");
+});
+
+test("the conversation step leaves the start time and then the contact for the very end", () => {
+  const event = { ...requiredFields, eventKind: "birthday", honoreeName: "Sofía", theme: null, colors: [], likes: null, style: null };
+  const step = (patch: Record<string, unknown>) => calculateBriefProgress(EventBriefSchema.parse({ ...event, ...patch })).step;
+  assert.equal(step({ date: null, contactName: null, contactPhone: null }), "event", "event facts come first");
+  assert.equal(step({ startTime: null, contactName: null, contactPhone: null }), "preferences", "then theme, colours or likes");
+  assert.equal(step({ theme: "Frozen", startTime: null, contactName: null, contactPhone: null }), "start_time", "then the time picker");
+  assert.equal(step({ theme: "Frozen", contactName: null, contactPhone: null }), "contact", "contact is last");
+  assert.equal(step({ theme: "Frozen" }), "summary");
 });

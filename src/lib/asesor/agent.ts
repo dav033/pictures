@@ -95,6 +95,15 @@ async function* finishAdvisorTurn(deps: AdvisorTurnDependencies, text: string): 
 }
 
 /** Provider text is provisional until the stable assistant ID commits; tool receipts make retry effects idempotent. */
+/** What the advisor may ask on each server-computed step; the contact is always the last thing asked. */
+const STEP_GUIDANCE: Record<ReturnType<typeof calculateBriefProgress>["step"], string> = {
+  event: "datos del evento. Pregunta solo por los datos del evento pendientes; no pidas hora ni datos de contacto todavía.",
+  preferences: "gustos. Pregunta por temática, colores, estilo o lo que le gusta; si no tiene preferencias, guarda likes con eso. No pidas hora ni contacto todavía.",
+  start_time: "hora. La pantalla muestra ahora el selector de hora de inicio; invita al cliente a elegirla ahí. No pidas datos de contacto todavía.",
+  contact: "contacto. Ahora sí, como último paso, pide el nombre del contacto, su teléfono o correo y su autorización.",
+  summary: "resumen. Todos los datos obligatorios están; sigue el flujo del resumen.",
+};
+
 export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGenerator<AdvisorEvent> {
   const current = deps.messages.at(-1);
   if (!current || current.role !== "user") throw new Error("advisor_turn_requires_user_message");
@@ -112,7 +121,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateBriefProgress(currentState.brief);
-    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.`;
+    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}`;
   };
   let system = modelContext(state);
   let accumulated = "";
