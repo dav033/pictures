@@ -56,6 +56,21 @@ test("guest count orders by proximity to base_guests without a hard capacity", (
   assert.equal(huge.status, "proposal");
 });
 
+test("the package that matches the requested theme wins over a cheaper generic one, and says it exceeds the budget", () => {
+  const futbol = pkg("futbol", { name: "Cumpleaños Futbol", base_guests: 15, is_featured: true }, [{ total: 300000 }, { total: 20000, charge_type: "per_person" }]);
+  const sweet = pkg("sweet", { name: "Celebración Sweet", base_guests: 10 }, [{ total: 273000 }]);
+  const express = pkg("express", { name: "Cumpleaños Express", base_guests: 10 }, [{ total: 420100 }]);
+  const asked = brief({ guestCount: 40, theme: "fiesta de futbol", budgetRange: "$300.000–$600.000" });
+  const result = proposeStandardPackage(catalogue([sweet, express, futbol]), asked);
+  assert.ok(result.status === "proposal");
+  assert.equal(result.proposal.name, "Cumpleaños Futbol");
+  assert.equal(result.proposal.coverage.theme, "matches");
+  assert.ok(result.proposal.disclosures.some((text) => /supera el presupuesto/.test(text)));
+  // Without a theme match the budget still decides.
+  const generic = proposeStandardPackage(catalogue([futbol, sweet, express]), brief({ guestCount: 40, theme: "Jardín", budgetRange: "$300.000–$600.000" }));
+  assert.ok(generic.status === "proposal" && generic.proposal.name !== "Cumpleaños Futbol" && !generic.proposal.disclosures.some((text) => /supera el presupuesto/.test(text)));
+});
+
 test("no fit and unavailable catalogue return explicit no-match", () => {
   assert.deepEqual(proposeStandardPackage(catalogue([pkg("x", { city_slug: "cali" })]), brief()), { status: "no_match", reason: "no_fitting_package" });
   assert.deepEqual(proposeStandardPackage({ status: "unavailable", reason: "request_failed" }, brief()), { status: "no_match", reason: "catalogue_unavailable" });

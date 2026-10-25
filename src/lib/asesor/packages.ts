@@ -95,7 +95,7 @@ function estimateSubtotal(pkg: HappiaPackage, guests: number): number | null {
 
 const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
-function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<HappiaCatalogueResult, { status: "available" }>, coverage: { event: Coverage; theme: Coverage; city: Coverage }): StandardPackageProposal {
+function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<HappiaCatalogueResult, { status: "available" }>, coverage: { event: Coverage; theme: Coverage; city: Coverage }, overBudget = false): StandardPackageProposal {
   const guests = brief.guestCount ?? pkg.base_guests;
   const subtotal = estimateSubtotal(pkg, guests);
   const guestsCoverage = brief.guestCount === null ? "unknown" : brief.guestCount === pkg.base_guests ? "matches_base" : "differs_from_base";
@@ -105,6 +105,7 @@ function proposalFor(pkg: HappiaPackage, brief: EventBrief, catalogue: Extract<H
   if (coverage.city === "unknown") disclosures.push("El catálogo no indica la ciudad de este paquete; no se garantiza cobertura en la ciudad del evento.");
   if (guestsCoverage === "differs_from_base") disclosures.push(`El paquete está pensado para ${pkg.base_guests} invitados; el costo y la capacidad para ${brief.guestCount} se confirman con el equipo.`);
   if (guestsCoverage === "unknown") disclosures.push(`Aún no hay número de invitados; el paquete está pensado para ${pkg.base_guests}.`);
+  if (overBudget) disclosures.push(`El estimado de este paquete supera el presupuesto indicado${brief.budgetRange ? ` (${brief.budgetRange})` : ""}; hay que decirle al cliente que el precio es mayor y que se puede ajustar quitando elementos.`);
   if (pkg.restrictions || pkg.conditions) disclosures.push("El paquete tiene condiciones o restricciones que se revisan al cerrar la propuesta.");
   if (subtotal === null) disclosures.push("El catálogo no trae precios completos para este paquete; no se muestra estimado.");
   return {
@@ -153,12 +154,13 @@ export function proposeStandardPackage(catalogue: HappiaCatalogueResult, brief: 
     if (coverage.event === "excluded" || coverage.theme === "excluded" || coverage.city === "excluded") return [];
     const subtotal = estimateSubtotal(pkg, brief.guestCount ?? pkg.base_guests);
     const overBudget = ceiling !== null && subtotal !== null && subtotal > ceiling;
-    return [{ pkg, coverage, overBudget, distance: brief.guestCount === null ? 0 : Math.abs(pkg.base_guests - brief.guestCount) }];
+    return [{ pkg, coverage, overBudget, themeMatch: coverage.theme === "matches", distance: brief.guestCount === null ? 0 : Math.abs(pkg.base_guests - brief.guestCount) }];
   });
-  // Within the customer's budget first, then closest to the guest count (a soft preference, not a capacity), then featured, then a stable id order.
-  candidates.sort((a, b) => Number(a.overBudget) - Number(b.overBudget) || a.distance - b.distance || Number(b.pkg.is_featured) - Number(a.pkg.is_featured) || a.pkg.id.localeCompare(b.pkg.id));
+  // The theme the customer asked for first (a football party gets the football package even when it costs more: the proposal says so),
+  // then within the budget, then closest to the guest count (a soft preference, not a capacity), then featured, then a stable id order.
+  candidates.sort((a, b) => Number(b.themeMatch) - Number(a.themeMatch) || Number(a.overBudget) - Number(b.overBudget) || a.distance - b.distance || Number(b.pkg.is_featured) - Number(a.pkg.is_featured) || a.pkg.id.localeCompare(b.pkg.id));
   const best = candidates[0];
   if (!best) return { status: "no_match", reason: "no_fitting_package" };
-  const proposal = proposalFor(best.pkg, brief, catalogue, { event: best.coverage.event as Coverage, theme: best.coverage.theme, city: best.coverage.city });
+  const proposal = proposalFor(best.pkg, brief, catalogue, { event: best.coverage.event as Coverage, theme: best.coverage.theme, city: best.coverage.city }, best.overBudget);
   return { status: "proposal", proposal, card: packageCard(proposal) };
 }
