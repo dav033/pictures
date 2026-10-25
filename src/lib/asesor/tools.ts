@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { Herramienta, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { ADVISOR_ESTIMATE_NOTICE, EventBriefSchema, type EventBriefState, parseEventBriefState } from "./contracts";
-import { calculateBriefProgress } from "./progress";
+import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import type { PhotoPreference } from "./repository";
 import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseStoredDirectionOffers } from "./directions";
 import type { DirectionOffer } from "./directions-contract";
@@ -199,7 +199,7 @@ export async function applyAdvisorTool(input: {
         message = `Paquete estándar propuesto: ${outcome.proposal.name}. ${estimate.status === "available" ? `Estimado ${estimate.subtotalCop} COP antes de IVA y comisión.` : "Precio estimado no disponible."} ${ADVISOR_ESTIMATE_NOTICE} ${outcome.proposal.disclosures.join(" ")}`;
       }
     } else if (call.nombre === "propose_summary") {
-      const progress = calculateBriefProgress(state.brief);
+      const progress = calculateStateProgress(state);
       if (!progress.complete) { message = `Faltan campos obligatorios: ${progress.missing.join(", ")}.`; return state; }
       const summaryVersion = state.summarySequence + 1;
       const safeBrief = { ...state.brief,
@@ -281,5 +281,5 @@ export async function applyAdvisorTool(input: {
     ...(call.nombre === "show_directions" && directionOffers ? { directions: state.directionOffers } : {}),
     ...(call.nombre === "propose_standard_package" && packageCardValue ? { card: packageCardValue } : {}),
   };
-  return { event: "tool", name: call.nombre, result: toolResult, state, progress: calculateBriefProgress(state.brief) };
+  return { event: "tool", name: call.nombre, result: toolResult, state, progress: calculateStateProgress(state) };
 }

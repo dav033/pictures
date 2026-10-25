@@ -51,8 +51,8 @@ test("only the conversation ID is stored locally and restore/create use authenti
   assert.match(hook, /setMessages\(snapshot\.messages\)/);
   assert.match(hook, /lastMessage\?\.role === "user"/);
   assert.match(hook, /setPendingTurn\(\{ id: lastMessage\.id, content: lastMessage\.content \}\)/);
-  assert.match(createRoute, /calculateBriefProgress\(state\.brief\)/);
-  assert.match(restoreRoute, /calculateBriefProgress\(state\.brief\)/);
+  assert.match(createRoute, /calculateStateProgress\(state\)/);
+  assert.match(restoreRoute, /calculateStateProgress\(state\)/);
   assert.match(restoreRoute, /briefVersion: brief\?\.version/);
 });
 

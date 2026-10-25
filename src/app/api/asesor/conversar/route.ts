@@ -2,7 +2,7 @@ import { z } from "zod";
 import { requireAdvisorRole } from "@/lib/asesor/auth";
 import { createAsesorRepository } from "@/lib/asesor/repository";
 import { parseEventBriefState } from "@/lib/asesor/contracts";
-import { calculateBriefProgress } from "@/lib/asesor/progress";
+import { calculateStateProgress } from "@/lib/asesor/progress";
 import { runAdvisorTurn, type AdvisorEvent } from "@/lib/asesor/agent";
 import { isSameOriginRequest } from "@/lib/auth/request";
 import { applyCustomerConsentToState, customerConsent } from "@/lib/asesor/tools";
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   const latest = await repo.latestBrief(input.conversationId).catch(() => null);
   if (previousAssistant) {
     const state = parseEventBriefState(latest?.state);
-    const terminal: AdvisorEvent = { type: "final", state, progress: calculateBriefProgress(state.brief), messageId: assistantId, retryAvailable: false };
+    const terminal: AdvisorEvent = { type: "final", state, progress: calculateStateProgress(state), messageId: assistantId, retryAvailable: false };
     const replay = `${sse({ type: "text", delta: previousAssistant.content })}${sse(terminal, latest?.version ?? 0)}`;
     return new Response(replay, { headers: streamHeaders() });
   }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     }
   } catch {
     const state = parseEventBriefState(latest?.state);
-    const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "El proveedor no está disponible. El mensaje quedó guardado; puedes reintentar este turno.", state, progress: calculateBriefProgress(state.brief), retryAvailable: true };
+    const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "El proveedor no está disponible. El mensaje quedó guardado; puedes reintentar este turno.", state, progress: calculateStateProgress(state), retryAvailable: true };
     return new Response(sse(terminal, latest?.version ?? 0), { headers: streamHeaders() });
   }
 
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
       } catch {
         if (terminalSent) { streamController.close(); return; }
         const state = parseEventBriefState((await repo.latestBrief(input.conversationId))?.state);
-        const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "Se conservaron los datos guardados. La respuesta se interrumpió; puedes reintentar este turno.", state, progress: calculateBriefProgress(state.brief), retryAvailable: true };
+        const terminal: AdvisorEvent = { type: "error", code: "PROVIDER_FAILURE", message: "Se conservaron los datos guardados. La respuesta se interrumpió; puedes reintentar este turno.", state, progress: calculateStateProgress(state), retryAvailable: true };
         terminalSent = true;
         streamController.enqueue(new TextEncoder().encode(sse(terminal, (await repo.latestBrief(input.conversationId))?.version ?? 0)));
         streamController.close();

@@ -2,7 +2,7 @@ import "server-only";
 
 import { readAdvisorSessionToken } from "./auth";
 import { parseEventBriefState } from "./contracts";
-import { calculateBriefProgress } from "./progress";
+import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import type { AdminConversationRow, AsesorRepository, StoredMessage } from "./repository";
 
 export function getAdminPageAccess(token: string | undefined): "anonymous" | "forbidden" | "admin" {
@@ -45,7 +45,7 @@ function projectConversation(conversation: AdminConversationRow): AdminConversat
     title: conversation.title,
     updatedAt: conversation.updatedAt,
     status: approved ? "approved" : state.summary ? "brief_ready" : "in_progress",
-    progress: calculateBriefProgress(state.brief),
+    progress: calculateStateProgress(state),
     lastQuestion: lastQuestion(conversation.lastAssistantMessage),
   };
 }

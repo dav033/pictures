@@ -1,7 +1,7 @@
 import type { ChatPort, FragmentoChat, LlamadaHerramienta, Mensaje } from "@/lib/ia/nucleo/tipos";
 import type { StoredMessage } from "./repository";
 import { ADVISOR_SYSTEM_PROMPT } from "./prompts/base";
-import { calculateBriefProgress } from "./progress";
+import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import { applyAdvisorTool, ADVISOR_TOOLS, applyCustomerConsentToState, type BriefMutator } from "./tools";
 import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
@@ -91,15 +91,16 @@ async function* finishAdvisorTurn(deps: AdvisorTurnDependencies, text: string): 
   const assistantId = `${deps.turnId}:assistant`;
   await deps.appendAssistant(assistantId, text);
   const state = parseEventBriefState(await deps.readBrief());
-  yield { type: "final", state, progress: calculateBriefProgress(state.brief), messageId: assistantId, retryAvailable: false };
+  yield { type: "final", state, progress: calculateStateProgress(state), messageId: assistantId, retryAvailable: false };
 }
 
 /** Provider text is provisional until the stable assistant ID commits; tool receipts make retry effects idempotent. */
 /** What the advisor may ask on each server-computed step; the contact is always the last thing asked. */
-const STEP_GUIDANCE: Record<ReturnType<typeof calculateBriefProgress>["step"], string> = {
+const STEP_GUIDANCE: Record<ReturnType<typeof calculateStateProgress>["step"], string> = {
   event: "datos del evento. Pregunta solo por los datos del evento pendientes; no pidas hora ni datos de contacto todavía.",
   preferences: "gustos. Pregunta por temática, colores, estilo o lo que le gusta; si no tiene preferencias, guarda likes con eso. No pidas hora ni contacto todavía.",
   start_time: "hora. La pantalla muestra ahora el selector de hora de inicio; invita al cliente a elegirla ahí. No pidas datos de contacto todavía.",
+  proposal: "propuesta. Busca en Happia con propose_standard_package y presenta el paquete que encaja con su precio estimado; si no hay paquete, dilo y ofrece seguir a medida; si el lugar está por definir, recuerda que buscaremos lugar en Happia. No pidas datos de contacto todavía.",
   contact: "contacto. Ahora sí, como último paso, pide el nombre del contacto, su teléfono o correo y su autorización.",
   summary: "resumen. Todos los datos obligatorios están; sigue el flujo del resumen.",
 };
@@ -120,7 +121,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   const history = await toHistory(deps.messages);
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
-    const progress = calculateBriefProgress(currentState.brief);
+    const progress = calculateStateProgress(currentState);
     return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}`;
   };
   let system = modelContext(state);
@@ -133,7 +134,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   // model edits the brief again after an earlier automatic summary in the same turn.
   let summaryAttempts = 0;
   async function* ensureSummary(): AsyncGenerator<AdvisorEvent> {
-    if (state.summary || !calculateBriefProgress(state.brief).complete) return;
+    if (state.summary || !calculateStateProgress(state).complete) return;
     const effect = await applyAdvisorTool({
       call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary:${summaryAttempts++}`,
       currentCustomerText: customerText, mutateBrief: deps.mutateBrief,
@@ -197,7 +198,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       message: latest.refused.contact || latest.refused.address
         ? "Se conservaron los datos guardados. La aprobación sigue sin estar disponible porque se rechazó el uso de contacto o dirección. Puedes reintentar cuando quieras."
         : "Se conservaron los datos guardados. La respuesta se interrumpió; puedes reintentar este turno.",
-      state: latest, progress: calculateBriefProgress(latest.brief), retryAvailable: true,
+      state: latest, progress: calculateStateProgress(latest), retryAvailable: true,
     };
     return;
   } finally {

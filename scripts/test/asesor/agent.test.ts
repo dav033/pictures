@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ChatPort, FragmentoChat, LlamadaHerramienta } from "@/lib/ia/nucleo/tipos";
 import { EventBriefSchema, parseEventBriefState } from "@/lib/asesor/contracts";
-import { calculateBriefProgress } from "@/lib/asesor/progress";
+import { calculateBriefProgress, calculateStateProgress } from "@/lib/asesor/progress";
 import { ADVISOR_TOOLS, applyAdvisorTool, type BriefMutator } from "@/lib/asesor/tools";
 import { runAdvisorTurn } from "@/lib/asesor/agent";
 import type { StoredMessage } from "@/lib/asesor/repository";
@@ -198,4 +198,13 @@ test("the conversation step leaves the start time and then the contact for the v
   assert.equal(step({ theme: "Frozen", startTime: null, contactName: null, contactPhone: null }), "start_time", "then the time picker");
   assert.equal(step({ theme: "Frozen", contactName: null, contactPhone: null }), "contact", "contact is last");
   assert.equal(step({ theme: "Frozen" }), "summary");
+});
+
+test("the proposal from Happia comes before the contact: no contact step until a package search was presented", () => {
+  const brief = { ...requiredFields, eventKind: "birthday", honoreeName: "Sofía", theme: "Frozen", contactName: null, contactPhone: null };
+  const fresh = parseEventBriefState({ brief });
+  assert.equal(calculateStateProgress(fresh).step, "proposal");
+  const searched = { ...fresh, toolReceipts: { "op-1": { name: "propose_standard_package", argsHash: "x", message: "No hay un paquete estándar" } } };
+  assert.equal(calculateStateProgress(searched).step, "contact", "a search with no match still counts as presented");
+  assert.equal(calculateStateProgress(parseEventBriefState({ brief: { ...brief, date: null } })).step, "event");
 });
