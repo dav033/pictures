@@ -31,3 +31,17 @@ export function useVozDisponible(): boolean {
   }, []);
   return disponible;
 }
+
+export type EstadoVoz = "comprobando" | "sin_navegador" | "apagada" | "lista";
+
+/** Como `useVozDisponible`, pero dice por qué no está: el navegador no puede grabar (p. ej. página sin HTTPS) o el servidor la tiene apagada. */
+export function useEstadoVoz(): EstadoVoz {
+  const [estado, setEstado] = useState<EstadoVoz>("comprobando");
+  useEffect(() => {
+    let vivo = true;
+    void (navegadorPuedeGrabar() ? servidorHabilitado().then((habilitada): EstadoVoz => (habilitada ? "lista" : "apagada")) : Promise.resolve<EstadoVoz>("sin_navegador"))
+      .then((siguiente) => { if (vivo) setEstado(siguiente); });
+    return () => { vivo = false; };
+  }, []);
+  return estado;
+}

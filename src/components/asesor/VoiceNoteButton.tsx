@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Mic, Square, X } from "lucide-react";
 import { Nivel } from "@/components/voz/BotonVoz";
 import { formatearTiempo } from "@/components/voz/estado-dictado";
 import { MENSAJES_ERROR_DICTADO } from "@/components/voz/mensajes-voz";
 import { useDictado } from "@/components/voz/useDictado";
-import { useVozDisponible } from "@/components/voz/useVozDisponible";
+import { useEstadoVoz } from "@/components/voz/useVozDisponible";
 import { MAX_SEGUNDOS_AUDIO } from "@/lib/voz/limites";
 
 type Props = {
@@ -18,13 +18,18 @@ type Props = {
 };
 
 const ERROR_SECONDS = 7;
+const UNAVAILABLE: Record<"sin_navegador" | "apagada", string> = {
+  sin_navegador: "Este navegador no puede grabar aquí. Abre la página con HTTPS (o desde localhost) y permite el micrófono.",
+  apagada: "Las notas de voz no están disponibles ahora. Escribe tu mensaje, por favor.",
+};
 
 /**
  * Records a voice note and sends it to `/api/asesor/voice-notes`; the server stores the transcript as the customer's turn
- * and `onNote` then runs the advisor turn with it. Hidden when dictation is off or the browser cannot record.
+ * and `onNote` then runs the advisor turn with it. When voice is unavailable the button stays visible and says why.
  */
 export function VoiceNoteButton({ conversationId, onNote, disabled = false, className }: Props) {
-  const available = useVozDisponible();
+  const voice = useEstadoVoz();
+  const [hint, setHint] = useState(false);
   const turnId = useRef("");
   const wrapper = useRef<HTMLSpanElement>(null);
 
@@ -44,7 +49,21 @@ export function VoiceNoteButton({ conversationId, onNote, disabled = false, clas
     return () => window.clearTimeout(timer);
   }, [error, descartarError]);
 
-  if (!available) return null;
+  useEffect(() => {
+    if (!hint) return;
+    const timer = window.setTimeout(() => setHint(false), ERROR_SECONDS * 1000);
+    return () => window.clearTimeout(timer);
+  }, [hint]);
+
+  if (voice === "comprobando") return null;
+  if (voice !== "lista") {
+    return (
+      <span className="relative inline-flex shrink-0">
+        <button type="button" onClick={() => setHint((shown) => !shown)} aria-label="Nota de voz no disponible" aria-disabled="true" title={UNAVAILABLE[voice]} className={`${className} opacity-50`}><Mic className="size-5" aria-hidden /></button>
+        {hint && <span role="alert" className="absolute bottom-full right-0 z-30 mb-1.5 w-64 max-w-[70vw] rounded-lg border border-borde bg-superficie px-2.5 py-1.5 text-left text-xs text-texto shadow-lg">{UNAVAILABLE[voice]}</span>}
+      </span>
+    );
+  }
   const recording = estado.fase === "grabando";
   const working = estado.fase === "permiso" || estado.fase === "transcribiendo";
   const status = recording ? "Grabando la nota de voz. Toca de nuevo para enviarla." : estado.fase === "permiso" ? "Esperando el permiso del micrófono." : estado.fase === "transcribiendo" ? "Enviando la nota de voz." : "";
