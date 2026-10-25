@@ -9,7 +9,7 @@ type Pkg = Extract<HappiaCatalogueResult, { status: "available" }>["data"]["pack
 
 function pkg(id: string, extra: Record<string, unknown> = {}, items: { total: number; active?: boolean; charge_type?: string }[] = [{ total: 400000 }]): Pkg {
   return {
-    id, event_type_id: "e1", name: `Paquete ${id}`, base_guests: 20, standard_duration_minutes: 120, conditions: null, restrictions: null,
+    id, event_type_id: "e1", name: "Paquete Express", base_guests: 20, standard_duration_minutes: 120, conditions: null, restrictions: null,
     is_active: true, is_featured: false,
     package_items: items.map((item, index) => ({
       id: `${id}-i${index}`, total: item.total, is_active: item.active ?? true, package_id: id, charge_type: item.charge_type ?? "total", description: null,

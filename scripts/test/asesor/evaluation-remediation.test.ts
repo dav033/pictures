@@ -29,7 +29,7 @@ function stateStore(initial: unknown = null) {
 
 function pkg(id: string) {
   return {
-    id, event_type_id: "event", name: `Paquete ${id}`, base_guests: 20,
+    id, event_type_id: "event", name: "Paquete Express", base_guests: 20,
     standard_duration_minutes: 120, conditions: null, restrictions: null,
     is_active: true, is_featured: true,
     package_items: [{ id: `${id}-item`, total: 425000, is_active: true, package_id: id, charge_type: "total", description: null, suggested_start_time: null, provider_name: null, category_name: null }],

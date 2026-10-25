@@ -54,6 +54,27 @@ function themeCoverage(pkg: HappiaPackage, brief: EventBrief): Coverage {
   return declared.some((entry) => theme.includes(entry) || entry.includes(theme)) ? "matches" : "excluded";
 }
 
+/**
+ * Live Happia packages carry no theme or event tags (checked 2026-10-25); their names do: "Cumpleaños Futbol",
+ * "Celebración Halloween", "Baby Shower", "Auditorio Corporativo". A themed name is offered only when the customer's
+ * theme, style or colours mention it, so a football package is never proposed for a Frozen party.
+ */
+const GENERIC_NAME_WORDS = new Set(["paquete", "cumpleanos", "celebracion", "decoracion", "fiesta", "de", "del", "la", "el", "los", "las", "y", "con",
+  "express", "luxury", "personalizada", "alta", "complejidad", "sweet", "baby", "shower", "auditorio", "corporativo"]);
+const NAME_EVENT_HINTS: ReadonlyArray<[RegExp, ReadonlyArray<EventBrief["eventKind"]>]> = [
+  [/\bcumpleanos\b/, ["birthday"]], [/\b(?:corporativo|auditorio)\b/, ["corporate"]], [/\bbaby shower\b/, ["social", "other"]],
+];
+
+export function nameCoverage(pkg: Pick<HappiaPackage, "name">, brief: EventBrief): { event: Coverage; theme: Coverage } {
+  const name = normalise(pkg.name);
+  const hint = NAME_EVENT_HINTS.find(([pattern]) => pattern.test(name));
+  const event: Coverage = !hint || !brief.eventKind ? "unknown" : hint[1].includes(brief.eventKind) ? "matches" : "excluded";
+  const themeWords = name.split(" ").filter((word) => word.length > 2 && !GENERIC_NAME_WORDS.has(word));
+  if (themeWords.length === 0) return { event, theme: "unknown" };
+  const wanted = normalise([brief.theme, brief.style, ...brief.colors].filter(Boolean).join(" "));
+  return { event, theme: themeWords.some((word) => wanted.split(" ").includes(word)) ? "matches" : "excluded" };
+}
+
 function cityCoverage(pkg: HappiaPackage, brief: EventBrief): Coverage {
   const declared = metadataList(pkg, ["city_slug", "city"]);
   const city = brief.city ? normalise(brief.city) : "";
@@ -125,7 +146,10 @@ export function proposeStandardPackage(catalogue: HappiaCatalogueResult, brief: 
   const ceiling = budgetCeiling(brief);
   const candidates = catalogue.data.packages.flatMap((pkg) => {
     if (!pkg.is_active || !pkg.package_items.some((item) => item.is_active)) return [];
-    const coverage = { event: eventCoverage(pkg, brief), theme: themeCoverage(pkg, brief), city: cityCoverage(pkg, brief) };
+    const byName = nameCoverage(pkg, brief);
+    const declaredEvent = eventCoverage(pkg, brief);
+    const declaredTheme = themeCoverage(pkg, brief);
+    const coverage = { event: declaredEvent === "unknown" ? byName.event : declaredEvent, theme: declaredTheme === "unknown" ? byName.theme : declaredTheme, city: cityCoverage(pkg, brief) };
     if (coverage.event === "excluded" || coverage.theme === "excluded" || coverage.city === "excluded") return [];
     const subtotal = estimateSubtotal(pkg, brief.guestCount ?? pkg.base_guests);
     const overBudget = ceiling !== null && subtotal !== null && subtotal > ceiling;

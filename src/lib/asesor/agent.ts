@@ -7,6 +7,8 @@ import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
 import type { PhotoPreference } from "./repository";
 import { applyQuickReplyToState } from "./quick-replies";
+import type { HappiaCatalogueResult } from "./catalogue";
+import { catalogueForModel } from "./catalogue-context";
 
 export type AdvisorEvent =
   | { type: "text"; delta: string }
@@ -24,6 +26,8 @@ export type AdvisorTurnDependencies = {
   savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** Reads the Happia catalogue once per turn: the model may only offer what it lists. Absent (tests), nothing is offered. */
+  loadCatalogue?: () => Promise<HappiaCatalogueResult>;
   /** Clock for the date given to the model; tests pin it. */
   now?: () => Date;
 };
@@ -103,7 +107,7 @@ const STEP_GUIDANCE: Record<ReturnType<typeof calculateStateProgress>["step"], s
   event: "datos del evento. Pregunta solo por los datos del evento pendientes; no pidas hora ni datos de contacto todavía.",
   preferences: "gustos. Pregunta por temática, colores, estilo o lo que le gusta y propón ideas concretas que encajen; si no tiene preferencias, guarda likes con eso. No pidas hora ni contacto todavía.",
   start_time: "hora. La pantalla muestra ahora el selector de hora de inicio; invita al cliente a elegirla ahí. No pidas datos de contacto todavía.",
-  proposal: "propuesta. Busca en Happia con propose_standard_package y presenta el paquete que encaja con su precio estimado; si no hay paquete, dilo y ofrece seguir a medida; preséntalo como precio de referencia del catálogo, no como cotización: el decorador la confirma con el brief; si el lugar está por definir, recuerda que se lo pasamos a Happia para ayudarle a buscarlo, sin prometer lugares. No pidas datos de contacto todavía.",
+  proposal: "propuesta. Busca en Happia con propose_standard_package y presenta el paquete que encaja con su precio estimado; si no hay paquete, dilo y ofrece armarlo solo con servicios del catálogo de Happia de su ciudad; preséntalo como precio de referencia del catálogo, no como cotización: el decorador la confirma con el brief; si el lugar está por definir, recuerda que se lo pasamos a Happia para ayudarle a buscarlo, sin prometer lugares. No pidas datos de contacto todavía.",
   contact: "contacto. Ahora sí, como último paso, pide el nombre del contacto, su teléfono o correo y su autorización.",
   summary: "resumen. Todos los datos obligatorios están; sigue el flujo del resumen.",
 };
@@ -134,11 +138,13 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   });
   let state = parseEventBriefState(consentWrite.state);
   // Do not send prior turns to tools; they are contextual input only. The model has no access to other conversations.
+  const unavailable: HappiaCatalogueResult = { status: "unavailable", reason: "not_configured" };
+  const catalogue = deps.loadCatalogue ? await deps.loadCatalogue().catch((): HappiaCatalogueResult => ({ status: "unavailable", reason: "request_failed" })) : unavailable;
   const history = await toHistory(deps.messages);
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateStateProgress(currentState);
-    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}${progress.ask ? ASK_GUIDANCE[progress.ask] : ""}\n${todayContext(deps.now?.() ?? new Date())}`;
+    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}${progress.ask ? ASK_GUIDANCE[progress.ask] : ""}\n${todayContext(deps.now?.() ?? new Date())}\n${catalogueForModel(catalogue, currentState.brief.city)}`;
   };
   let system = modelContext(state);
   let accumulated = "";
@@ -181,7 +187,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       for (let index = 0; index < turn.calls.length; index++) {
         const call = turn.calls[index];
         const previousSummaryVersion = state.summary?.version;
-        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback, turnId: deps.turnId });
+        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback, turnId: deps.turnId, ...(deps.loadCatalogue ? { loadCatalogue: async () => catalogue } : {}) });
         state = effect.state;
         if ((call.nombre === "propose_summary" && state.summary && state.summary.version !== previousSummaryVersion)
           || (call.nombre === "approve_summary" && state.approval && state.approval.summaryVersion === state.summary?.version)) {

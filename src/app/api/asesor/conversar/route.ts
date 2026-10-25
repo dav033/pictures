@@ -98,6 +98,7 @@ export async function POST(request: Request) {
     chat,
     messages: savedMessages,
     turnId: input.turnId,
+    loadCatalogue: async () => (await import("@/lib/asesor/catalogue")).getHappiaCatalogue(),
     mutateBrief: (mutate) => repo.mutateBrief(input.conversationId, mutate),
     readBrief: async () => (await repo.latestBrief(input.conversationId))?.state ?? null,
     appendAssistant: async (id, content) => {

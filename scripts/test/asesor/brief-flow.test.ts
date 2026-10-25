@@ -123,9 +123,9 @@ test("the package within the customer's budget comes first, then the closest gue
   assert.equal(budgetCeiling({ budget: null, budgetRange: "Más de $600.000" }), null);
   assert.equal(budgetCeiling({ budget: 450_000, budgetRange: null }), 450_000);
   const item = (total: number, category: string) => ({ id: `i-${total}`, package_id: "p", total, charge_type: "total", charge_mode: "unit", quantity_editable: false, sale_unit: null, removable: false, suggested_start_time: null, description: null, is_active: true, provider_name: "Proveedor", category_name: category });
-  const pkg = (id: string, base: number, items: ReturnType<typeof item>[]) => ({ id, event_type_id: "e", city_id: "c", name: id, base_guests: base, standard_duration_minutes: null, conditions: null, restrictions: null, is_active: true, is_featured: false, city: "Barranquilla", city_slug: "barranquilla", package_items: items });
+  const pkg = (id: string, base: number, items: ReturnType<typeof item>[], name = "Cumpleaños Express") => ({ id, event_type_id: "e", city_id: "c", name, base_guests: base, standard_duration_minutes: null, conditions: null, restrictions: null, is_active: true, is_featured: false, city: "Barranquilla", city_slug: "barranquilla", package_items: items });
   const catalogue = { status: "available", source: "happia_api", fetchedAt: "2026-10-25T20:00:00.000Z", snapshotAgeSeconds: 0,
-    data: { services: [], packages: [pkg("caro-15", 15, [item(966_000, "Decoración")]), pkg("sweet-10", 10, [item(200_000, "Decoración"), item(73_000, "Comida")])] } } as never;
+    data: { services: [], packages: [pkg("caro-15", 15, [item(966_000, "Decoración")], "Cumpleaños Luxury"), pkg("sweet-10", 10, [item(200_000, "Decoración"), item(73_000, "Comida")], "Celebración Sweet"), pkg("futbol-15", 15, [item(100_000, "Decoración")], "Cumpleaños Futbol")] } } as never;
   const brief = EventBriefSchema.parse({ ...sofia, guestCount: 15, budgetRange: "$300.000–$600.000" });
   const outcome = proposeStandardPackage(catalogue, brief);
   assert.equal(outcome.status === "proposal" && outcome.proposal.packageId, "sweet-10");
@@ -138,4 +138,32 @@ test("the model is told today's date in Colombia so a day and month resolve to t
   const { todayContext } = await import("../../../src/lib/asesor/agent");
   assert.match(todayContext(new Date("2026-10-26T03:00:00.000Z")), /Fecha de hoy en Colombia: 2026-10-25\./, "Bogotá is UTC-5");
   assert.match(todayContext(new Date("2026-10-26T03:00:00.000Z")), /próxima fecha futura/);
+});
+
+test("a package whose name carries another theme or event is never proposed", async () => {
+  const { nameCoverage } = await import("../../../src/lib/asesor/packages");
+  const frozen = EventBriefSchema.parse({ ...sofia, theme: "Frozen" });
+  assert.deepEqual(nameCoverage({ name: "Cumpleaños Futbol" }, frozen), { event: "matches", theme: "excluded" });
+  assert.deepEqual(nameCoverage({ name: "Cumpleaños Fútbol" }, EventBriefSchema.parse({ ...sofia, theme: "fútbol" })), { event: "matches", theme: "matches" });
+  assert.deepEqual(nameCoverage({ name: "Cumpleaños Rosa Brillante" }, EventBriefSchema.parse({ ...sofia, theme: null, colors: ["rosa"] })).theme, "matches", "colours count as taste");
+  assert.deepEqual(nameCoverage({ name: "Celebración Sweet" }, frozen), { event: "unknown", theme: "unknown" }, "generic names stay offerable");
+  assert.equal(nameCoverage({ name: "Baby Shower" }, frozen).event, "excluded");
+  assert.equal(nameCoverage({ name: "Auditorio Corporativo" }, frozen).event, "excluded");
+  assert.equal(nameCoverage({ name: "Celebración Halloween" }, EventBriefSchema.parse({ ...sofia, theme: null })).theme, "excluded", "no stated taste: themed packages are not imposed");
+});
+
+test("the model only gets offerable Happia services of the customer's city", async () => {
+  const { catalogueForModel } = await import("../../../src/lib/asesor/catalogue-context");
+  const service = (name: string | null, city: string, total = 100_000, description: string | null = null) => ({ id: `${name}-${city}`, name, description, total, charge_type: "total", charge_mode: "unit", quantity_editable: false, sale_unit: null, has_delivery: false, image_url: null, image_focus: "center", category_name: "Decoración", provider_name: "Proveedor", city, city_slug: city.toLowerCase(), rating: null });
+  const catalogue = { status: "available", source: "happia_api", fetchedAt: "x", snapshotAgeSeconds: 0, data: { packages: [], services: [
+    service("Decoración Arco con Globos + Decorador", "Barranquilla", 190_000), service("Decoración", "Barranquilla", 100_000, "Prueba"), service(null, "Barranquilla"),
+    service("Kit Decoración Futbol", "Bogotá", 67_200),
+  ] } } as never;
+  const text = catalogueForModel(catalogue, "Barranquilla");
+  assert.match(text, /lo único que se puede ofrecer/);
+  assert.match(text, /• Decoración Arco con Globos \+ Decorador \[Decoración\]/);
+  assert.doesNotMatch(text, /Prueba|Kit Decoración Futbol/, "test rows and other cities are left out");
+  assert.match(catalogueForModel(catalogue, null), /aún no sabes la ciudad.*Barranquilla, Bogotá/);
+  assert.match(catalogueForModel(catalogue, "Cali"), /no hay servicios en Cali/);
+  assert.match(catalogueForModel({ status: "unavailable", reason: "request_failed" }, "Barranquilla"), /No propongas servicios, elementos ni precios concretos/);
 });

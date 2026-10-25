@@ -78,11 +78,12 @@ export function DirectionCards({ cards, busy, onPick }: DirectionProps) {
       {cards.map((card) => <button key={card.id} type="button" disabled={busy} onClick={() => onPick(card.content)} className="flex w-60 shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-borde-suave bg-superficie text-left shadow-sm transition hover:border-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-50">
         {card.imageUrl && <img src={card.imageUrl} alt={`Referencia visual: ${card.title}`} loading="lazy" className="h-32 w-full object-cover" />}
         <span className="flex flex-col gap-1 p-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-acento">Dirección</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-acento">Inspiración</span>
           <span className="font-medium text-texto">{card.title}</span>
           <span className="line-clamp-3 text-[13px] text-texto-suave">{card.description}</span>
           {card.source && <span className="text-xs text-texto-suave">Fuente: {card.source}</span>}
           {card.price && <span className="text-sm font-semibold text-texto">{card.price}</span>}
+          <span className="text-xs text-texto-suave">Es una referencia: el decorador confirma qué se puede hacer.</span>
         </span>
       </button>)}
     </div>
