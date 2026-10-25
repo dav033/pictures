@@ -138,7 +138,7 @@ export function BotonVoz({ campoId, alTexto, deshabilitado = false, clase, varia
 const BARRAS = [0.25, 0.5, 0.8, 0.5, 0.25] as const;
 
 /** Cinco barritas que suben con el volumen de la voz. */
-function Nivel({ nivel }: { nivel: number }) {
+export function Nivel({ nivel }: { nivel: number }) {
   return (
     <span className="flex h-4 items-center gap-0.5" aria-hidden>
       {BARRAS.map((forma, i) => (

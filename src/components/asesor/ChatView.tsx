@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
-import { History } from "lucide-react";
+import { History, Mic } from "lucide-react";
 import { AdvisorHeader } from "./AdvisorHeader";
 import { plainChatText } from "./chat-text";
 import { Composer } from "./Composer";
@@ -80,6 +80,7 @@ export function ChatView() {
             const changes = conversation.changes.filter((change) => change.turnId !== null && `${change.turnId}:assistant` === message.id);
             return message.role === "user"
               ? <li key={message.id} className="ml-auto max-w-[80%] rounded-2xl border border-borde-suave bg-superficie px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_1px_2px_var(--sombra)]">
+                {message.inputMode === "voice" && <p className="mb-1 flex items-center gap-1 text-xs text-texto-suave"><Mic aria-hidden="true" className="size-3" />Nota de voz</p>}
                 {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
                 {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
                   <img src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} loading="lazy" className="max-h-64 max-w-full rounded-xl object-cover" />
@@ -110,7 +111,7 @@ export function ChatView() {
         && <StartTimePicker busy={busy} onConfirm={(message) => conversation.submit(message)} onDismiss={() => setTimeDismissedAt(conversation.briefVersion)} />}
 
       <footer className="sticky bottom-0 z-10 bg-fondo/95 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={busy} capabilities={conversation.capabilities} photoKind={conversation.photoKind} onPhotoKindChange={conversation.setPhotoKind} onVoiceText={setDraft} textareaRef={textarea}
+        <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={busy} capabilities={conversation.capabilities} photoKind={conversation.photoKind} onPhotoKindChange={conversation.setPhotoKind} onVoiceText={setDraft} voiceNote={{ conversationId: conversation.conversationId, onNote: conversation.submitVoiceNote }} textareaRef={textarea}
           placeholder={progress?.ask === "budget" ? "O escribe un monto…" : "Escribe tu respuesta…"}
           error={conversation.status === "failed" ? conversation.error : null} onRetry={conversation.status === "failed" ? conversation.retry : undefined} />
       </footer>

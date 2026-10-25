@@ -39,7 +39,9 @@ async function toHistory(messages: StoredMessage[]): Promise<Mensaje[]> {
     if (message.role === "assistant") { history.push({ rol: "asistente", texto: message.content }); continue; }
     if (message.role !== "user") continue;
     const photoNotes = message.attachments.map((photo) => `Foto ${photo.id}: ${photo.kind === "venue" ? "lugar" : "inspiración"}; confirmación ${photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"}; preferencia ${photo.preference}.`);
-    const content = [message.content, ...photoNotes].filter(Boolean).join("\n");
+    // A voice note reaches the model as its transcript; flag it so the advisor tolerates transcription slips.
+    const spoken = message.inputMode === "voice" ? `(Nota de voz transcrita; puede traer errores de transcripción) ${message.content}` : message.content;
+    const content = [spoken, ...photoNotes].filter(Boolean).join("\n");
     if (message.id !== lastUser?.id || message.attachments.length === 0) { history.push({ rol: "usuario", texto: content }); continue; }
     const images = [];
     for (const photo of message.attachments) {

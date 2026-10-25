@@ -4,7 +4,7 @@ import { formatBriefChange } from "@/lib/asesor/brief-changes";
 export const ADVISOR_CONVERSATION_STORAGE_KEY = "asesor.conversationId";
 
 export type AdvisorPhoto = { id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
-export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[] };
+export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[]; inputMode?: "voice" };
 export type AdvisorProgress = { complete: boolean; completed: number; required: number; missing: string[]; step?: "event" | "preferences" | "start_time" | "proposal" | "contact" | "summary"; ask?: "priority" | "budget" };
 export type AdvisorComposerCard = {
   kind: "direction" | "package";
@@ -45,7 +45,7 @@ const photoSchema = z.object({
   id: z.string().min(1), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), byteSize: z.number().int().positive().max(6 * 1024 * 1024),
   kind: z.enum(["inspiration", "venue"]), confirmed: z.boolean().nullable(), preference: z.enum(["like", "dislike", "neutral"]),
 }).strict();
-const messageSchema = z.object({ id: z.string().min(1), role: z.enum(["user", "assistant"]), content: z.string(), attachments: z.array(photoSchema).optional() }).strict();
+const messageSchema = z.object({ id: z.string().min(1), role: z.enum(["user", "assistant"]), content: z.string(), attachments: z.array(photoSchema).optional(), inputMode: z.literal("voice").optional() }).strict();
 const directionSchema = z.object({
   id: z.string().min(1), title: z.string().min(1), description: z.string().min(1), photoUrl: z.string().startsWith("/").refine((value) => !value.startsWith("//")),
   provenance: z.object({ kind: z.enum(["real", "illustrative_example"]), label: z.string().nullable() }),

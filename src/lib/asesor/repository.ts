@@ -5,9 +5,11 @@ export type MessageRole = "user" | "assistant" | "system";
 export type PhotoKind = "inspiration" | "venue";
 export type PhotoPreference = "like" | "dislike" | "neutral";
 export type AttachmentInput = { id: string; mimeType: string; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference };
-export type MessageInput = { id: string; role: MessageRole; content: string; attachments?: AttachmentInput[] };
+/** How a customer turn arrived: typed, or a voice note transcribed to text (any channel). */
+export type MessageInputMode = "text" | "voice";
+export type MessageInput = { id: string; role: MessageRole; content: string; attachments?: AttachmentInput[]; inputMode?: MessageInputMode };
 export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference };
-export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[] };
+export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[]; inputMode?: MessageInputMode };
 export type StoredBrief = { conversationId: string; version: number; state: unknown };
 export type StoredConversation = { id: string; accountId: string | null; title: string | null; updatedAt: string };
 export type AdminConversationRow = StoredConversation & { lastAssistantMessage: string | null; latestBrief: StoredBrief | null };
@@ -139,8 +141,8 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
       try {
         await client.query("BEGIN");
         const result = await client.query(
-          `INSERT INTO messages (id, conversation_id, role, content) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
-          [message.id, conversationId, message.role, message.content],
+          `INSERT INTO messages (id, conversation_id, role, content, input_mode) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
+          [message.id, conversationId, message.role, message.content, message.inputMode ?? "text"],
         );
         const inserted = (result.rowCount ?? 0) > 0;
         if (inserted) {
@@ -168,8 +170,8 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
     },
 
     async listMessages(conversationId: string): Promise<StoredMessage[]> {
-      const { rows } = await db.query<{ id: string; role: MessageRole; content: string }>(
-        `SELECT id, role, content FROM messages WHERE conversation_id = $1 ORDER BY seq`,
+      const { rows } = await db.query<{ id: string; role: MessageRole; content: string; input_mode: MessageInputMode }>(
+        `SELECT id, role, content, input_mode FROM messages WHERE conversation_id = $1 ORDER BY seq`,
         [conversationId],
       );
       const { rows: files } = await db.query<{
@@ -187,8 +189,9 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
           WHERE m.conversation_id = $1 ORDER BY m.seq, a.created_at, a.id`,
         [conversationId],
       );
-      return rows.map((row) => ({
+      return rows.map(({ input_mode: inputMode, ...row }) => ({
         ...row,
+        ...(inputMode === "voice" ? { inputMode } : {}),
         attachments: files
           .filter((file) => file.message_id === row.id)
           .map((file) => ({ id: file.id, mimeType: file.mime_type, byteSize: file.byte_size, data: file.data, kind: file.photo_kind ?? "inspiration", confirmed: file.confirmed ?? null, preference: file.preference ?? "neutral" })),

@@ -67,6 +67,8 @@ test("retry reuses the pending turn ID and failed conversation IDs have a recove
 test("Composer exposes camera/gallery upload and advisor dictation; offers render in the transcript", () => {
   assert.match(composer, /capabilities\.voice && onVoiceText/);
   assert.match(composer, /<BotonVoz/);
+  assert.match(composer, /voiceNote && !value\.trim\(\)/);
+  assert.match(composer, /<VoiceNoteButton/);
   assert.match(composer, /capture="environment"/);
   assert.match(composer, /Elegir foto de la galería/);
   assert.match(chatView, /aria-label="Opciones para continuar"/);
@@ -76,6 +78,8 @@ test("Composer exposes camera/gallery upload and advisor dictation; offers rende
   assert.match(hook, /const capabilities: ComposerCapabilities = \{ photo: true, voice: true \}/);
   assert.match(chatView, /<SummaryCard/);
   assert.match(chatView, /onVoiceText=\{setDraft\}/);
+  assert.match(chatView, /onNote: conversation\.submitVoiceNote/);
+  assert.match(hook, /const submitVoiceNote = useCallback\(\(turnId: string, text: string\)/);
 });
 
 test("advisor replies render as plain text: Markdown emphasis and list markers are not shown raw", () => {

@@ -3,6 +3,7 @@
 import { ArrowUp, Camera, ImagePlus, Paperclip } from "lucide-react";
 import { useRef, useState, type RefObject } from "react";
 import { BotonVoz } from "@/components/voz/BotonVoz";
+import { VoiceNoteButton } from "./VoiceNoteButton";
 
 export type ComposerCapabilities = { photo: boolean; voice: boolean };
 type Props = {
@@ -14,6 +15,8 @@ type Props = {
   photoKind?: "inspiration" | "venue";
   onPhotoKindChange?: (kind: "inspiration" | "venue") => void;
   onVoiceText?: (text: string) => void;
+  /** Voice notes are sent as their own turn while the draft is empty; with a draft the microphone dictates into it. */
+  voiceNote?: { conversationId: string | null; onNote: (turnId: string, text: string) => void };
   onRetry?: () => void;
   error?: string | null;
   placeholder?: string;
@@ -22,7 +25,7 @@ type Props = {
 
 const iconButton = "grid size-11 shrink-0 place-items-center rounded-full text-texto-suave transition hover:bg-superficie-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-40";
 
-export function Composer({ value, onChange, onSubmit, busy, capabilities = { photo: false, voice: false }, photoKind = "inspiration", onPhotoKindChange, onVoiceText, onRetry, error, placeholder = "Escribe tu respuesta…", textareaRef }: Props) {
+export function Composer({ value, onChange, onSubmit, busy, capabilities = { photo: false, voice: false }, photoKind = "inspiration", onPhotoKindChange, onVoiceText, voiceNote, onRetry, error, placeholder = "Escribe tu respuesta…", textareaRef }: Props) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [trayOpen, setTrayOpen] = useState(false);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -57,7 +60,9 @@ export function Composer({ value, onChange, onSubmit, busy, capabilities = { pho
         <textarea ref={textareaRef} id="advisor-message" name="message" rows={1} value={value} onChange={(event) => onChange(event.target.value)} disabled={busy} placeholder={placeholder}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
           className="max-h-32 min-h-11 min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base text-texto outline-none [field-sizing:content] placeholder:text-texto-suave disabled:opacity-60" />
-        {canVoice && <BotonVoz campoId="advisor-message" alTexto={onVoiceText} deshabilitado={busy} variante="cliente" clase={iconButton} />}
+        {canVoice && (voiceNote && !value.trim()
+          ? <VoiceNoteButton conversationId={voiceNote.conversationId} onNote={voiceNote.onNote} disabled={busy} className={iconButton} />
+          : <BotonVoz campoId="advisor-message" alTexto={onVoiceText} deshabilitado={busy} variante="cliente" clase={iconButton} />)}
         <button type="submit" aria-label="Enviar" disabled={busy || (!value.trim() && photos.length === 0)} className="grid size-11 shrink-0 place-items-center rounded-full bg-acento text-sobre-acento transition hover:bg-acento-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45">
           <ArrowUp aria-hidden="true" className="size-5" />
         </button>

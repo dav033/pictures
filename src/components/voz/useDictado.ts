@@ -23,6 +23,11 @@ type Grabacion = {
   relojes: number[];
 };
 
+/** Manda la grabación al servidor y devuelve su respuesta `{ texto }`; por omisión, el dictado de `/api/voz/transcribir`. */
+export type EnviarAudio = (audio: Blob, signal: AbortSignal) => Promise<Response>;
+
+const enviarADictado: EnviarAudio = (audio, signal) => fetch(RUTA, { method: "POST", headers: { "Content-Type": audio.type || "audio/webm" }, body: audio, signal });
+
 export type Dictado = {
   estado: EstadoDictado;
   segundos: number;
@@ -72,7 +77,7 @@ function medirNivel(flujo: MediaStream, contexto: AudioContext, alNivel: (n: num
  * Dictado por voz: toca para grabar, toca para terminar. Graba con MediaRecorder (webm/opus, mp4 en Safari), manda el audio a
  * `/api/voz/transcribir` y entrega el texto a `alTexto`. Suelta el micrófono al terminar, al cancelar (Esc) y al desmontar.
  */
-export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: KeyboardEvent) => boolean = () => true): Dictado {
+export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: KeyboardEvent) => boolean = () => true, enviar: EnviarAudio = enviarADictado): Dictado {
   const [estado, despachar] = useReducer(reducirDictado, ESTADO_INICIAL);
   const [segundos, setSegundos] = useState(0);
   const [nivel, setNivel] = useState(0);
@@ -81,8 +86,9 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
   const turno = useRef(0);
   const alTextoRef = useRef(alTexto);
   const aceptaEscRef = useRef(aceptaEsc);
+  const enviarRef = useRef(enviar);
   const fase = useRef(estado.fase);
-  useEffect(() => { alTextoRef.current = alTexto; aceptaEscRef.current = aceptaEsc; fase.current = estado.fase; });
+  useEffect(() => { alTextoRef.current = alTexto; aceptaEscRef.current = aceptaEsc; enviarRef.current = enviar; fase.current = estado.fase; });
 
   const soltar = useCallback(() => {
     const actual = grabacion.current;
@@ -100,7 +106,7 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
     const control = new AbortController();
     abortador.current = control;
     try {
-      const respuesta = await fetch(RUTA, { method: "POST", headers: { "Content-Type": audio.type || "audio/webm" }, body: audio, signal: control.signal });
+      const respuesta = await enviarRef.current(audio, control.signal);
       if (turno.current !== miTurno) return;
       if (!respuesta.ok) {
         const cuerpo = (await respuesta.json().catch(() => ({}))) as { codigo?: string };

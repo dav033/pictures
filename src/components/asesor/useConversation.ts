@@ -153,10 +153,17 @@ export function useConversation() {
     void sendTurn(turn);
   }, [sendTurn, status, photoKind]);
 
+  /** A voice note the server already stored as turn `turnId`: show it and run the advisor turn with its transcript. */
+  const submitVoiceNote = useCallback((turnId: string, text: string) => {
+    if (status === "sending") return;
+    setMessages((current) => [...current, { id: turnId, role: "user", content: text, inputMode: "voice" }]);
+    void sendTurn({ id: turnId, content: text });
+  }, [sendTurn, status]);
+
   const retry = useCallback(() => { if (pendingTurn) void sendTurn(pendingTurn); }, [pendingTurn, sendTurn]);
   const startFresh = useCallback(async () => {
     window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setUi(EMPTY_UI); await createConversation();
   }, [createConversation]);
   const capabilities: ComposerCapabilities = { photo: true, voice: true };
-  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, photoKind, setPhotoKind, capabilities, submit, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, photoKind, setPhotoKind, capabilities, submit, submitVoiceNote, retry, startFresh };
 }

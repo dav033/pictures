@@ -22,6 +22,7 @@ export function codigoDeEstadoHttp(status: number, codigoServidor?: string): Cod
   if (status === 401) return "sesion";
   if (status === 404) return "no_disponible";
   if (status === 413) return "demasiado_largo";
+  if (status === 422) return "no_se_entendio";
   if (status === 429) return "demasiados";
   if (status === 503) return "ocupado";
   return "fallo";
