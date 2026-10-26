@@ -15,7 +15,7 @@ type Props = {
 };
 
 const SKIPPED_KEY = "asesor.keepSkipped";
-const skippedPhotos = (): string[] => { try { return JSON.parse(window.localStorage.getItem(SKIPPED_KEY) ?? "[]") as string[]; } catch { return []; } };
+const skippedPhotos = (): string[] => { try { return JSON.parse(window.localStorage.getItem(SKIPPED_KEY) ?? "[]") as string[]; } catch { return []; } };  // prerender-seguro: PhotoNotes solo se monta con fotos, que llegan del navegador (subida o conversación cargada), nunca en el prerender; la lectura falla a [] si no hay almacenamiento
 const rememberSkipped = (id: string) => { try { window.localStorage.setItem(SKIPPED_KEY, JSON.stringify([...new Set([...skippedPhotos(), id])].slice(-50))); } catch { /* it will be offered again */ } };
 
 const label = (option: string) => option.charAt(0).toUpperCase() + option.slice(1);

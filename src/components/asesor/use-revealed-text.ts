@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { advanceReveal, rememberRevealed, revealedCount, revealedSlice } from "./reveal";
 
 export function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;  // prerender-seguro: solo se consulta para respuestas nuevas (`animate`), que llegan en el navegador; el mensaje de bienvenida no animado cortocircuita antes y en el servidor `window` no existe
 }
 
 /**

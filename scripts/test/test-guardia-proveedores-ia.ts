@@ -161,6 +161,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/modulos-render/route.ts": "estudio de módulos: render con IA (FLUX) con caché por clave canónica (REQ-011)",
   "src/app/api/modulos-interpretar/route.ts": "estudio de módulos: pedido en palabras → configuración (Gemini texto, sin imágenes)",
   "src/app/api/voz/transcribir/route.ts": "dictado por voz (REQ-009): Whisper en el VPS, proveedor «whisper-vps»",
+  "src/app/api/asesor/voice-notes/route.ts": "notas de voz del asesor (REQ-020): Whisper en el VPS, proveedor «whisper-vps»; el audio no se guarda ni se audita, solo tamaño, tipo y tiempos",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
   "src/app/api/guiada/motor/route.ts": "REQ-007: bandera GUIADA_MOTOR (3d|python) con la que se crea un plan de la guiada; la lectura para un plan nuevo queda en decidir(regla:motor_guiada)",
