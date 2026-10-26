@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { servesText } from "@/lib/asesor/servings";
 import { prefersReducedMotion } from "./use-revealed-text";
 import type { AdvisorComposerCard, AdvisorProposal } from "./conversation-contract";
 
@@ -36,7 +37,7 @@ function proposalFacts(proposal: AdvisorProposal, city: string | null): Fact[] {
   const { coverage, baseGuests, guestCount } = proposal;
   const overBudget: Fact[] = proposal.disclosures.some((text) => /supera el presupuesto/.test(text)) ? [{ ok: false, text: "Supera el presupuesto que indicaste" }] : [];
   if (proposal.kind === "custom") return [
-    { ok: true, text: guestCount ? `Cantidades calculadas para ${guestCount} invitados` : "Cantidades por confirmar" },
+    quantityFact(proposal.quantityCheck ?? "none", guestCount),
     coverage.city === "matches" ? { ok: true, text: city ? `Servicios disponibles en ${city}` : "Servicios disponibles en tu ciudad" } : { ok: false, text: "La cobertura en tu ciudad se confirma" },
     coverage.theme === "matches" ? { ok: true, text: "Incluye servicios de tu temática" } : { ok: false, text: "La temática y los colores los define el decorador" },
     ...overBudget,
@@ -51,10 +52,18 @@ function proposalFacts(proposal: AdvisorProposal, city: string | null): Fact[] {
   ];
 }
 
-type PackageProps = { proposal: AdvisorProposal; city: string | null; busy: boolean; onPick: (message: string) => void };
+function quantityFact(check: NonNullable<AdvisorProposal["quantityCheck"]>, guests: number | null): Fact {
+  const people = guests ? `${guests} invitados` : "tus invitados";
+  if (check === "short") return { ok: false, text: `Revisa las cantidades: no todo alcanza para ${people}` };
+  if (check === "unknown") return { ok: false, text: `Falta confirmar cuánto rinde parte de la comida para ${people}` };
+  if (check === "ok") return { ok: true, text: `La comida y bebida alcanzan para ${people}, según lo que rinde cada servicio` };
+  return { ok: true, text: guests ? `Servicios por persona calculados para ${guests} invitados` : "Cantidades por confirmar" };
+}
+
+type PackageProps = { proposal: AdvisorProposal; city: string | null; busy: boolean; onPick: (message: string) => void; onEdit?: () => void };
 
 /** The standard Happia package as a reference price, never a quote: the decorator confirms it with the brief. */
-export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
+export function PackageCard({ proposal, city, busy, onPick, onEdit }: PackageProps) {
   const { estimate } = proposal;
   const price = estimate.status === "available" && estimate.subtotalCop !== null ? copFormat.format(estimate.subtotalCop) : null;
   const consulted = consultedAt(estimate.fetchedAt);
@@ -80,7 +89,7 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
         {custom && lines.length > 0 && <ul aria-label="Servicios de la propuesta" className="flex flex-col divide-y divide-borde-suave rounded-2xl bg-superficie-suave px-3 text-sm">
           {lines.map((line, index) => <li key={line.serviceId} style={{ "--i": index + 1 } as CSSProperties} className="asesor-sube flex items-baseline justify-between gap-3 py-2">
             <span className="min-w-0"><span className="font-medium">{line.name}</span>
-              <span className="block text-xs text-texto-suave">{line.provider} · {line.basis === "per_person" ? `${line.quantity} invitados × ${copFormat.format(line.unitPriceCop)}` : line.quantity > 1 ? `${line.quantity} × ${copFormat.format(line.unitPriceCop)}` : "1 unidad"}</span></span>
+              <span className="block text-xs text-texto-suave">{line.provider} · {line.serves ? `rinde ${servesText(line.serves)} · ` : ""}{line.basis === "per_person" ? `${line.quantity} invitados × ${copFormat.format(line.unitPriceCop)}` : line.quantity > 1 ? `${line.quantity} × ${copFormat.format(line.unitPriceCop)}` : "1 unidad"}</span></span>
             <span className="shrink-0 font-semibold">{copFormat.format(line.subtotalCop)}</span>
           </li>)}
         </ul>}
@@ -89,6 +98,9 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
             <span aria-hidden="true" className={`font-bold ${fact.ok ? "text-exito" : "text-aviso"}`}>{fact.ok ? "✓" : "!"}</span>{fact.text}
           </li>)}
         </ul>
+        {custom && (proposal.disclosures ?? []).some((text) => text.startsWith("Alcance:")) && <ul aria-label="Alcance de las cantidades" className="flex flex-col gap-1 rounded-xl bg-aviso-suave px-3 py-2 text-[13px] leading-snug">
+          {proposal.disclosures.filter((text) => text.startsWith("Alcance:")).map((text) => <li key={text}>{text.replace(/^Alcance: /, "").replace(/^./, (letter) => letter.toUpperCase())}</li>)}
+        </ul>}
         <details className="border-t border-borde-suave pt-2">
           <summary className="flex min-h-8 cursor-pointer list-none items-center text-[13px] font-medium text-acento">Ver condiciones del catálogo</summary>
           <div className="mt-1 flex flex-col gap-1 text-[13px] leading-relaxed text-texto-suave">
@@ -97,7 +109,8 @@ export function PackageCard({ proposal, city, busy, onPick }: PackageProps) {
             {proposal.disclosures.map((disclosure) => <p key={disclosure}>{disclosure}</p>)}
           </div>
         </details>
-        <div className="grid gap-2">
+        <div className={`grid gap-2 ${custom && onEdit ? "grid-cols-2" : ""}`}>
+          {custom && onEdit && <button type="button" onClick={onEdit} className="asesor-eleva min-h-11 rounded-[14px] border border-borde bg-superficie text-sm font-medium text-texto">Editar o agregar servicios</button>}
           <button type="button" disabled={busy} onClick={() => onPick(custom ? `Me gusta la propuesta ${proposal.name}.` : `Me gusta el paquete ${proposal.name}.`)} aria-label={custom ? `Me gusta la propuesta ${proposal.name}` : `Me gusta el paquete ${proposal.name}`} className="asesor-eleva min-h-11 rounded-[14px] bg-acento text-sm font-semibold text-sobre-acento disabled:opacity-50">Me gusta</button>
         </div>
       </div>

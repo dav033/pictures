@@ -1,4 +1,5 @@
 import type { HappiaCatalogueResult, HappiaService } from "./catalogue";
+import { isFoodOrDrink, servesOfService, servesText } from "./servings";
 
 const MAX_SERVICES = 60;
 const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -27,7 +28,9 @@ export function offerableServices(services: readonly HappiaService[]): Array<Hap
 function serviceLine(service: HappiaService & { name: string }): string {
   const description = service.description?.replace(/\s+/g, " ").trim().slice(0, 140);
   const perPerson = service.charge_type === "per_person" || service.charge_mode === "per_person";
-  return `• id=${service.id} · ${service.name} [${service.category_name}] · ${service.provider_name} · ${copFormat.format(service.total)} ${perPerson ? "por persona (se multiplica por los invitados)" : service.charge_mode === "event" || !service.quantity_editable ? "por evento (1 unidad)" : "por unidad (puedes pedir varias)"}${description ? ` — ${description}` : ""}`;
+  const serves = servesOfService(service);
+  const yieldText = serves ? ` · rinde ${servesText(serves)} por unidad` : isFoodOrDrink(service.category_name) && !perPerson ? " · sin dato de cuánto rinde" : "";
+  return `• id=${service.id} · ${service.name} [${service.category_name}] · ${service.provider_name} · ${copFormat.format(service.total)} ${perPerson ? "por persona (se multiplica por los invitados)" : service.charge_mode === "event" || !service.quantity_editable ? "por evento (1 unidad)" : "por unidad (puedes pedir varias)"}${yieldText}${description ? ` — ${description}` : ""}`;
 }
 
 /**

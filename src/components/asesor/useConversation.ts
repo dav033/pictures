@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RecordedNote } from "./VoiceNoteButton";
 import { waveformFromLevels } from "./waveform";
 import { photoOnlyMessage } from "./photo-message";
-import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorUiState } from "./conversation-contract";
+import { ADVISOR_CONVERSATION_STORAGE_KEY, parseStatePatch, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorUiState } from "./conversation-contract";
 import type { ComposerCapabilities } from "./Composer";
 
 type Status = "loading" | "ready" | "sending" | "failed" | "invalid" | "unavailable" | "completed";
@@ -26,7 +26,7 @@ function parseUploadedPhotos(value: unknown, turnId: string): AdvisorPhoto[] | n
   return attachments;
 }
 
-const EMPTY_UI: AdvisorUiState = { cards: [], summary: null, approved: false, headline: { title: null, facts: [], city: null }, changes: [], proposal: null, directionChosen: false };
+const EMPTY_UI: AdvisorUiState = { cards: [], summary: null, approved: false, headline: { title: null, facts: [], city: null, guests: null }, changes: [], proposal: null, directionChosen: false };
 const uiOf = ({ cards, summary, approved, headline, changes, proposal, directionChosen }: AdvisorUiState): AdvisorUiState => ({ cards, summary, approved, headline, changes, proposal, directionChosen });
 
 export function useConversation() {
@@ -203,10 +203,19 @@ export function useConversation() {
   }, [messages]);
   useEffect(() => { const urls = recordedUrls.current; return () => urls.forEach((url) => URL.revokeObjectURL(url)); }, []);
 
+  /** The customer edited the proposal on screen: take the state the server returned (new total, no summary, no approval). */
+  const applyProposalPatch = useCallback((value: unknown): boolean => {
+    const patch = parseStatePatch(value);
+    if (!patch) return false;
+    setProgress(patch.progress); setBriefVersion(patch.briefVersion); setUi(uiOf(patch));
+    setStatus((current) => current === "completed" ? "ready" : current);
+    return true;
+  }, []);
+
   const retry = useCallback(() => { if (pendingTurn) void sendTurn(pendingTurn); }, [pendingTurn, sendTurn]);
   const startFresh = useCallback(async () => {
     window.localStorage.removeItem(ADVISOR_CONVERSATION_STORAGE_KEY); setConversationId(null); setMessages([]); setPendingTurn(null); setUi(EMPTY_UI); await createConversation();
   }, [createConversation]);
   const capabilities: ComposerCapabilities = { photo: true, voice: true };
-  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, streamingId: pendingTurn ? `${pendingTurn.id}:assistant` : null, liveReplyIds, photoKind, setPhotoKind, capabilities, submit, recordVoiceNote, submitVoiceNote, failVoiceNote, discardVoiceNote, voicePending, retry, startFresh };
+  return { conversationId, messages, progress, briefVersion, ...ui, status, error, streamingText, streamingId: pendingTurn ? `${pendingTurn.id}:assistant` : null, liveReplyIds, photoKind, setPhotoKind, capabilities, submit, recordVoiceNote, submitVoiceNote, failVoiceNote, discardVoiceNote, voicePending, applyProposalPatch, retry, startFresh };
 }

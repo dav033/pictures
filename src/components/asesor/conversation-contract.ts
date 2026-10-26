@@ -20,7 +20,7 @@ export type AdvisorComposerCard = {
 };
 export type AdvisorSummary = { version: number; text: string };
 /** Header line built from the brief: "Cumpleaños de Sofía" and its facts ("10 sep · 15 invitados · Barranquilla"). */
-export type AdvisorHeadline = { title: string | null; facts: string[]; city: string | null };
+export type AdvisorHeadline = { title: string | null; facts: string[]; city: string | null; guests: number | null };
 /** A change the server recorded, linked to the reply of the turn that made it. */
 export type AdvisorChange = { turnId: string | null; text: string; impact: string | null };
 export type AdvisorProposal = z.infer<typeof packageSchema>;
@@ -59,10 +59,11 @@ const directionSchema = z.object({
 });
 const proposalLineSchema = z.object({
   serviceId: z.string().min(1), name: z.string().min(1), category: z.string(), provider: z.string(), quantity: z.number().int().positive(),
-  basis: z.enum(["per_person", "unit"]), unitPriceCop: z.number().finite().nonnegative(), subtotalCop: z.number().finite().nonnegative(),
+  basis: z.enum(["per_person", "unit", "event"]), unitPriceCop: z.number().finite().nonnegative(), subtotalCop: z.number().finite().nonnegative(),
+  serves: z.object({ amount: z.number().int().positive(), unit: z.enum(["piezas", "porciones", "trozos", "vasos"]), estimated: z.boolean() }).strict().nullable().default(null),
 }).strict();
 const packageSchema = z.object({
-  kind: z.enum(["standard", "custom"]).optional(), lines: z.array(proposalLineSchema).optional(),
+  kind: z.enum(["standard", "custom"]).optional(), lines: z.array(proposalLineSchema).optional(), quantityCheck: z.enum(["ok", "short", "unknown", "none"]).optional(),
   packageId: z.string().min(1), name: z.string().min(1), baseGuests: z.number().int().positive(), guestCount: z.number().int().positive().nullable(),
   estimate: z.object({
     status: z.enum(["available", "unavailable"]), subtotalCop: z.number().finite().nonnegative().nullable(),
@@ -99,13 +100,13 @@ function shortDate(value: string | null | undefined): string | null {
 }
 
 function headlineFrom(brief: z.infer<typeof headlineBriefSchema> | undefined): AdvisorHeadline {
-  if (!brief) return { title: null, facts: [], city: null };
+  if (!brief) return { title: null, facts: [], city: null, guests: null };
   const owner = brief.eventKind === "corporate" ? brief.companyName : brief.eventKind === "school" ? brief.schoolName : brief.honoreeName;
   const kind = brief.eventKind ? EVENT_TITLES[brief.eventKind] ?? null : null;
   const title = brief.eventName ?? (kind && owner ? `${kind} de ${owner}` : kind);
   const facts = [shortDate(brief.date), brief.startTime, brief.guestCount ? `${brief.guestCount} invitados` : null, brief.city]
     .filter((fact): fact is string => typeof fact === "string" && fact.trim() !== "");
-  return { title: title ?? null, facts, city: brief.city ?? null };
+  return { title: title ?? null, facts, city: brief.city ?? null, guests: typeof brief.guestCount === "number" && brief.guestCount > 0 ? brief.guestCount : null };
 }
 
 const copFormat = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -174,6 +175,16 @@ export function parseCreatedConversation(value: unknown): ({ conversationId: str
   const briefVersion = Reflect.get(value, "briefVersion");
   if (typeof conversationId !== "string" || !progress || !uiState || !Number.isSafeInteger(briefVersion) || (briefVersion as number) < 0) return null;
   return { conversationId, progress, briefVersion: briefVersion as number, ...uiState };
+}
+
+/** The state the server returns after the customer edits the proposal: the same pieces a streamed reply carries. */
+export function parseStatePatch(value: unknown): ({ progress: AdvisorProgress; briefVersion: number } & AdvisorUiState) | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const progress = parseProgress(Reflect.get(value, "progress"));
+  const uiState = cardsFromState(Reflect.get(value, "state"));
+  const briefVersion = Reflect.get(value, "briefVersion");
+  if (!progress || !uiState || !Number.isSafeInteger(briefVersion) || (briefVersion as number) < 0) return null;
+  return { progress, briefVersion: briefVersion as number, ...uiState };
 }
 
 type AdvisorEventState = { progress: AdvisorProgress; briefVersion: number } & AdvisorUiState;

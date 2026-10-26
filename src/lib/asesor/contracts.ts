@@ -68,9 +68,11 @@ export const ProposalLineSchema = z.object({
   category: z.string(),
   provider: z.string(),
   quantity: z.number().int().positive(),
-  basis: z.enum(["per_person", "unit"]),
+  basis: z.enum(["per_person", "unit", "event"]),
   unitPriceCop: z.number().finite().nonnegative(),
   subtotalCop: z.number().finite().nonnegative(),
+  /** What this line yields in total (quantity × per unit), when the catalogue says; `null` when it does not. */
+  serves: z.object({ amount: z.number().int().positive(), unit: z.enum(["piezas", "porciones", "trozos", "vasos"]), estimated: z.boolean() }).strict().nullable().default(null),
 }).strict();
 export type ProposalLine = z.infer<typeof ProposalLineSchema>;
 
@@ -78,6 +80,8 @@ export const StandardPackageProposalSchema = z.object({
   /** "custom": built by the server from individual services (`lines`); "standard": a closed Happia package. */
   kind: z.enum(["standard", "custom"]).default("standard"),
   lines: z.array(ProposalLineSchema).default([]),
+  /** Do the food and drink reach every guest: ok, short, unknown (no yield data) or none (no food lines). */
+  quantityCheck: z.enum(["ok", "short", "unknown", "none"]).default("none"),
   packageId: z.string().min(1),
   name: z.string().min(1),
   baseGuests: z.number().int().positive(),

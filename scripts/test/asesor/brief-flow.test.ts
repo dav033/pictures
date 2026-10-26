@@ -101,7 +101,7 @@ test("the chat header, change notes and package card come from the server state"
       changes: [{ field: "guestCount", from: "10", to: "15", turnId: "t2", impact: null }] },
     progress: { complete: false, completed: 8, required: 10, missing: ["startTime"], step: "preferences", ask: "budget" }, briefVersion: 3,
   });
-  assert.deepEqual(snapshot?.headline, { title: "Cumpleaños de Sofía", facts: ["10 sep", "17:00", "15 invitados", "Barranquilla"], city: "Barranquilla" });
+  assert.deepEqual(snapshot?.headline, { title: "Cumpleaños de Sofía", facts: ["10 sep", "17:00", "15 invitados", "Barranquilla"], city: "Barranquilla", guests: 15 });
   assert.deepEqual(snapshot?.changes, [{ turnId: "t2", text: "Invitados: 10 → 15", impact: null }]);
   assert.equal(snapshot?.progress.ask, "budget");
   const iso = parseAdvisorSnapshot({ conversation: { id: "c" }, messages: [], state: { directionOffers: [], standardPackage: null, summary: null, approval: null, brief: { ...sofia, date: "2026-12-10" } }, progress: { complete: false, completed: 1, required: 10, missing: [] }, briefVersion: 1 });

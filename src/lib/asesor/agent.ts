@@ -58,6 +58,16 @@ async function toHistory(messages: StoredMessage[]): Promise<Mensaje[]> {
   return history;
 }
 
+/** The proposal as it stands now, including what the customer changed on screen (added, reduced or removed services). */
+function proposalForModel(state: EventBriefState): string {
+  const proposal = state.standardPackage;
+  if (!proposal || proposal.kind !== "custom") return "";
+  const cop = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  const lines = proposal.lines.map((line) => `${line.name} x${line.quantity} = ${cop.format(line.subtotalCop)}`).join("; ");
+  const total = proposal.estimate.subtotalCop === null ? "sin total" : cop.format(proposal.estimate.subtotalCop);
+  return `Propuesta a medida vigente (el cliente puede editarla en pantalla: agregar, cambiar cantidades o quitar; tómala tal cual está, no la vuelvas a armar si no te lo piden): ${lines}. Total ${total}. ${proposal.disclosures.filter((text) => text.startsWith("Alcance:")).join(" ")}\n\n`;
+}
+
 function briefForModel(state: EventBriefState) {
   const brief = { ...state.brief };
   if (!brief.contactPermission || state.refused.contact) {
@@ -151,7 +161,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {
     const progress = calculateStateProgress(currentState);
-    return `${ADVISOR_SYSTEM_PROMPT}\n\nEstado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}${progress.ask ? ASK_GUIDANCE[progress.ask] : ""}\n${todayContext(deps.now?.() ?? new Date())}\n${catalogueForModel(catalogue, currentState.brief.city)}`;
+    return `${ADVISOR_SYSTEM_PROMPT}\n\n${proposalForModel(currentState)}Estado estructurado del evento (fuente de verdad): ${JSON.stringify(briefForModel(currentState))}\nResumen vigente: ${currentState.summary ? JSON.stringify(currentState.summary) : "ninguno"}\nSiguiente versión de resumen: ${currentState.summarySequence + 1}\nAvance calculado por servidor: ${progress.completed}/${progress.required}.\nCampos obligatorios pendientes: ${progress.missing.join(", ") || "ninguno"}.\nPaso de la conversación: ${STEP_GUIDANCE[progress.step]}${progress.ask ? ASK_GUIDANCE[progress.ask] : ""}\n${todayContext(deps.now?.() ?? new Date())}\n${catalogueForModel(catalogue, currentState.brief.city)}`;
   };
   let system = modelContext(state);
   let accumulated = "";

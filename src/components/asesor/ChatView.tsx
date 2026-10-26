@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
-import { History } from "lucide-react";
+import { History, Store } from "lucide-react";
 import { ADVISOR_DIRECTIONS_ENABLED } from "@/lib/asesor/features";
 import { AdvisorHeader } from "./AdvisorHeader";
 import { AssistantText } from "./AssistantText";
 import { PhotoNotes } from "./PhotoNotes";
 import { VoiceNoteBubble } from "./VoiceNoteBubble";
+import { ProposalSheet } from "./ProposalSheet";
 import { Composer } from "./Composer";
 import { ContactForm } from "./ContactForm";
 import { DirectionCards, PackageCard } from "./OfferCards";
@@ -48,6 +49,7 @@ export function ChatView() {
   const conversation = useConversation();
   const [draft, setDraft] = useState("");
   const [timeDismissedAt, setTimeDismissedAt] = useState<number | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const transcriptEnd = useRef<HTMLDivElement>(null);
   // Replies being typed out: what hangs off a reply (change notes, cards, quick replies, the summary) waits for it to finish.
   const [revealing, setRevealing] = useState<ReadonlySet<string>>(() => new Set());
@@ -124,7 +126,7 @@ export function ChatView() {
 
         {idle && settled && !conversation.summary && (directions.length > 0 && !conversation.directionChosen || showProposal) && <section aria-label="Opciones para continuar" className="flex flex-col gap-3">
           {directions.length > 0 && !conversation.directionChosen && <DirectionCards cards={directions} busy={busy} onPick={conversation.submit} />}
-          {showProposal && conversation.proposal && <PackageCard proposal={conversation.proposal} city={conversation.headline.city} busy={busy} onPick={conversation.submit} />}
+          {showProposal && conversation.proposal && <PackageCard proposal={conversation.proposal} city={conversation.headline.city} busy={busy} onPick={conversation.submit} onEdit={() => setSheetOpen(true)} />}
         </section>}
         {idle && settled && progress?.ask && <QuickReplies ask={progress.ask} busy={busy} onPick={conversation.submit} />}
         {idle && settled && progress?.step === "contact" && !conversation.summary && <ContactForm askAddress={progress.missing.includes("address")} busy={busy} onSend={conversation.submit} />}
@@ -134,7 +136,14 @@ export function ChatView() {
       {idle && settled && asksOnlyForStartTime(progress) && timeDismissedAt !== conversation.briefVersion
         && <StartTimePicker busy={busy} onConfirm={(message) => conversation.submit(message)} onDismiss={() => setTimeDismissedAt(conversation.briefVersion)} />}
 
+      {sheetOpen && conversation.conversationId && <ProposalSheet conversationId={conversation.conversationId} proposal={conversation.proposal} guests={conversation.headline.guests} city={conversation.headline.city} onClose={() => setSheetOpen(false)} onSaved={conversation.applyProposalPatch} />}
+
       <footer className="sticky bottom-0 z-10 bg-fondo/95 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        {conversation.conversationId && conversation.headline.city && <div className="mx-auto mb-2 flex w-full max-w-2xl">
+          <button type="button" onClick={() => setSheetOpen(true)} className="asesor-eleva flex min-h-10 items-center gap-2 rounded-full border border-borde bg-superficie px-4 text-sm font-medium shadow-sm">
+            <Store aria-hidden="true" className="size-4 text-acento" />{conversation.proposal?.estimate.subtotalCop ? `Tu propuesta · ${new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(conversation.proposal.estimate.subtotalCop)} · editar` : "Explorar servicios de Happia"}
+          </button>
+        </div>}
         <Composer value={draft} onChange={setDraft} onSubmit={conversation.submit} busy={busy} capabilities={conversation.capabilities} photoKind={conversation.photoKind} onPhotoKindChange={conversation.setPhotoKind} onVoiceText={setDraft} voiceNote={{ conversationId: conversation.conversationId, onRecorded: conversation.recordVoiceNote, onNote: conversation.submitVoiceNote, onFailed: conversation.failVoiceNote }} textareaRef={textarea}
           placeholder={progress?.ask === "budget" ? "O escribe un monto…" : "Escribe tu respuesta…"}
           error={conversation.status === "failed" ? conversation.error : null} onRetry={conversation.status === "failed" ? conversation.retry : undefined} />

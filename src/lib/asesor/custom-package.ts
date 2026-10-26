@@ -1,12 +1,13 @@
 import { ADVISOR_ESTIMATE_NOTICE, type EventBrief, type ProposalLine, type StandardPackageProposal } from "./contracts";
 import type { HappiaCatalogueResult, HappiaService } from "./catalogue";
 import { offerableServices } from "./catalogue-context";
+import { coverageOf, scaleServes, servesOfService } from "./servings";
 import { budgetCeiling, packageCard, type AdvisorPackageCard } from "./packages";
 
 /** What the model asks for: service ids copied from the catalogue it was given, and a quantity for unit-priced services. */
 export type CustomPackageRequest = { name?: string; items: ReadonlyArray<{ serviceId: string; quantity?: number }> };
 
-export const MAX_CUSTOM_ITEMS = 12;
+export const MAX_CUSTOM_ITEMS = 20;
 const MAX_UNIT_QUANTITY = 60;
 
 export type CustomPackageResult =
@@ -64,8 +65,8 @@ export function buildCustomPackage(catalogue: HappiaCatalogueResult, brief: Even
   }
   const lines: ProposalLine[] = [...wanted].map(([id, quantity]) => {
     const service = byId.get(id) as HappiaService & { name: string };
-    return { serviceId: id, name: service.name.trim(), category: service.category_name, provider: service.provider_name, quantity, basis: isPerPerson(service) ? "per_person" : "unit",
-      unitPriceCop: service.total, subtotalCop: Math.round(service.total * quantity) };
+    return { serviceId: id, name: service.name.trim(), category: service.category_name, provider: service.provider_name, quantity, basis: isPerPerson(service) ? "per_person" : service.charge_mode === "event" || !service.quantity_editable ? "event" : "unit",
+      unitPriceCop: service.total, subtotalCop: Math.round(service.total * quantity), serves: isPerPerson(service) ? null : scaleServes(servesOfService(service), quantity) };
   });
   const total = lines.reduce((sum, line) => sum + line.subtotalCop, 0);
 
@@ -76,6 +77,8 @@ export function buildCustomPackage(catalogue: HappiaCatalogueResult, brief: Even
   if (words.length > 0 && !themeMatches) disclosures.push(`Ningún servicio del catálogo de ${brief.city} es específico de la temática "${brief.theme ?? brief.style}"; la temática y los colores los define el decorador con estos servicios.`);
   const ceiling = budgetCeiling(brief);
   if (ceiling !== null && total > ceiling) disclosures.push(`El total supera el presupuesto indicado${brief.budgetRange ? ` (${brief.budgetRange})` : ""}; dile al cliente que es mayor y qué servicios se pueden quitar para bajarlo.`);
+  const coverage = coverageOf(lines.map((line) => ({ ...line, perPerson: line.basis === "per_person" })), guests);
+  disclosures.push(...coverage.notes);
   const uncovered = lines.filter((line) => line.basis === "unit" && /\bpara\s+\d+\s+invitados\b/i.test(`${(byId.get(line.serviceId) as HappiaService).description ?? ""}`));
   for (const line of uncovered) disclosures.push(`"${line.name}" indica una capacidad por unidad en su descripción; confirma que ${line.quantity} unidad(es) alcanzan para ${guests} invitados.`);
 
@@ -84,7 +87,7 @@ export function buildCustomPackage(catalogue: HappiaCatalogueResult, brief: Even
     estimate: { status: total > 0 ? "available" : "unavailable", subtotalCop: total > 0 ? total : null, basis: "before_vat_and_commission", source: catalogue.source,
       fetchedAt: catalogue.fetchedAt, snapshotAgeSeconds: catalogue.snapshotAgeSeconds, notice: ADVISOR_ESTIMATE_NOTICE },
     coverage: { event: "unknown", theme: themeMatches ? "matches" : "unknown", city: "matches", guests: "matches_base" },
-    disclosures,
+    disclosures, quantityCheck: coverage.check,
     categories: [...new Set(lines.map((line) => line.category).filter((name) => name.trim() !== ""))].sort((a, b) => a.localeCompare(b, "es")),
   };
   return { status: "proposal", proposal, card: packageCard(proposal) };
