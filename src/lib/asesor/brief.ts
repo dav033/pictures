@@ -83,6 +83,7 @@ function summaryText(brief: Partial<EventBrief>): string {
     ["Colores", brief.colors?.join(", ") || null],
     ["Lo más importante", brief.organiserPriority ? PRIORITY_LABELS[brief.organiserPriority] : null],
     ["Marcas o proveedores", brief.brandRequests],
+    ["Dónde irá la decoración", brief.decorationPlacement],
     ["Notas", brief.notes],
     ["Paquete propuesto", brief.proposedPackage],
   ];

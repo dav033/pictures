@@ -31,6 +31,7 @@ const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueUndecided") return { type: "boolean", description: "true cuando el cliente aún no sabe o no está seguro de dónde será el evento; entonces no se pide dirección." };
   if (field === "budgetUndisclosed") return { type: "boolean", description: "true cuando el cliente prefiere no decir el presupuesto; no vuelvas a preguntarlo." };
   if (field === "venueSearch") return { type: "string", description: "Qué lugar buscaría si aún no lo tiene: tipo (salón, finca, al aire libre), zona o barrio y capacidad. Se le pasa a Happia para ayudar a buscar el lugar; no hay búsqueda automática." };
+  if (field === "decorationPlacement") return { type: "string", description: "En qué parte del lugar irá la decoración (la pared del fondo, la entrada, la mesa principal…), según el cliente." };
   if (field === "story") return { type: "string", description: "Por qué es especial esta celebración para quien organiza, en sus palabras." };
   if (field === "budgetRange") return { type: "string", description: "Rango de presupuesto cuando el cliente da un rango y no un monto, por ejemplo: Hasta $300.000." };
   if (field === "brandRequests") return { type: "string", description: "Marcas o proveedores que el cliente pide expresamente." };
@@ -285,6 +286,7 @@ export async function applyAdvisorTool(input: {
         safeBrief.likes ? `Le gusta: ${safeBrief.likes}` : null,
         safeBrief.dislikes ? `No le gusta: ${safeBrief.dislikes}` : null,
         safeBrief.brandRequests ? `Marcas o proveedores: ${safeBrief.brandRequests}` : null,
+        safeBrief.decorationPlacement ? `Dónde irá la decoración: ${safeBrief.decorationPlacement}` : null,
         state.standardPackage ? null : safeBrief.proposedPackage ? `Paquete propuesto: ${safeBrief.proposedPackage}` : null,
         ...packageSummaryLines(state.standardPackage),
         safeBrief.notes ? `Notas: ${safeBrief.notes}` : null,

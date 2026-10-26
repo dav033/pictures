@@ -61,6 +61,8 @@ export function ChatView() {
   const { follow, snap } = useStickToBottom(transcriptEnd);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const visibleMessages = conversation.messages.length ? conversation.messages : [welcome];
+  // Photos are named by their position in the conversation ("De la foto 2…"), the same order the server counts them in.
+  const photoNumbers = new Map(visibleMessages.flatMap((message) => message.attachments ?? []).map((photo, index) => [photo.id, index + 1] as const));
   const progress = conversation.progress;
   const busy = conversation.voicePending || !conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable";
   const idle = !busy && conversation.status !== "failed";
@@ -106,7 +108,7 @@ export function ChatView() {
                 {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
                   <img src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} loading="lazy" className="max-h-64 max-w-full rounded-xl object-cover" />
                   <figcaption className="mt-1 text-xs text-texto-suave">{photo.kind === "venue" ? "Lugar del evento" : "Inspiración"} · {photo.preference === "neutral" ? "por revisar" : photo.preference === "like" ? "me gusta" : "no me gusta"}</figcaption>
-                  <PhotoNotes photo={photo} />
+                  <PhotoNotes photo={photo} photoNumber={photoNumbers.get(photo.id) ?? 1} busy={busy} onReply={conversation.submit} />
                 </figure>)}
               </li>
               : <li key={message.id} style={live ? undefined : stagger(index)} className={`flex flex-col gap-2.5 ${live ? "" : "asesor-sube"}`}>

@@ -48,6 +48,8 @@ export const EventBriefSchema = z.object({
   contactPermission: z.boolean().default(false),
   addressPermission: z.boolean().default(false),
   notes: z.string().trim().max(2000).nullable().default(null),
+  /** Where in the venue the decoration goes ("la pared del fondo", "la entrada"), asked after a photo of the place. */
+  decorationPlacement: z.string().trim().max(300).nullable().default(null),
 }).strict();
 
 export type EventBrief = z.infer<typeof EventBriefSchema>;

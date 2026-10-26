@@ -156,3 +156,20 @@ test("the server stores only what the customer's last message supports, and the 
   });
   assert.match(String((stranger.result as { message: string }).message), /No se pudo asociar la lectura/);
 });
+
+import { applyKeepReply, keepReplyMessage, noKeepReplyMessage, parseKeepReply } from "../../../src/lib/asesor/photo-keep";
+
+test("the keep chips are applied by the server to the numbered photo, merged and capped", async () => {
+  assert.equal(keepReplyMessage(2, ["colores", "estilo"]), "De la foto 2 quiero conservar: colores, estilo.");
+  assert.deepEqual(parseKeepReply("De la foto 2 quiero conservar: colores, todo el diseño."), { photoNumber: 2, items: ["colores", "todo el diseño"] });
+  assert.equal(parseKeepReply("De la foto 2 quiero conservar: los globos dorados."), null, "free text is left to the model");
+  assert.equal(parseKeepReply(noKeepReplyMessage(1)), null);
+  const photos = [{ id: "a", keep: [] as string[] }, { id: "b", keep: ["fondo"] }];
+  const saved: Array<{ id: string; keep: string[] }> = [];
+  const save = async (id: string, confirmed: null, preference: null, keep: string[]) => { assert.equal(confirmed, null); assert.equal(preference, null); saved.push({ id, keep }); return true; };
+  assert.equal(await applyKeepReply(photos, keepReplyMessage(2, ["colores", "fondo"]), save), true);
+  assert.deepEqual(saved, [{ id: "b", keep: ["fondo", "colores"] }], "merged with what was kept, no duplicates");
+  assert.deepEqual(photos[1].keep, ["fondo", "colores"], "this turn's context already shows it");
+  assert.equal(await applyKeepReply(photos, keepReplyMessage(5, ["colores"]), save), false, "a photo number that does not exist saves nothing");
+  assert.equal(await applyKeepReply(photos, "hola", save), false);
+});

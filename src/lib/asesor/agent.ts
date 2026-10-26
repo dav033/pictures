@@ -8,6 +8,7 @@ import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
 import type { PhotoPreference } from "./repository";
 import { applyQuickReplyToState } from "./quick-replies";
+import { applyKeepReply } from "./photo-keep";
 import type { HappiaCatalogueResult } from "./catalogue";
 import { catalogueForModel } from "./catalogue-context";
 
@@ -40,7 +41,7 @@ async function toHistory(messages: StoredMessage[]): Promise<Mensaje[]> {
   for (const message of messages) {
     if (message.role === "assistant") { history.push({ rol: "asistente", texto: message.content }); continue; }
     if (message.role !== "user") continue;
-    const photoNotes = message.attachments.map((photo) => `Foto ${photo.id}: ${photo.kind === "venue" ? "lugar" : "inspiración"}; confirmación ${photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"}; preferencia ${photo.preference}.`);
+    const photoNotes = message.attachments.map((photo) => `Foto ${photo.id}: ${photo.kind === "venue" ? "lugar" : "inspiración"}; confirmación ${photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"}; preferencia ${photo.preference}${photo.reading ? `; lectura guardada (${photo.reading.style})` : "; sin lectura guardada todavía"}${photo.keep?.length ? `; el cliente quiere conservar: ${photo.keep.join(", ")}` : ""}.`);
     // A voice note reaches the model as its transcript; flag it so the advisor tolerates transcription slips.
     const spoken = message.inputMode === "voice" ? `(Nota de voz transcrita; puede traer errores de transcripción) ${message.content}` : message.content;
     const content = [spoken, ...photoNotes].filter(Boolean).join("\n");
@@ -144,6 +145,8 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   // Do not send prior turns to tools; they are contextual input only. The model has no access to other conversations.
   const unavailable: HappiaCatalogueResult = { status: "unavailable", reason: "not_configured" };
   const catalogue = deps.loadCatalogue ? await deps.loadCatalogue().catch((): HappiaCatalogueResult => ({ status: "unavailable", reason: "request_failed" })) : unavailable;
+  // A "what to keep" chip is applied by the server to the photo it names, like the budget chips; the model then sees it as saved.
+  if (deps.savePhotoFeedback) await applyKeepReply(deps.messages.flatMap((message) => message.attachments), current.content, deps.savePhotoFeedback);
   const history = await toHistory(deps.messages);
   const photoIds = new Set(deps.messages.flatMap((message) => message.attachments.map((photo) => photo.id)));
   const modelContext = (currentState: EventBriefState) => {

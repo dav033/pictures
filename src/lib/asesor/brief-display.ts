@@ -7,7 +7,7 @@ const LABELS: Record<string, string> = {
   budget: "Presupuesto", budgetRange: "Presupuesto", story: "Por qué es especial", contactName: "Contacto", contactPhone: "Teléfono", contactEmail: "Correo",
   honoreeName: "Homenajeado/a", honoreeAge: "Edad del homenajeado", companyName: "Empresa", schoolName: "Institución", grade: "Grado", audience: "Público",
   organiserPriority: "Lo más importante", theme: "Tema", colors: "Colores", style: "Estilo", likes: "Le gusta", dislikes: "No le gusta",
-  brandRequests: "Marcas o proveedores", notes: "Notas", proposedPackage: "Paquete propuesto",
+  brandRequests: "Marcas o proveedores", notes: "Notas", decorationPlacement: "Dónde irá la decoración", proposedPackage: "Paquete propuesto",
 };
 
 function display(value: unknown): string | null {

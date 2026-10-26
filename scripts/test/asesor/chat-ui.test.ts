@@ -163,3 +163,14 @@ test("recording shows a live waveform, names the microphone in use and lets the 
   assert.match(dictation, /addEventListener\("ended"/, "a track the browser cuts is reported instead of sending an empty recording");
   assert.match(dictation, /microfono_cortado/);
 });
+
+test("photos offer the keep chips and the venue photo asks where the decoration goes", () => {
+  const notes = readFileSync("src/components/asesor/PhotoNotes.tsx", "utf8");
+  assert.match(notes, /KEEP_OPTIONS\.map/);
+  assert.match(notes, /¿Qué es lo más importante de conservar de esta referencia\?/);
+  assert.match(notes, /keepReplyMessage\(photoNumber, picked\)/);
+  assert.match(chatView, /<PhotoNotes photo=\{photo\} photoNumber=\{photoNumbers\.get\(photo\.id\) \?\? 1\}/);
+  const base = readFileSync("src/lib/asesor/prompts/base.ts", "utf8");
+  assert.match(base, /foto del lugar, pregunta en qué parte irá la decoración/);
+  assert.match(base, /decorationPlacement/);
+});
