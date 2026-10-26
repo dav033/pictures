@@ -33,8 +33,11 @@ test("advisor asks about the event first, leaves contact for the end and writes 
   assert.match(ADVISOR_SYSTEM_PROMPT, /texto plano.*sin Markdown/);
 });
 
-test("advisor keeps an undecided venue as a Happia search and leaves the start time to the picker", () => {
+test("advisor keeps an undecided venue as undecided, never offers to search venues, and leaves the start time to the picker", () => {
   assert.match(ADVISOR_SYSTEM_PROMPT, /venueUndecided/);
   assert.match(ADVISOR_SYSTEM_PROMPT, /venueSearch/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /Happia todavía no ofrece lugares ni salones/);
+  assert.match(ADVISOR_SYSTEM_PROMPT, /no ofrezcas buscar, sugerir ni recomendar lugares, no preguntes tipo de lugar, zona, barrio ni capacidad para buscarlos/);
+  assert.doesNotMatch(ADVISOR_SYSTEM_PROMPT, /se lo pasamos a Happia para ayudarle a buscarlo/);
   assert.match(ADVISOR_SYSTEM_PROMPT, /No preguntes la hora de inicio/);
 });

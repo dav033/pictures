@@ -164,6 +164,7 @@ test("the model only gets offerable Happia services of the customer's city", asy
   assert.match(text, /• id=Decoración Arco con Globos \+ Decorador-Barranquilla · Decoración Arco con Globos \+ Decorador \[Decoración\]/);
   assert.match(text, /por evento \(1 unidad\)/);
   assert.doesNotMatch(text, /Prueba|Kit Decoración Futbol/, "test rows and other cities are left out");
+  assert.match(text, /Lugares: el catálogo no tiene salones ni lugares todavía \(solo Decoración\)\. No ofrezcas, busques ni recomiendes lugares/, "the model is told there are no venues");
   assert.match(catalogueForModel(catalogue, null), /aún no sabes la ciudad.*Barranquilla, Bogotá/);
   assert.match(catalogueForModel(catalogue, "Cali"), /no hay servicios en Cali/);
   assert.match(catalogueForModel({ status: "unavailable", reason: "request_failed" }, "Barranquilla"), /No propongas servicios, elementos ni precios concretos/);

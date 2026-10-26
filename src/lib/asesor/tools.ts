@@ -30,7 +30,7 @@ const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
   if (field === "venueUndecided") return { type: "boolean", description: "true cuando el cliente aún no sabe o no está seguro de dónde será el evento; entonces no se pide dirección." };
   if (field === "budgetUndisclosed") return { type: "boolean", description: "true cuando el cliente prefiere no decir el presupuesto; no vuelvas a preguntarlo." };
-  if (field === "venueSearch") return { type: "string", description: "Qué lugar buscaría si aún no lo tiene: tipo (salón, finca, al aire libre), zona o barrio y capacidad. Se le pasa a Happia para ayudar a buscar el lugar; no hay búsqueda automática." };
+  if (field === "venueSearch") return { type: "string", description: "Solo lo que el cliente ya dijo por su cuenta sobre el lugar que tiene en mente (tipo, zona, capacidad). Es una nota para el equipo: Happia todavía no ofrece ni busca lugares, así que no se lo preguntes." };
   if (field === "decorationPlacement") return { type: "string", description: "En qué parte del lugar irá la decoración (la pared del fondo, la entrada, la mesa principal…), según el cliente." };
   if (field === "story") return { type: "string", description: "Por qué es especial esta celebración para quien organiza, en sus palabras." };
   if (field === "budgetRange") return { type: "string", description: "Rango de presupuesto cuando el cliente da un rango y no un monto, por ejemplo: Hasta $300.000." };

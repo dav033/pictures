@@ -42,5 +42,8 @@ export function catalogueForModel(catalogue: HappiaCatalogueResult, city: string
     return `Catálogo de Happia: no hay servicios en ${city}. Happia tiene servicios en: ${cities.join(", ")}. Dilo con honestidad; no propongas elementos concretos.`;
   }
   const lines = local.slice(0, MAX_SERVICES).map(serviceLine);
-  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer; arma la propuesta con propose_custom_package usando estos id):\n${lines.join("\n")}`;
+  const venues = /sal[oó]n|lugar|espacio|sede|finca|venue/i;
+  const venueNote = local.some((service) => venues.test(`${service.category_name} ${service.name}`)) ? ""
+    : `\nLugares: el catálogo no tiene salones ni lugares todavía (solo ${[...new Set(local.map((service) => service.category_name))].join(", ")}). No ofrezcas, busques ni recomiendes lugares ni preguntes tipo o zona para buscarlos.`;
+  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer; arma la propuesta con propose_custom_package usando estos id):\n${lines.join("\n")}${venueNote}`;
 }
