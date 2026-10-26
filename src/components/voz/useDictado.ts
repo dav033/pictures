@@ -28,7 +28,16 @@ export type EnviarAudio = (audio: Blob, signal: AbortSignal, segundos: number) =
 
 const enviarADictado: EnviarAudio = (audio, signal) => fetch(RUTA, { method: "POST", headers: { "Content-Type": audio.type || "audio/webm" }, body: audio, signal });
 
+/** Ajustes de quien usa el dictado: un micrófono elegido y aviso del volumen de cada muestra. */
+export type OpcionesDictado = {
+  /** `deviceId` del micrófono elegido; si ya no existe se usa el predeterminado. */
+  dispositivoId?: string | null;
+  alNivel?: (nivel: number) => void;
+};
+
 export type Dictado = {
+  /** Nombre del micrófono que el navegador está usando, mientras graba. */
+  dispositivo: string | null;
   estado: EstadoDictado;
   segundos: number;
   /** 0 a 1: qué tan fuerte se oye ahora. */
@@ -77,7 +86,7 @@ function medirNivel(flujo: MediaStream, contexto: AudioContext, alNivel: (n: num
  * Dictado por voz: toca para grabar, toca para terminar. Graba con MediaRecorder (webm/opus, mp4 en Safari), manda el audio a
  * `/api/voz/transcribir` y entrega el texto a `alTexto`. Suelta el micrófono al terminar, al cancelar (Esc) y al desmontar.
  */
-export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: KeyboardEvent) => boolean = () => true, enviar: EnviarAudio = enviarADictado): Dictado {
+export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: KeyboardEvent) => boolean = () => true, enviar: EnviarAudio = enviarADictado, opciones: OpcionesDictado = {}): Dictado {
   const [estado, despachar] = useReducer(reducirDictado, ESTADO_INICIAL);
   const [segundos, setSegundos] = useState(0);
   const [nivel, setNivel] = useState(0);
@@ -87,8 +96,10 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
   const alTextoRef = useRef(alTexto);
   const aceptaEscRef = useRef(aceptaEsc);
   const enviarRef = useRef(enviar);
+  const opcionesRef = useRef(opciones);
+  const [dispositivo, setDispositivo] = useState<string | null>(null);
   const fase = useRef(estado.fase);
-  useEffect(() => { alTextoRef.current = alTexto; aceptaEscRef.current = aceptaEsc; enviarRef.current = enviar; fase.current = estado.fase; });
+  useEffect(() => { alTextoRef.current = alTexto; aceptaEscRef.current = aceptaEsc; enviarRef.current = enviar; opcionesRef.current = opciones; fase.current = estado.fase; });
 
   const soltar = useCallback(() => {
     const actual = grabacion.current;
@@ -152,7 +163,15 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
     const cerrarContexto = () => void contexto?.close().catch(() => undefined);
     let flujo: MediaStream;
     try {
-      flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const elegido = opcionesRef.current.dispositivoId;
+      const base = { echoCancellation: true, noiseSuppression: true };
+      try {
+        flujo = await navigator.mediaDevices.getUserMedia({ audio: elegido ? { ...base, deviceId: { exact: elegido } } : base });
+      } catch (primero) {
+        // El micrófono elegido ya no está (otro dispositivo, otro navegador): se usa el predeterminado.
+        if (!elegido || !(primero instanceof DOMException) || primero.name !== "OverconstrainedError") throw primero;
+        flujo = await navigator.mediaDevices.getUserMedia({ audio: base });
+      }
     } catch (error) {
       cerrarContexto();
       if (turno.current === miTurno) despachar({ tipo: "fallo", codigo: codigoDeErrorMicrofono(error) });
@@ -180,13 +199,23 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
       if (duracion < MINIMO_MS || audio.size === 0) { despachar({ tipo: "fallo", codigo: "muy_corto" }); return; }
       void transcribir(audio, miTurno, duracion / 1000);
     };
-    const medidor = contexto ? medirNivel(flujo, contexto, setNivel) : null;
+    const medidor = contexto ? medirNivel(flujo, contexto, (n) => { setNivel(n); opcionesRef.current.alNivel?.(n); }) : null;
     if (medidor !== null) actual.relojes.push(medidor);
     actual.relojes.push(window.setInterval(() => {
       const transcurrido = (performance.now() - inicio) / 1000;
       setSegundos(transcurrido);
       if (transcurrido >= SEGUNDOS_CORTE) terminar();
     }, 250));
+    const pista = flujo.getAudioTracks()[0];
+    setDispositivo(pista?.label || null);
+    // Si el navegador corta la pista a mitad de la grabación (dispositivo desconectado o cambiado), se avisa en vez de mandar un audio vacío.
+    pista?.addEventListener("ended", () => {
+      if (grabacion.current !== actual) return;
+      actual.grabadora.onstop = null;
+      if (actual.grabadora.state === "recording") actual.grabadora.stop();
+      soltar();
+      despachar({ tipo: "fallo", codigo: "microfono_cortado" });
+    });
     grabadora.start();
     despachar({ tipo: "grabando" });
   }, [soltar, terminar, transcribir]);
@@ -222,5 +251,5 @@ export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: Keyb
 
   const descartarError = useCallback(() => despachar({ tipo: "descartar_error" }), []);
 
-  return { estado, segundos, nivel, alternar, cancelar, descartarError };
+  return { estado, segundos, nivel, dispositivo, alternar, cancelar, descartarError };
 }

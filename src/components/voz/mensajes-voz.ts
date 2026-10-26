@@ -1,6 +1,7 @@
 import type { CodigoErrorDictado } from "./estado-dictado";
 
 export const MENSAJES_ERROR_DICTADO: Record<CodigoErrorDictado, string> = {
+  microfono_cortado: "El micrófono dejó de enviar sonido (¿se desconectó o cambió el dispositivo?). Elige otro micrófono e inténtalo de nuevo.",
   sin_permiso: "No tengo permiso para usar el micrófono. Actívalo en los permisos del navegador.",
   sin_microfono: "No encontré un micrófono en este dispositivo.",
   sin_conexion: "Sin conexión: el dictado necesita internet.",

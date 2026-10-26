@@ -1,4 +1,5 @@
 export type CodigoErrorDictado =
+  | "microfono_cortado"
   | "sin_permiso"
   | "sin_microfono"
   | "sin_conexion"

@@ -150,3 +150,16 @@ test("a voice note shows as a WhatsApp-style bubble at once, with the transcript
   const button = readFileSync("src/components/asesor/VoiceNoteButton.tsx", "utf8");
   assert.match(button, /onRecorded\(\{ turnId: id, url: URL\.createObjectURL\(audio\)/, "the recording is reported before the upload starts");
 });
+
+test("recording shows a live waveform, names the microphone in use and lets the customer pick another", () => {
+  const button = readFileSync("src/components/asesor/VoiceNoteButton.tsx", "utf8");
+  const dictation = readFileSync("src/components/voz/useDictado.ts", "utf8");
+  assert.match(button, /<LiveWaveform levels=\{history\}/);
+  assert.match(button, /No se detecta sonido en tu micrófono/);
+  assert.match(button, /enumerateDevices/);
+  assert.match(button, /SILENCE_PEAK/);
+  assert.match(dictation, /deviceId: \{ exact: elegido \}/, "the chosen microphone is requested by id");
+  assert.match(dictation, /OverconstrainedError/, "a microphone that no longer exists falls back to the default one");
+  assert.match(dictation, /addEventListener\("ended"/, "a track the browser cuts is reported instead of sending an empty recording");
+  assert.match(dictation, /microfono_cortado/);
+});
