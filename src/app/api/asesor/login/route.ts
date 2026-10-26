@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   if (!isJson) {
-    const response = seeOther("/asesor");
+    const response = seeOther(role === "admin" ? "/asesor/admin" : "/asesor");
     response.cookies.set(ASESOR_SESSION_COOKIE, token, advisorCookieOptions());
     return response;
   }

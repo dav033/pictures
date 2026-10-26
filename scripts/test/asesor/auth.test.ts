@@ -159,3 +159,43 @@ test("proxy exclusions are boundary-exact and voice reaches its existing guard w
   const response = await voiceStatus(new NextRequest("https://example.test/api/voz/transcribir"));
   assert.equal(response.status, 401, "the voice handler still enforces its existing APP_PASSWORD session check");
 });
+
+test("the original Demo Decoración login is the only door for customers; it never grants the administrator role", async () => {
+  const { advisorSessionFromRequest } = await import("@/lib/asesor/auth");
+  const { sessionToken } = await import("@/lib/auth/session");
+  Reflect.set(process.env, "NODE_ENV", "production");
+  process.env.APP_PASSWORD = "original-shared-password";
+  process.env.ASESOR_SESSION_SECRET = "test-advisor-session-secret-with-32-bytes!!";
+  const withCookie = (cookie?: string) => new Request("https://example.test/api/asesor/conversations", { headers: cookie ? { cookie } : {} });
+
+  // Customer: the original session alone opens the advisor, as a customer.
+  const original = `session=${sessionToken("original-shared-password")}`;
+  assert.equal(advisorSessionFromRequest(withCookie(original))?.role, "user");
+  assert.equal(requireAdvisorRole(withCookie(original)) instanceof Response, false);
+  // Nothing, or a wrong password's token, opens nothing.
+  assert.equal(advisorSessionFromRequest(withCookie()), null);
+  assert.equal(advisorSessionFromRequest(withCookie(`session=${sessionToken("another-password")}`)), null);
+  assert.equal((requireAdvisorRole(withCookie()) as Response).status, 401);
+  // The administration monitor stays closed to the original login...
+  assert.equal((requireAdvisorRole(withCookie(original), ["admin"]) as Response).status, 403);
+  // ...and opens only with the administrator's own session, which wins over the original one.
+  const adminToken = createAdvisorSessionToken("admin");
+  assert.ok(adminToken);
+  const both = `${original}; ${ASESOR_SESSION_COOKIE}=${adminToken}`;
+  assert.equal(advisorSessionFromRequest(withCookie(both))?.role, "admin");
+  assert.equal(requireAdvisorRole(withCookie(both), ["admin"]) instanceof Response, false);
+  // Without APP_PASSWORD configured the original login cannot open anything (fails closed).
+  delete process.env.APP_PASSWORD;
+  assert.equal(advisorSessionFromRequest(withCookie(original)), null);
+});
+
+test("pages send a visitor without a session to the original login and keep /asesor/login for administration", async () => {
+  const { readFileSync } = await import("node:fs");
+  assert.match(readFileSync("src/app/asesor/(protected)/layout.tsx", "utf8"), /redirect\("\/login\?from=\/asesor"\)/);
+  assert.match(readFileSync("src/app/asesor/brief/[id]/page.tsx", "utf8"), /redirect\(`\/login\?from=\$\{encodeURIComponent/);
+  const loginPage = readFileSync("src/app/asesor/login/page.tsx", "utf8");
+  assert.match(loginPage, /query\.admin !== "1" && query\.error === undefined/);
+  assert.match(loginPage, /"\/login\?from=\/asesor"/);
+  assert.match(loginPage, /type="hidden" name="username" value="admin"/, "the customer account is not offered here any more");
+  for (const file of ["src/app/asesor/admin/page.tsx", "src/app/asesor/admin/[id]/page.tsx", "src/proxy.ts"]) assert.match(readFileSync(file, "utf8"), /\/asesor\/login\?admin=1/, file);
+});

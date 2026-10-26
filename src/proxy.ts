@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
   if (path === "/asesor/admin" || path.startsWith("/asesor/admin/")) {
     const token = request.cookies.get(ASESOR_SESSION_COOKIE)?.value;
     const session = readAdvisorSessionToken(token);
-    if (!session) return NextResponse.redirect(new URL("/asesor/login", request.url));
+    if (!session) return NextResponse.redirect(new URL("/asesor/login?admin=1", request.url));
     if (session.role !== "admin") return NextResponse.json({ code: "ADVISOR_FORBIDDEN" }, { status: 403 });
     return NextResponse.next();
   }

@@ -44,8 +44,9 @@ export async function runDeployed(args: string[]): Promise<void> {
   let failure: string | undefined;
   let outcome: "passed" | "failed" = "failed";
   try {
+    // The advisor sends visitors without a session to the original Demo Decoración login (a redirect), so any 200 or redirect means it is up.
     const ready = await fetch(`${options.origin}/asesor/login`, { redirect: "manual", signal: AbortSignal.timeout(15_000) });
-    if (ready.status !== 200) throw new Error(`Deployed advisor login returned HTTP ${ready.status}; no credentials sent.`);
+    if (![200, 307, 308].includes(ready.status)) throw new Error(`Deployed advisor login returned HTTP ${ready.status}; no credentials sent.`);
     const readRevision = async () => {
       const response = await fetch(`${options.origin}/api/asesor/login`, { redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(15_000) });
       if (!response.ok) throw new Error(`Published advisor identity unavailable (HTTP ${response.status}).`);

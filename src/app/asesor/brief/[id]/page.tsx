@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { BriefView } from "@/components/asesor/BriefView";
-import { ASESOR_SESSION_COOKIE, readAdvisorSessionToken } from "@/lib/asesor/auth";
+import { advisorSessionFromCookies } from "@/lib/asesor/auth";
 import { loadApprovedBrief, type BriefLoadResult, type BriefProjection } from "@/lib/asesor/brief";
 import { createAsesorRepository } from "@/lib/asesor/repository";
 import sharp from "sharp";
@@ -44,9 +44,9 @@ async function BriefContent({
 }) {
   await connection();
   const jar = await cookies();
-  const session = readAdvisorSessionToken(jar.get(ASESOR_SESSION_COOKIE)?.value);
-  if (!session) redirect("/asesor/login");
+  const session = advisorSessionFromCookies((name) => jar.get(name)?.value);
   const { id } = await params;
+  if (!session) redirect(`/login?from=${encodeURIComponent(`/asesor/brief/${id}`)}`);
   const query = await searchParams;
   const projection: BriefProjection = query.projection === "vendor" ? "vendor" : "full";
   let result: BriefLoadResult | null = null;

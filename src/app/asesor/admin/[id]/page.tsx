@@ -12,7 +12,7 @@ export const instant = false;
 export default async function AdminConversationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const jar = await cookies();
   const access = getAdminPageAccess(jar.get(ASESOR_SESSION_COOKIE)?.value);
-  if (access === "anonymous") redirect("/asesor/login");
+  if (access === "anonymous") redirect("/asesor/login?admin=1");
   if (access === "forbidden") forbidden();
   const { id } = await params;
 

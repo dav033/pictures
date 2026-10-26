@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "@/lib/auth/session";
 
 function deriveScrypt(password: string, salt: Buffer, keyLength: number, options: { N: number; r: number; p: number }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -117,10 +118,32 @@ export function advisorCookieOptions() {
   };
 }
 
+type CookieReader = (name: string) => string | undefined;
+
+/** The Demo Decoración login (the shared password) is the front door: whoever passed it may talk to the advisor as a customer. */
+function passedOriginalLogin(read: CookieReader): boolean {
+  if (loginOmitidoEnDesarrollo()) return true;
+  const expected = process.env.APP_PASSWORD;
+  return Boolean(expected) && read(SESSION_COOKIE) === sessionToken(expected as string);
+}
+
+/**
+ * The advisor session of a request: the administrator's own session when it has one, otherwise the original login as a
+ * customer ("user"). The administrator role is never granted by the original login.
+ */
+export function advisorSessionFromCookies(read: CookieReader): AdvisorSession | null {
+  const own = readAdvisorSessionToken(read(ASESOR_SESSION_COOKIE));
+  if (own) return own;
+  return passedOriginalLogin(read) ? { role: "user", expiresAt: Date.now() + ASESOR_SESSION_MAX_AGE * 1000 } : null;
+}
+
+export function cookieReaderFromRequest(request: Request): CookieReader {
+  const parts = request.headers.get("cookie")?.split(";").map((part) => part.trim()) ?? [];
+  return (name) => parts.find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1);
+}
+
 export function advisorSessionFromRequest(request: Request): AdvisorSession | null {
-  const cookie = request.headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${ASESOR_SESSION_COOKIE}=`));
-  const token = cookie?.slice(ASESOR_SESSION_COOKIE.length + 1);
-  return readAdvisorSessionToken(token);
+  return advisorSessionFromCookies(cookieReaderFromRequest(request));
 }
 
 export function requireAdvisorRole(request: Request, allowedRoles: readonly AdvisorRole[] = ["user", "admin"]): AdvisorSession | NextResponse {
