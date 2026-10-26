@@ -127,3 +127,21 @@ test("an amount replaces the quick-pick band (and vice versa): the brief never k
   await applyAdvisorTool({ call: { nombre: "save_event_fields", args: { budgetRange: "Hasta $300.000" } }, operationId: "b3:0:0", currentCustomerText: "eso", mutateBrief: store.mutate });
   assert.equal(store.state.changes.length, 2, "saying the same budget again changes nothing");
 });
+
+test("find_venues looks the places up in the live catalogue instead of assuming anything", async () => {
+  const ask = async (cat: HappiaCatalogueResult, city: string | null) => {
+    const store = memory({ brief: brief({ city }) });
+    const out = await applyAdvisorTool({ call: { nombre: "find_venues", args: {} }, operationId: "v:0:0", currentCustomerText: "no tenemos lugar", mutateBrief: store.mutate, loadCatalogue: async () => cat });
+    return String((out.result as { message: string }).message);
+  };
+  const hall = service("salon-1", "Salón Jardín", 900_000, { category_name: "Salones", provider_name: "Casa Jardín", description: "Salón para 60 personas con terraza." });
+  assert.match(await ask(catalogue(), "Barranquilla"), /no tiene lugares ni salones disponibles ahora.*no ofrezcas, busques ni recomiendes lugares/i, "no venue service: told so, from the data");
+  const withHall = await ask(catalogue([...SERVICES, hall]), "Barranquilla");
+  assert.match(withHall, /Lugares del catálogo de Happia en Barranquilla.*id=salon-1 · Salón Jardín · Casa Jardín · \$\s?900\.000.*60 personas/);
+  assert.doesNotMatch(await ask(catalogue([...SERVICES, hall]), "Bogotá"), /salon-1/, "a hall of another city is never offered");
+  assert.match(await ask(catalogue([...SERVICES, hall]), null), /pregúntala/, "no city: ask it first");
+  assert.match(await ask({ status: "unavailable", reason: "request_failed" }, "Barranquilla"), /No hay catálogo de Happia disponible ahora/);
+  // And the hall can then go into the custom proposal like any other service.
+  const proposal = buildCustomPackage(catalogue([...SERVICES, hall]), brief(), { items: [{ serviceId: "salon-1" }, { serviceId: "kit" }] });
+  assert.ok(proposal.status === "proposal" && proposal.proposal.lines.some((line) => line.serviceId === "salon-1"));
+});

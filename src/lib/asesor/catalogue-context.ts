@@ -15,6 +15,11 @@ function offerable(service: HappiaService): service is HappiaService & { name: s
   return typeof service.name === "string" && service.name.trim() !== "" && service.total >= MIN_PLAUSIBLE_PRICE_COP && !/\bprueba\b/i.test(`${service.name} ${service.description ?? ""}`);
 }
 
+/** A service that is a place to hold the event (hall, venue, auditorium…), by its category or name. */
+export function isVenueService(service: Pick<HappiaService, "category_name" | "name">): boolean {
+  return /sal[oó]n|lugar|espacio|sede|finca|venue|auditorio|terraza|hotel|club|quinta|casa de eventos/i.test(`${service.category_name} ${service.name ?? ""}`);
+}
+
 export function offerableServices(services: readonly HappiaService[]): Array<HappiaService & { name: string }> {
   return services.filter(offerable);
 }
@@ -42,8 +47,5 @@ export function catalogueForModel(catalogue: HappiaCatalogueResult, city: string
     return `Catálogo de Happia: no hay servicios en ${city}. Happia tiene servicios en: ${cities.join(", ")}. Dilo con honestidad; no propongas elementos concretos.`;
   }
   const lines = local.slice(0, MAX_SERVICES).map(serviceLine);
-  const venues = /sal[oó]n|lugar|espacio|sede|finca|venue/i;
-  const venueNote = local.some((service) => venues.test(`${service.category_name} ${service.name}`)) ? ""
-    : `\nLugares: el catálogo no tiene salones ni lugares todavía (solo ${[...new Set(local.map((service) => service.category_name))].join(", ")}). No ofrezcas, busques ni recomiendes lugares ni preguntes tipo o zona para buscarlos.`;
-  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer; arma la propuesta con propose_custom_package usando estos id):\n${lines.join("\n")}${venueNote}`;
+  return `Catálogo de Happia en ${city} (lo único que se puede ofrecer; arma la propuesta con propose_custom_package usando estos id):\n${lines.join("\n")}`;
 }

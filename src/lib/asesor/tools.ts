@@ -5,7 +5,8 @@ import { ADVISOR_ESTIMATE_NOTICE, EventBriefSchema, type EventBriefState, parseE
 import { calculateBriefProgress, calculateStateProgress } from "./progress";
 import type { PhotoPreference } from "./repository";
 import { ADVISOR_DIRECTIONS_ENABLED, ADVISOR_STANDARD_PACKAGES_ENABLED } from "./features";
-import { buildCustomPackage, MAX_CUSTOM_ITEMS } from "./custom-package";
+import { buildCustomPackage, MAX_CUSTOM_ITEMS, servicesInCity } from "./custom-package";
+import { isVenueService } from "./catalogue-context";
 import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseStoredDirectionOffers } from "./directions";
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
@@ -30,7 +31,7 @@ const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
   if (field === "venueUndecided") return { type: "boolean", description: "true cuando el cliente aún no sabe o no está seguro de dónde será el evento; entonces no se pide dirección." };
   if (field === "budgetUndisclosed") return { type: "boolean", description: "true cuando el cliente prefiere no decir el presupuesto; no vuelvas a preguntarlo." };
-  if (field === "venueSearch") return { type: "string", description: "Solo lo que el cliente ya dijo por su cuenta sobre el lugar que tiene en mente (tipo, zona, capacidad). Es una nota para el equipo: Happia todavía no ofrece ni busca lugares, así que no se lo preguntes." };
+  if (field === "venueSearch") return { type: "string", description: "Solo lo que el cliente ya dijo por su cuenta sobre el lugar que tiene en mente (tipo, zona, capacidad), como nota para el equipo. No se lo preguntes salvo que find_venues devuelva lugares." };
   if (field === "decorationPlacement") return { type: "string", description: "En qué parte del lugar irá la decoración (la pared del fondo, la entrada, la mesa principal…), según el cliente." };
   if (field === "story") return { type: "string", description: "Por qué es especial esta celebración para quien organiza, en sus palabras." };
   if (field === "budgetRange") return { type: "string", description: "Rango de presupuesto cuando el cliente da un rango y no un monto, por ejemplo: Hasta $300.000." };
@@ -53,6 +54,7 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "show_directions", descripcion: "Muestra las doce direcciones visuales permitidas y sus artículos temáticos verificados; úsala cuando el cliente aún no decide.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "select_direction", descripcion: "Registra una dirección que el cliente eligió entre las que ya se le mostraron.", esquema: { type: "object", additionalProperties: false, required: ["directionId"], properties: { directionId: { type: "string", enum: ADVISOR_DIRECTION_IDS } } } },
   { nombre: "propose_standard_package", descripcion: "Pide al servidor el paquete estándar de Happia que mejor encaja con tipo de evento, temática, ciudad e invitados. Úsalo antes de ofrecer servicios a medida. El servidor devuelve el paquete, su estimado en COP y avisos; no indiques IDs ni precios.", esquema: { type: "object", additionalProperties: false, properties: {} } },
+  { nombre: "find_venues", descripcion: "Consulta en el catálogo en vivo de Happia si hay lugares (salones, espacios) en la ciudad del evento y los devuelve con su id y precio. Úsala cuando el cliente pida o necesite un lugar; ofrece solo lo que devuelva y, si no hay ninguno, dilo con honestidad.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "propose_custom_package", descripcion: "Arma una propuesta a medida con servicios individuales del «Catálogo de Happia» de la ciudad del evento. Pasa solo los id del catálogo que te dio el servidor y, para los servicios por unidad, la cantidad; el servidor valida cada servicio, fija las cantidades por persona y calcula los precios y el total. Si algún id no existe, no se arma nada.", esquema: { type: "object", additionalProperties: false, required: ["items"], properties: { name: { type: "string", description: "Nombre corto de la propuesta, por ejemplo «Fiesta de fútbol de David»." }, items: { type: "array", minItems: 1, maxItems: MAX_CUSTOM_ITEMS, items: { type: "object", additionalProperties: false, required: ["serviceId"], properties: { serviceId: { type: "string", description: "Identificador (id=...) del servicio en el catálogo." }, quantity: { type: "integer", minimum: 1, description: "Unidades, solo para servicios por unidad; los servicios por persona usan los invitados." } } } } } } },
 ];
 
@@ -126,6 +128,17 @@ export function applyCustomerConsentToState(state: EventBriefState, text: string
   return state;
 }
 
+const venueCop = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+/** What the live catalogue has as places for the event's city, worded for the advisor; nothing is assumed. */
+function describeVenues(catalogue: HappiaCatalogueResult, city: string | null): string {
+  if (catalogue.status !== "available") return "No hay catálogo de Happia disponible ahora: no sabes si hay lugares, así que no ofrezcas ni prometas ninguno.";
+  if (!city) return "Aún no hay ciudad del evento: pregúntala antes de consultar lugares.";
+  const venues = servicesInCity(catalogue, city).filter(isVenueService);
+  if (venues.length === 0) return `El catálogo de Happia en ${city} no tiene lugares ni salones disponibles ahora. No ofrezcas, busques ni recomiendes lugares, no preguntes tipo de lugar ni zona para buscarlos; dile con honestidad que por ahora el lugar lo define el cliente y que Happia ayuda con el resto.`;
+  return `Lugares del catálogo de Happia en ${city} (ofrece solo estos; puedes incluirlos en la propuesta a medida con su id): ${venues.map((venue) => `id=${venue.id} · ${venue.name} · ${venue.provider_name} · ${venueCop.format(venue.total)}${venue.description ? ` — ${venue.description.replace(/\s+/g, " ").slice(0, 140)}` : ""}`).join("; ")}.`;
+}
+
 export async function applyAdvisorTool(input: {
   call: LlamadaHerramienta;
   operationId: string;
@@ -145,7 +158,7 @@ export async function applyAdvisorTool(input: {
   let catalogue: HappiaCatalogueResult = { status: "unavailable", reason: "request_failed" };
   let packageCardValue: unknown;
   const customArgs = call.nombre === "propose_custom_package" ? customPackageArgsSchema.safeParse(call.args) : null;
-  if ((call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) || customArgs?.success) {
+  if ((call.nombre === "propose_standard_package" && summaryArgsSchema.safeParse(call.args).success) || customArgs?.success || (call.nombre === "find_venues" && noArgsSchema.safeParse(call.args).success)) {
     try { catalogue = await (input.loadCatalogue ?? (async () => (await import("./catalogue")).getHappiaCatalogue()))(); } catch { /* Explicit no-match below; never invent a catalogue result. */ }
   }
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
@@ -179,6 +192,7 @@ export async function applyAdvisorTool(input: {
       || ((call.nombre === "approve_summary") && !approvalArgsSchema.safeParse(call.args).success)
       || ((call.nombre === "propose_standard_package") && !summaryArgsSchema.safeParse(call.args).success)
       || (call.nombre === "propose_custom_package" && !customArgs?.success)
+      || (call.nombre === "find_venues" && !noArgsSchema.safeParse(call.args).success)
       || (call.nombre === "record_photo_feedback" && !photoFeedbackSchema.safeParse(call.args).success)
       || (call.nombre === "record_photo_reading" && !photoReadingArgsSchema.safeParse(call.args).success)
       || (call.nombre === "show_directions" && !noArgsSchema.safeParse(call.args).success)
@@ -245,6 +259,8 @@ export async function applyAdvisorTool(input: {
         const estimate = outcome.proposal.estimate;
         message = `Paquete estándar propuesto: ${outcome.proposal.name}. ${estimate.status === "available" ? `Estimado ${estimate.subtotalCop} COP antes de IVA y comisión.` : "Precio estimado no disponible."} ${ADVISOR_ESTIMATE_NOTICE} ${outcome.proposal.disclosures.join(" ")}`;
       }
+    } else if (call.nombre === "find_venues") {
+      message = describeVenues(catalogue, state.brief.city);
     } else if (call.nombre === "propose_custom_package" && customArgs?.success) {
       const outcome = buildCustomPackage(catalogue, state.brief, customArgs.data);
       if (outcome.status === "rejected") { message = outcome.reason; return state; }
