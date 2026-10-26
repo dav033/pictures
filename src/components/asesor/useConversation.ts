@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RecordedNote } from "./VoiceNoteButton";
 import { waveformFromLevels } from "./waveform";
+import { photoOnlyMessage } from "./photo-message";
 import { ADVISOR_CONVERSATION_STORAGE_KEY, parseAdvisorEvent, parseAdvisorSnapshot, parseCreatedConversation, type AdvisorMessage, type AdvisorPhoto, type AdvisorProgress, type AdvisorUiState } from "./conversation-contract";
 import type { ComposerCapabilities } from "./Composer";
 
@@ -166,7 +167,8 @@ export function useConversation() {
   }, [conversationId, photoKind, refreshPhotos]);
 
   const submit = useCallback((content: string, photos?: File[]) => {
-    const cleaned = content.trim();
+    // A photo sent on its own still carries a line of text: every turn needs one, and it shows what the customer sent.
+    const cleaned = content.trim() || (photos?.length ? photoOnlyMessage(photoKind, photos.length) : "");
     if ((!cleaned && !photos?.length) || status === "sending") return;
     const turn: PendingTurn = { id: crypto.randomUUID(), content: cleaned, ...(photos?.length ? { photos, photoKind } : {}) };
     setMessages((current) => [...current, { id: turn.id, role: "user", content: cleaned, ...(photos?.length ? { attachments: [] } : {}) }]);

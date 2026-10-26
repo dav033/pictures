@@ -174,3 +174,11 @@ test("photos offer the keep chips and the venue photo asks where the decoration 
   assert.match(base, /foto del lugar, pregunta en qué parte irá la decoración/);
   assert.match(base, /decorationPlacement/);
 });
+
+test("a photo sent without text still sends a message the server accepts", async () => {
+  const { photoOnlyMessage } = await import("../../../src/components/asesor/photo-message");
+  assert.equal(photoOnlyMessage("inspiration", 1), "Te comparto una foto de inspiración.");
+  assert.equal(photoOnlyMessage("venue", 2), "Te comparto fotos del lugar.");
+  for (const kind of ["inspiration", "venue"] as const) for (const count of [1, 3]) assert.ok(photoOnlyMessage(kind, count).trim().length > 0);
+  assert.match(hook, /content\.trim\(\) \|\| \(photos\?\.length \? photoOnlyMessage\(photoKind, photos\.length\)/);
+});
