@@ -2,6 +2,7 @@ import type { ChatPort, FragmentoChat, LlamadaHerramienta, Mensaje } from "@/lib
 import type { StoredMessage } from "./repository";
 import { ADVISOR_SYSTEM_PROMPT } from "./prompts/base";
 import { calculateBriefProgress, calculateStateProgress } from "./progress";
+import type { PhotoReading } from "./photo-evidence";
 import { applyAdvisorTool, ADVISOR_MODEL_TOOLS, applyCustomerConsentToState, type BriefMutator } from "./tools";
 import { parseEventBriefState, type EventBriefState } from "./contracts";
 import { prepareAdvisorPhoto } from "./photos";
@@ -23,7 +24,8 @@ export type AdvisorTurnDependencies = {
   mutateBrief: BriefMutator;
   readBrief: () => Promise<unknown>;
   appendAssistant: (id: string, content: string) => Promise<void>;
-  savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
+  savePhotoFeedback?: (attachmentId: string, confirmed: boolean | null, preference: PhotoPreference | null, keep?: string[]) => Promise<boolean>;
+  savePhotoReading?: (attachmentId: string, reading: PhotoReading) => Promise<boolean>;
   signal?: AbortSignal;
   timeoutMs?: number;
   /** Reads the Happia catalogue once per turn: the model may only offer what it lists. Absent (tests), nothing is offered. */
@@ -189,7 +191,7 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
       for (let index = 0; index < turn.calls.length; index++) {
         const call = turn.calls[index];
         const previousSummaryVersion = state.summary?.version;
-        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback, turnId: deps.turnId, ...(deps.loadCatalogue ? { loadCatalogue: async () => catalogue } : {}) });
+        const effect = await applyAdvisorTool({ call, operationId: `${deps.turnId}:${operations}:${index}`, currentCustomerText: current.content, mutateBrief: deps.mutateBrief, photoIds, savePhotoFeedback: deps.savePhotoFeedback, savePhotoReading: deps.savePhotoReading, turnId: deps.turnId, ...(deps.loadCatalogue ? { loadCatalogue: async () => catalogue } : {}) });
         state = effect.state;
         if ((call.nombre === "propose_summary" && state.summary && state.summary.version !== previousSummaryVersion)
           || (call.nombre === "approve_summary" && state.approval && state.approval.summaryVersion === state.summary?.version)) {

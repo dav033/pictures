@@ -1,3 +1,4 @@
+import type { PhotoReading } from "./photo-evidence";
 import "server-only";
 
 import { readAdvisorSessionToken } from "./auth";
@@ -25,7 +26,7 @@ export type AdminConversationDetail = AdminConversationSnapshot & {
     id: string;
     role: StoredMessage["role"];
     content: string;
-    attachments: Array<{ id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" }>;
+    attachments: Array<{ id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral"; reading: PhotoReading | null; keep: string[] }>;
   }>;
   brief: ReturnType<typeof parseEventBriefState>["brief"];
   approvedBrief: { version: number; text: string } | null;
@@ -67,7 +68,7 @@ export async function getAdminConversationDetail(repository: Pick<AsesorReposito
       id: messageId,
       role,
       content,
-      attachments: attachments.map(({ id: attachmentId, mimeType, byteSize, kind, confirmed, preference }) => ({ id: attachmentId, mimeType, byteSize, kind: kind ?? "inspiration", confirmed: confirmed ?? null, preference: preference ?? "neutral" })),
+      attachments: attachments.map(({ id: attachmentId, mimeType, byteSize, kind, confirmed, preference, reading, keep }) => ({ id: attachmentId, mimeType, byteSize, kind: kind ?? "inspiration", confirmed: confirmed ?? null, preference: preference ?? "neutral", reading: reading ?? null, keep: keep ?? [] })),
     })),
     brief: state.brief,
     approvedBrief: approved && state.summary ? { version: state.summary.version, text: state.summary.text } : null,

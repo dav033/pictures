@@ -1,4 +1,11 @@
 import { getAsesorPool, type AsesorDb } from "./db";
+import { PhotoReadingSchema, type PhotoReading } from "./photo-evidence";
+
+/** A stored reading that no longer parses is shown as no reading, never as a failure. */
+function parseReading(value: unknown): PhotoReading | null {
+  const parsed = PhotoReadingSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
 
 export type MessageRole = "user" | "assistant" | "system";
 
@@ -8,7 +15,7 @@ export type AttachmentInput = { id: string; mimeType: string; data: Buffer; kind
 /** How a customer turn arrived: typed, or a voice note transcribed to text (any channel). */
 export type MessageInputMode = "text" | "voice";
 export type MessageInput = { id: string; role: MessageRole; content: string; attachments?: AttachmentInput[]; inputMode?: MessageInputMode };
-export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference };
+export type StoredAttachment = { id: string; mimeType: string; byteSize: number; data: Buffer; kind?: PhotoKind; confirmed?: boolean | null; preference?: PhotoPreference; reading?: PhotoReading | null; keep?: string[] };
 export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[]; inputMode?: MessageInputMode };
 export type StoredBrief = { conversationId: string; version: number; state: unknown };
 export type StoredConversation = { id: string; accountId: string | null; title: string | null; updatedAt: string };
@@ -183,8 +190,10 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         photo_kind: PhotoKind;
         confirmed: boolean | null;
         preference: PhotoPreference;
+        reading: unknown;
+        keep: string[] | null;
       }>(
-        `SELECT a.id, a.message_id, a.mime_type, a.byte_size, a.data, a.photo_kind, a.confirmed, a.preference
+        `SELECT a.id, a.message_id, a.mime_type, a.byte_size, a.data, a.photo_kind, a.confirmed, a.preference, a.reading, a.keep
            FROM attachments a JOIN messages m ON m.id = a.message_id
           WHERE m.conversation_id = $1 ORDER BY m.seq, a.created_at, a.id`,
         [conversationId],
@@ -194,7 +203,7 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         ...(inputMode === "voice" ? { inputMode } : {}),
         attachments: files
           .filter((file) => file.message_id === row.id)
-          .map((file) => ({ id: file.id, mimeType: file.mime_type, byteSize: file.byte_size, data: file.data, kind: file.photo_kind ?? "inspiration", confirmed: file.confirmed ?? null, preference: file.preference ?? "neutral" })),
+          .map((file) => ({ id: file.id, mimeType: file.mime_type, byteSize: file.byte_size, data: file.data, kind: file.photo_kind ?? "inspiration", confirmed: file.confirmed ?? null, preference: file.preference ?? "neutral", reading: parseReading(file.reading), keep: file.keep ?? [] })),
       }));
     },
 
@@ -208,11 +217,22 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
       return row ? { id: row.id, mimeType: row.mime_type, byteSize: row.byte_size, data: row.data, kind: row.photo_kind ?? "inspiration", confirmed: row.confirmed ?? null, preference: row.preference ?? "neutral", conversationId: row.conversation_id, accountId: row.account_id } : null;
     },
 
-    async updatePhotoFeedback(conversationId: string, attachmentId: string, confirmed: boolean, preference: PhotoPreference): Promise<boolean> {
+    /** Saves what the customer said about a photo; a `null` leaves that part as it was, `keep` replaces the list when given. */
+    async updatePhotoFeedback(conversationId: string, attachmentId: string, confirmed: boolean | null, preference: PhotoPreference | null, keep?: string[]): Promise<boolean> {
       const result = await db.query(
-        `UPDATE attachments a SET confirmed = $3, preference = $4
+        `UPDATE attachments a SET confirmed = COALESCE($3::boolean, a.confirmed), preference = COALESCE($4::text, a.preference), keep = COALESCE($5::text[], a.keep)
           FROM messages m WHERE a.id = $2 AND a.message_id = m.id AND m.conversation_id = $1`,
-        [conversationId, attachmentId, confirmed, preference],
+        [conversationId, attachmentId, confirmed, preference, keep ?? null],
+      );
+      return (result.rowCount ?? 0) === 1;
+    },
+
+    /** Stores the advisor's structured first look; a new reading needs the customer's confirmation again. */
+    async savePhotoReading(conversationId: string, attachmentId: string, reading: PhotoReading): Promise<boolean> {
+      const result = await db.query(
+        `UPDATE attachments a SET reading = $3::jsonb, confirmed = NULL
+          FROM messages m WHERE a.id = $2 AND a.message_id = m.id AND m.conversation_id = $1`,
+        [conversationId, attachmentId, JSON.stringify(reading)],
       );
       return (result.rowCount ?? 0) === 1;
     },

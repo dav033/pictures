@@ -72,7 +72,7 @@ test("the first-look turn contains a JPEG derivative inline and identifies the o
 });
 
 test("photo feedback is persisted separately for the requested attachment ID", async () => {
-  let persisted: { attachmentId: string; confirmed: boolean; preference: string } | null = null;
+  let persisted: { attachmentId: string; confirmed: boolean | null; preference: string | null } | null = null;
   const result = await applyAdvisorTool({
     call: { nombre: "record_photo_feedback", args: { attachmentId: "venue-attachment", confirmed: true, preference: "dislike" } },
     operationId: "turn:0:0", currentCustomerText: "Confirmo la lectura, pero no me gusta.",
@@ -113,4 +113,46 @@ test("Postgres bytea writes and reads the original bytes and photo metadata unch
   const message = (await repository.listMessages("conversation-1"))[0]!;
   assert.deepEqual(message.attachments[0]?.data, bytes);
   assert.deepEqual({ kind: message.attachments[0]?.kind, confirmed: message.attachments[0]?.confirmed, preference: message.attachments[0]?.preference }, { kind: "venue", confirmed: true, preference: "dislike" });
+});
+
+import { customerEvidence, keepWithEvidence } from "../../../src/lib/asesor/photo-evidence";
+
+test("the customer's own words decide what is stored about a photo", () => {
+  assert.deepEqual(customerEvidence("Sí, es esa. Me encanta el arco blanco y negro"), { confirmed: true, corrected: false, likes: true, dislikes: false });
+  assert.equal(customerEvidence("No, en realidad es más bien rosa").corrected, true);
+  assert.equal(customerEvidence("No, en realidad es más bien rosa").confirmed, false);
+  assert.equal(customerEvidence("no me gusta el fondo rojo").dislikes, true);
+  assert.equal(customerEvidence("no me gusta el fondo rojo").likes, false);
+  const mixed = customerEvidence("Me encanta el arco blanco y negro, pero el fondo rojo no me gusta");
+  assert.ok(mixed.likes && mixed.dislikes, "a liked part and a disliked part in one message are both heard");
+  assert.equal(customerEvidence("Somos 15 en Barranquilla").likes, false, "an unrelated message supports nothing");
+  assert.deepEqual(keepWithEvidence(["el arco blanco y negro", "las flores amarillas"], "Me encanta el arco blanco y negro"), { accepted: ["el arco blanco y negro"], rejected: ["las flores amarillas"] });
+});
+
+test("the server stores only what the customer's last message supports, and the reading needs the customer's confirmation again", async () => {
+  const saved: Array<{ confirmed: boolean | null; preference: string | null; keep?: string[] }> = [];
+  const run = (text: string, args: Record<string, unknown>) => applyAdvisorTool({
+    call: { nombre: "record_photo_feedback", args: { attachmentId: "p1", ...args } }, operationId: `t:${saved.length}:0`, currentCustomerText: text,
+    mutateBrief: async (mutate) => ({ state: mutate(null, 0), version: 1 }), photoIds: new Set(["p1"]),
+    savePhotoFeedback: async (_id, confirmed, preference, keep) => { saved.push({ confirmed, preference, ...(keep ? { keep } : {}) }); return true; },
+  });
+  // The model claims a like the customer never said: nothing is stored and the advisor is told to ask.
+  const unsupported = await run("Somos 15 en Barranquilla", { confirmed: true, preference: "like", keep: ["el arco blanco y negro"] });
+  assert.deepEqual(saved, []);
+  assert.match(String((unsupported.result as { message: string }).message), /NO se guardó.*Pregúntaselo/);
+  const supported = await run("Sí, es esa. Me encanta el arco blanco y negro, eso lo quiero sí o sí", { confirmed: true, preference: "like", keep: ["el arco blanco y negro", "las flores amarillas"] });
+  assert.deepEqual(saved.at(-1), { confirmed: true, preference: "like", keep: ["el arco blanco y negro"] });
+  assert.match(String((supported.result as { message: string }).message), /conservar: el arco blanco y negro/);
+  assert.match(String((supported.result as { message: string }).message), /NO se guardó.*conservar «las flores amarillas»/);
+  const reading = await applyAdvisorTool({
+    call: { nombre: "record_photo_reading", args: { attachmentId: "p1", style: "arco orgánico clásico", colors: ["blanco", "negro"], elements: ["arco de globos"] } }, operationId: "t:9:0", currentCustomerText: "mira esta foto",
+    mutateBrief: async (mutate) => ({ state: mutate(null, 0), version: 1 }), photoIds: new Set(["p1"]),
+    savePhotoReading: async (id, value) => { assert.equal(id, "p1"); assert.deepEqual(value, { style: "arco orgánico clásico", colors: ["blanco", "negro"], elements: ["arco de globos"] }); return true; },
+  });
+  assert.match(String((reading.result as { message: string }).message), /pendiente de su confirmación/);
+  const stranger = await applyAdvisorTool({
+    call: { nombre: "record_photo_reading", args: { attachmentId: "otra-conversacion", style: "x", colors: [], elements: [] } }, operationId: "t:10:0", currentCustomerText: "x",
+    mutateBrief: async (mutate) => ({ state: mutate(null, 0), version: 1 }), photoIds: new Set(["p1"]), savePhotoReading: async () => true,
+  });
+  assert.match(String((stranger.result as { message: string }).message), /No se pudo asociar la lectura/);
 });

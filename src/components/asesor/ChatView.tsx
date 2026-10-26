@@ -6,6 +6,7 @@ import { History } from "lucide-react";
 import { ADVISOR_DIRECTIONS_ENABLED } from "@/lib/asesor/features";
 import { AdvisorHeader } from "./AdvisorHeader";
 import { AssistantText } from "./AssistantText";
+import { PhotoNotes } from "./PhotoNotes";
 import { VoiceNoteBubble } from "./VoiceNoteBubble";
 import { Composer } from "./Composer";
 import { ContactForm } from "./ContactForm";
@@ -105,6 +106,7 @@ export function ChatView() {
                 {message.attachments?.map((photo) => <figure key={photo.id} className="mt-2">
                   <img src={`/api/asesor/photos/${encodeURIComponent(photo.id)}`} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} loading="lazy" className="max-h-64 max-w-full rounded-xl object-cover" />
                   <figcaption className="mt-1 text-xs text-texto-suave">{photo.kind === "venue" ? "Lugar del evento" : "Inspiración"} · {photo.preference === "neutral" ? "por revisar" : photo.preference === "like" ? "me gusta" : "no me gusta"}</figcaption>
+                  <PhotoNotes photo={photo} />
                 </figure>)}
               </li>
               : <li key={message.id} style={live ? undefined : stagger(index)} className={`flex flex-col gap-2.5 ${live ? "" : "asesor-sube"}`}>

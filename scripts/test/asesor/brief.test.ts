@@ -54,7 +54,7 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
     summarySequence: 4,
     approval: { summaryVersion: 4, confirmedAt: "2026-10-20T12:00:00.000Z" },
   });
-  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==", kind: "venue" as const, confirmed: true, preference: "dislike" as const }];
+  const photos = [{ id: "photo-1", mimeType: "image/jpeg", thumbnailUrl: "data:image/jpeg;base64,AA==", kind: "venue" as const, confirmed: true, preference: "dislike" as const, reading: { style: "salón amplio", colors: ["blanco"], elements: ["ventanales"] }, keep: ["los ventanales", "la mesa de Ana Pérez"] }];
   const full = createBriefProjection(state, photos, "full");
   assert.equal(full.brief.budget, 2_500_000);
   assert.equal(full.brief.address, "Calle 18 # 20-30");
@@ -84,7 +84,9 @@ test("full brief retains R11 fields and vendor projection excludes personal fiel
     assert.ok(!serialized.includes(value), `vendor projection leaked ${value}`);
   }
   assert.equal(vendor.brief.likes, "Flores");
-  assert.deepEqual(vendor.photos, photos);
+  assert.deepEqual(vendor.photos[0].reading, photos[0].reading, "the advisor's reading goes to the vendors as is");
+  assert.deepEqual(vendor.photos[0].keep, ["los ventanales", "la mesa de [dato privado]"], "the customer's name is redacted from what they want to keep");
+  assert.deepEqual(full.photos[0].keep, photos[0].keep, "the full brief keeps their words");
   assert.equal(vendor.approval, null);
 });
 

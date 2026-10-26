@@ -2,6 +2,7 @@ import type { BriefViewData } from "@/lib/asesor/brief";
 import { getBriefChangeLines, getBriefDisplayEntries } from "@/lib/asesor/brief-display";
 import Image from "next/image";
 import { PrintBriefButton } from "./PrintBriefButton";
+import { readingLines } from "@/lib/asesor/photo-evidence";
 
 export function BriefView({ data, conversationId }: { data: BriefViewData; conversationId: string }) {
   const entries = getBriefDisplayEntries(data);
@@ -23,7 +24,7 @@ export function BriefView({ data, conversationId }: { data: BriefViewData; conve
       </section>
       {changes.length > 0 && <section className="brief-details" aria-label="Historial de cambios"><div className="brief-detail"><h2>Historial de cambios</h2><ol>{changes.map((line, index) => <li key={index}>{line}</li>)}</ol></div></section>}
       {data.photos.length > 0 && <section className="brief-photos"><h2>Fotos de referencia</h2><div className="brief-photo-grid">
-        {data.photos.map((photo) => <figure key={photo.id}><Image src={photo.thumbnailUrl} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} width={240} height={160} unoptimized /><figcaption>{photo.kind === "venue" ? "Lugar" : "Inspiración"} · confirmación {photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"} · preferencia {photo.preference} · {photo.id.slice(0, 8)}</figcaption></figure>)}
+        {data.photos.map((photo) => <figure key={photo.id}><Image src={photo.thumbnailUrl} alt={photo.kind === "venue" ? "Foto del lugar del evento" : "Foto de inspiración"} width={240} height={160} unoptimized /><figcaption>{photo.kind === "venue" ? "Lugar" : "Inspiración"} · confirmación {photo.confirmed === null ? "pendiente" : photo.confirmed ? "sí" : "no"} · preferencia {photo.preference} · {photo.id.slice(0, 8)}{photo.reading && <span className="brief-photo-reading">{readingLines(photo.reading).map((line) => `${line.label}: ${line.value}`).join(" · ")}</span>}{photo.keep.length > 0 && <span className="brief-photo-keep">Conservar sí o sí: {photo.keep.join(" · ")}</span>}</figcaption></figure>)}
       </div></section>}
       {data.projection === "full" && data.approval && <p className="brief-approved">Aprobado por el cliente</p>}
     </main>

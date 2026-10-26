@@ -68,7 +68,7 @@ test("admin detail reads transcript and approved brief while returning attachmen
   });
   const messages: StoredMessage[] = [{
     id: "message-1", role: "user", content: "Adjunto una referencia.",
-    attachments: [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512, data: Buffer.from([1, 2, 3]), kind: "venue", confirmed: true, preference: "dislike" }],
+    attachments: [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512, data: Buffer.from([1, 2, 3]), kind: "venue", confirmed: true, preference: "dislike", reading: { style: "salón amplio", colors: ["blanco"], elements: [] }, keep: ["los ventanales"] }],
   }];
   const detail = await getAdminConversationDetail({
     getAdminConversation: async (id) => id === row.id ? row : null,
@@ -76,7 +76,7 @@ test("admin detail reads transcript and approved brief while returning attachmen
   }, row.id);
   assert.ok(detail);
   assert.equal(detail.transcript[0].content, "Adjunto una referencia.");
-  assert.deepEqual(detail.transcript[0].attachments, [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512, kind: "venue", confirmed: true, preference: "dislike" }]);
+  assert.deepEqual(detail.transcript[0].attachments, [{ id: "attachment-1", mimeType: "image/jpeg", byteSize: 512, kind: "venue", confirmed: true, preference: "dislike", reading: { style: "salón amplio", colors: ["blanco"], elements: [] }, keep: ["los ventanales"] }]);
   assert.equal("data" in detail.transcript[0].attachments[0], false);
   assert.equal(detail.approvedBrief?.text, "Brief aprobado: cumpleaños en Bogotá.");
   assert.equal(await getAdminConversationDetail({ getAdminConversation: async () => null, listMessages: async () => [] }, "other-account-id"), null);

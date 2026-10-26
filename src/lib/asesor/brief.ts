@@ -1,10 +1,11 @@
 import type { BriefChange, EventBrief, EventBriefState, StandardPackageProposal } from "./contracts";
 import { parseEventBriefState } from "./contracts";
 import { EVENT_KIND_LABELS, PRIORITY_LABELS } from "./brief-changes";
+import type { PhotoReading } from "./photo-evidence";
 import type { createAsesorRepository } from "./repository";
 
 export type BriefProjection = "full" | "vendor";
-export type BriefPhoto = { id: string; mimeType: string; thumbnailUrl: string; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
+export type BriefPhoto = { id: string; mimeType: string; thumbnailUrl: string; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral"; reading: PhotoReading | null; keep: string[] };
 export type BriefViewData = {
   projection: BriefProjection;
   summary: { version: number; text: string };
@@ -104,7 +105,8 @@ export function createBriefProjection(
     brief,
     standardPackage: state.standardPackage ? structuredClone(state.standardPackage) : null,
     approval: projection === "full" ? state.approval : null,
-    photos: photos.map((photo) => ({ ...photo })),
+    // What the customer wants to keep is their own wording: the vendor copy loses any personal value in it.
+    photos: photos.map((photo) => ({ ...photo, keep: projection === "vendor" ? photo.keep.map((item) => redactText(item, personalValues(state.brief))) : [...photo.keep] })),
     changes: projection === "full" ? state.changes.map((change) => ({ ...change }))
       : state.changes.filter((change) => !VENDOR_EXCLUDED_FIELDS.has(change.field))
         .map((change) => redactFreeText(change, personalValues(state.brief)) as BriefChange),
@@ -131,7 +133,7 @@ export async function loadApprovedBrief(input: {
     for (const attachment of message.attachments) {
       if (!attachment.mimeType.startsWith("image/")) continue;
       const thumbnailUrl = await input.thumbnail(attachment.mimeType, attachment.data);
-      if (thumbnailUrl) photos.push({ id: attachment.id, mimeType: attachment.mimeType, thumbnailUrl, kind: attachment.kind ?? "inspiration", confirmed: attachment.confirmed ?? null, preference: attachment.preference ?? "neutral" });
+      if (thumbnailUrl) photos.push({ id: attachment.id, mimeType: attachment.mimeType, thumbnailUrl, kind: attachment.kind ?? "inspiration", confirmed: attachment.confirmed ?? null, preference: attachment.preference ?? "neutral", reading: attachment.reading ?? null, keep: attachment.keep ?? [] });
     }
   }
   return { status: "ok", data: createBriefProjection(state, photos, input.projection) };

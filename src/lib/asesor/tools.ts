@@ -10,6 +10,7 @@ import { ADVISOR_DIRECTION_IDS, getDirectionOffers, isOfferedDirection, parseSto
 import type { DirectionOffer } from "./directions-contract";
 import type { HappiaCatalogueResult } from "./catalogue";
 import { packageCard, proposeStandardPackage } from "./packages";
+import { customerEvidence, keepWithEvidence, KeepItemSchema, MAX_KEEP_ITEMS, PhotoReadingSchema, type PhotoReading } from "./photo-evidence";
 import { appendBriefChanges, budgetDisplay, diffBrief, EVENT_KIND_LABELS, formatBriefChange, PRIORITY_LABELS, sameFact } from "./brief-changes";
 
 const fieldNames = Object.keys(EventBriefSchema.shape).filter((key) => key !== "contactPermission" && key !== "addressPermission" && key !== "proposedPackage");
@@ -22,7 +23,8 @@ const customPackageArgsSchema = z.object({
   items: z.array(z.object({ serviceId: z.string().min(1).max(100), quantity: z.number().int().min(1).max(60).optional() }).strict()).min(1).max(MAX_CUSTOM_ITEMS),
 }).strict();
 const directionArgsSchema = z.object({ directionId: z.string().refine(isOfferedDirection) }).strict();
-const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100), confirmed: z.boolean(), preference: z.enum(["like", "dislike", "neutral"]) }).strict();
+const photoFeedbackSchema = z.object({ attachmentId: z.string().min(1).max(100), confirmed: z.boolean(), preference: z.enum(["like", "dislike", "neutral"]), keep: z.array(KeepItemSchema).max(MAX_KEEP_ITEMS).optional() }).strict();
+const photoReadingArgsSchema = PhotoReadingSchema.extend({ attachmentId: z.string().min(1).max(100) }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "venueType") return { type: "string", description: "Tipo de lugar indicado por el cliente: salón, casa, restaurante, jardín, colegio, etc. En 'salón Casa Jardín', guarda salón aquí y Casa Jardín en venueName." };
   if (field === "venueName") return { type: "string", description: "Nombre propio del lugar; no sustituye venueType. Guarda también el tipo de lugar cuando el cliente lo haya indicado." };
@@ -45,7 +47,8 @@ export const ADVISOR_TOOLS: Herramienta[] = [
   { nombre: "save_event_fields", descripcion: "Guarda campos de evento indicados explícitamente por el cliente.", esquema: { type: "object", additionalProperties: false, properties: Object.fromEntries(fieldNames.map((key) => [key, fieldPropertySchema(key)])) } },
   { nombre: "propose_summary", descripcion: "Solicita al servidor crear el resumen si el brief está completo.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "approve_summary", descripcion: "Registra aprobación del resumen vigente; requiere confirmación explícita del cliente.", esquema: { type: "object", additionalProperties: false, required: ["summaryVersion"], properties: { summaryVersion: { type: "integer", minimum: 1 } } } },
-  { nombre: "record_photo_feedback", descripcion: "Registra por attachmentId si el cliente confirmó la lectura de una foto y si le gusta, le disgusta o no expresó preferencia. Usa solo los IDs disponibles en el contexto.", esquema: { type: "object", additionalProperties: false, required: ["attachmentId", "confirmed", "preference"], properties: { attachmentId: { type: "string" }, confirmed: { type: "boolean" }, preference: { type: "string", enum: ["like", "dislike", "neutral"] } } } },
+  { nombre: "record_photo_reading", descripcion: "Guarda tu primera lectura estructurada de una foto del cliente (estilo, colores y elementos que ves) para que él la confirme. Úsala en la primera respuesta tras recibir la foto, con los IDs del contexto; describe solo lo que ves en la imagen.", esquema: { type: "object", additionalProperties: false, required: ["attachmentId", "style", "colors", "elements"], properties: { attachmentId: { type: "string" }, style: { type: "string", description: "Estilo general en pocas palabras, por ejemplo «arco orgánico de globos, clásico y sobrio»." }, colors: { type: "array", maxItems: 6, items: { type: "string" }, description: "Nombres de los colores principales." }, elements: { type: "array", maxItems: 8, items: { type: "string" }, description: "Elementos decorativos que se ven: arco, guirnalda, columna, mesa de dulces…" } } } },
+  { nombre: "record_photo_feedback", descripcion: "Registra por attachmentId lo que el cliente dijo en SU ÚLTIMO MENSAJE sobre una foto: si confirmó tu lectura, si le gusta o le disgusta y qué quiere conservar sí o sí (keep). El servidor solo guarda lo que ese mensaje respalda; no atribuyas a otra imagen ni inventes. Usa los IDs disponibles en el contexto.", esquema: { type: "object", additionalProperties: false, required: ["attachmentId", "confirmed", "preference"], properties: { attachmentId: { type: "string" }, confirmed: { type: "boolean" }, preference: { type: "string", enum: ["like", "dislike", "neutral"] }, keep: { type: "array", maxItems: MAX_KEEP_ITEMS, items: { type: "string" }, description: "Lo que el cliente quiere conservar sí o sí de esta foto, con sus palabras (ej. «el arco blanco y negro»)." } } } },
   { nombre: "show_directions", descripcion: "Muestra las doce direcciones visuales permitidas y sus artículos temáticos verificados; úsala cuando el cliente aún no decide.", esquema: { type: "object", additionalProperties: false, properties: {} } },
   { nombre: "select_direction", descripcion: "Registra una dirección que el cliente eligió entre las que ya se le mostraron.", esquema: { type: "object", additionalProperties: false, required: ["directionId"], properties: { directionId: { type: "string", enum: ADVISOR_DIRECTION_IDS } } } },
   { nombre: "propose_standard_package", descripcion: "Pide al servidor el paquete estándar de Happia que mejor encaja con tipo de evento, temática, ciudad e invitados. Úsalo antes de ofrecer servicios a medida. El servidor devuelve el paquete, su estimado en COP y avisos; no indiques IDs ni precios.", esquema: { type: "object", additionalProperties: false, properties: {} } },
@@ -130,7 +133,9 @@ export async function applyAdvisorTool(input: {
   loadDirectionOffers?: () => Promise<DirectionOffer[]>;
   loadCatalogue?: () => Promise<HappiaCatalogueResult>;
   photoIds?: ReadonlySet<string>;
-  savePhotoFeedback?: (attachmentId: string, confirmed: boolean, preference: PhotoPreference) => Promise<boolean>;
+  /** `null` leaves that part as it was; `keep` replaces the list when given. */
+  savePhotoFeedback?: (attachmentId: string, confirmed: boolean | null, preference: PhotoPreference | null, keep?: string[]) => Promise<boolean>;
+  savePhotoReading?: (attachmentId: string, reading: PhotoReading) => Promise<boolean>;
   now?: () => Date;
   /** The customer turn this tool runs in; links recorded changes to that turn's reply. */
   turnId?: string | null;
@@ -174,6 +179,7 @@ export async function applyAdvisorTool(input: {
       || ((call.nombre === "propose_standard_package") && !summaryArgsSchema.safeParse(call.args).success)
       || (call.nombre === "propose_custom_package" && !customArgs?.success)
       || (call.nombre === "record_photo_feedback" && !photoFeedbackSchema.safeParse(call.args).success)
+      || (call.nombre === "record_photo_reading" && !photoReadingArgsSchema.safeParse(call.args).success)
       || (call.nombre === "show_directions" && !noArgsSchema.safeParse(call.args).success)
       || (call.nombre === "select_direction" && !directionArgsSchema.safeParse(call.args).success)) {
       message = "Los argumentos de la herramienta no son válidos; no se aplicó ningún cambio.";
@@ -313,19 +319,45 @@ export async function applyAdvisorTool(input: {
       message = input.photoIds?.has(feedback.attachmentId) && input.savePhotoFeedback
         ? `Preferencia recibida para la foto ${feedback.attachmentId}.`
         : "No se pudo asociar la preferencia a una foto de esta conversación.";
+    } else if (call.nombre === "record_photo_reading") {
+      const reading = photoReadingArgsSchema.parse(call.args);
+      message = input.photoIds?.has(reading.attachmentId) && input.savePhotoReading
+        ? `Lectura recibida para la foto ${reading.attachmentId}.`
+        : "No se pudo asociar la lectura a una foto de esta conversación.";
     } else {
       message = "Herramienta desconocida; no se aplicaron cambios.";
     }
     if (recordReceipt) state.toolReceipts[input.operationId] = { name: call.nombre, argsHash, message };
     return state;
   });
+  if (call.nombre === "record_photo_reading") {
+    const reading = photoReadingArgsSchema.safeParse(call.args);
+    if (reading.success && input.photoIds?.has(reading.data.attachmentId) && input.savePhotoReading) {
+      const { attachmentId, ...fields } = reading.data;
+      message = await input.savePhotoReading(attachmentId, fields)
+        ? `Lectura guardada para la foto ${attachmentId}. Describe esa lectura al cliente y pídele que confirme si es correcta; quedó pendiente de su confirmación.`
+        : "No se encontró la foto para guardar su lectura.";
+    }
+  }
   if (call.nombre === "record_photo_feedback") {
     const feedback = photoFeedbackSchema.safeParse(call.args);
     if (feedback.success && input.photoIds?.has(feedback.data.attachmentId) && input.savePhotoFeedback) {
-      const saved = await input.savePhotoFeedback(feedback.data.attachmentId, feedback.data.confirmed, feedback.data.preference);
-      message = saved
-        ? `Preferencia registrada para la foto ${feedback.data.attachmentId} (${feedback.data.preference}; confirmada: ${feedback.data.confirmed}).`
-        : "No se encontró la foto para guardar su preferencia.";
+      // Only what the customer's own latest message supports is stored; the rest is reported back so the advisor asks.
+      const evidence = customerEvidence(currentCustomerText);
+      const confirmed = feedback.data.confirmed ? (evidence.confirmed ? true : null) : (evidence.corrected ? false : null);
+      const preference = feedback.data.preference === "like" ? (evidence.likes ? "like" as const : null)
+        : feedback.data.preference === "dislike" ? (evidence.dislikes ? "dislike" as const : null) : "neutral" as const;
+      const keep = feedback.data.keep ? keepWithEvidence(feedback.data.keep, currentCustomerText) : null;
+      const saved = confirmed === null && preference === null && !(keep?.accepted.length)
+        ? true
+        : await input.savePhotoFeedback(feedback.data.attachmentId, confirmed, preference, keep?.accepted.length ? keep.accepted : undefined);
+      const unsupported = [
+        confirmed === null ? (feedback.data.confirmed ? "que confirmó tu lectura" : "que corrigió tu lectura") : null,
+        preference === null ? `que le ${feedback.data.preference === "like" ? "gusta" : "disgusta"} la foto` : null,
+        ...(keep?.rejected ?? []).map((item) => `conservar «${item}»`),
+      ].filter((item): item is string => item !== null);
+      message = !saved ? "No se encontró la foto para guardar su preferencia."
+        : `Guardado para la foto ${feedback.data.attachmentId}: ${[confirmed === null ? null : `lectura ${confirmed ? "confirmada" : "corregida"}`, preference && preference !== "neutral" ? (preference === "like" ? "le gusta" : "no le gusta") : null, keep?.accepted.length ? `conservar: ${keep.accepted.join(", ")}` : null].filter(Boolean).join("; ") || "sin cambios"}.${unsupported.length ? ` NO se guardó (el último mensaje del cliente no lo dice): ${unsupported.join("; ")}. Pregúntaselo en vez de suponerlo.` : ""}`;
     }
   }
   const state = parseEventBriefState(result.state);

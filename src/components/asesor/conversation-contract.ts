@@ -3,7 +3,7 @@ import { formatBriefChange } from "@/lib/asesor/brief-changes";
 
 export const ADVISOR_CONVERSATION_STORAGE_KEY = "asesor.conversationId";
 
-export type AdvisorPhoto = { id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral" };
+export type AdvisorPhoto = { id: string; mimeType: string; byteSize: number; kind: "inspiration" | "venue"; confirmed: boolean | null; preference: "like" | "dislike" | "neutral"; reading?: { style: string; colors: string[]; elements: string[] } | null; keep?: string[] };
 /** A voice note this browser recorded: the audio exists only here (the server keeps the transcript), `waveform` is the real loudness shape. */
 export type AdvisorVoiceNote = { url: string | null; seconds: number; waveform: number[]; state: "transcribing" | "ready" | "failed"; error?: string };
 export type AdvisorMessage = { id: string; role: "user" | "assistant"; content: string; attachments?: AdvisorPhoto[]; inputMode?: "voice"; voice?: AdvisorVoiceNote };
@@ -46,6 +46,7 @@ const progressSchema = z.object({ complete: z.boolean(), completed: z.number().i
 const photoSchema = z.object({
   id: z.string().min(1), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), byteSize: z.number().int().positive().max(6 * 1024 * 1024),
   kind: z.enum(["inspiration", "venue"]), confirmed: z.boolean().nullable(), preference: z.enum(["like", "dislike", "neutral"]),
+  reading: z.object({ style: z.string(), colors: z.array(z.string()), elements: z.array(z.string()) }).strict().nullable().optional(), keep: z.array(z.string()).optional(),
 }).strict();
 const messageSchema = z.object({ id: z.string().min(1), role: z.enum(["user", "assistant"]), content: z.string(), attachments: z.array(photoSchema).optional(), inputMode: z.literal("voice").optional() }).strict();
 const directionSchema = z.object({
