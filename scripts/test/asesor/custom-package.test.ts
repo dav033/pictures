@@ -113,3 +113,17 @@ test("the brief and the summary list every service with its price", async () => 
   assert.ok(entries.some((entry) => /^Servicio · Comida$/.test(entry.label) && /Torta de Chocolate 1\/2lb \(Sempertex\) x1: .*75\.000/.test(entry.value)));
   assert.ok(entries.some((entry) => entry.label === "Total de referencia" && /75\.000/.test(entry.value)));
 });
+
+test("an amount replaces the quick-pick band (and vice versa): the brief never keeps two budgets", async () => {
+  const store = memory({ brief: brief({ budgetRange: "$300.000–$600.000" }) });
+  await applyAdvisorTool({ call: { nombre: "save_event_fields", args: { budget: 1_200_000 } }, operationId: "b1:0:0", currentCustomerText: "cambiar el presupuesto a 1.2m", mutateBrief: store.mutate });
+  assert.equal(store.state.brief.budget, 1_200_000);
+  assert.equal(store.state.brief.budgetRange, null, "the old band is gone");
+  assert.equal(store.state.changes.length, 1);
+  assert.match(store.state.changes[0].from, /300\.000.*600\.000/); assert.match(store.state.changes[0].to, /1\.200\.000/);
+  await applyAdvisorTool({ call: { nombre: "save_event_fields", args: { budgetRange: "Hasta $300.000" } }, operationId: "b2:0:0", currentCustomerText: "mejor hasta 300 mil", mutateBrief: store.mutate });
+  assert.equal(store.state.brief.budget, null); assert.equal(store.state.brief.budgetRange, "Hasta $300.000");
+  assert.equal(store.state.changes.length, 2);
+  await applyAdvisorTool({ call: { nombre: "save_event_fields", args: { budgetRange: "Hasta $300.000" } }, operationId: "b3:0:0", currentCustomerText: "eso", mutateBrief: store.mutate });
+  assert.equal(store.state.changes.length, 2, "saying the same budget again changes nothing");
+});

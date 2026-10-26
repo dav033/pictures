@@ -42,7 +42,13 @@ export function sameFact(a: string, b: string): boolean {
 /** Server-owned diff between two brief states: each tracked fact that had a value and now has a different one. */
 export function diffBrief(before: EventBrief, after: EventBrief, turnId: string | null): BriefChange[] {
   const changes: BriefChange[] = [];
-  for (const field of Object.keys(TRACKED_FIELDS) as (keyof typeof TRACKED_FIELDS)[]) {
+  // The budget is one fact however it was given (an amount, a band): compare what the customer would read.
+  const fromBudget = before.budget !== null || before.budgetRange ? budgetDisplay(before) : null;
+  const toBudget = after.budget !== null || after.budgetRange ? budgetDisplay(after) : null;
+  if (fromBudget && toBudget !== fromBudget && !(toBudget && sameFact(fromBudget, toBudget))) {
+    changes.push({ field: "budget", from: fromBudget.slice(0, 500), to: (toBudget ?? "sin definir").slice(0, 500), turnId, impact: null });
+  }
+  for (const field of (Object.keys(TRACKED_FIELDS) as (keyof typeof TRACKED_FIELDS)[]).filter((key) => key !== "budget" && key !== "budgetRange")) {
     const from = displayValue(field, before[field]);
     const to = displayValue(field, after[field]);
     if (!from || from === to || (to !== "" && sameFact(from, to))) continue;

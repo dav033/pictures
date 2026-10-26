@@ -189,6 +189,11 @@ export async function applyAdvisorTool(input: {
       const updated = EventBriefSchema.safeParse({ ...state.brief, ...suppliedFields });
       if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
       const fitChanged = (["eventKind", "theme", "city", "guestCount"] as const).some((field) => updated.data[field] !== state.brief[field]);
+      // An amount and a band are two ways to say one budget: the newest wins and the other is cleared (the summary would show the old one).
+      const supplied = new Set(Object.keys(call.args));
+      if (supplied.has("budget") && updated.data.budget !== null && !supplied.has("budgetRange")) updated.data.budgetRange = null;
+      if (supplied.has("budgetRange") && updated.data.budgetRange && !supplied.has("budget")) updated.data.budget = null;
+      if (updated.data.budget !== null || updated.data.budgetRange) updated.data.budgetUndisclosed = false;
       // The same range or amount worded differently keeps the first wording (a quick-pick chip's exact text).
       if (state.brief.budgetRange && updated.data.budgetRange && sameFact(state.brief.budgetRange, updated.data.budgetRange)) updated.data.budgetRange = state.brief.budgetRange;
       state.changes = appendBriefChanges(state.changes, diffBrief(state.brief, updated.data, input.turnId ?? null));
