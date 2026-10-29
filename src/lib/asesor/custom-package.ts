@@ -5,17 +5,28 @@ import { coverageOf, scaleServes, servesOfService } from "./servings";
 import { budgetCeiling, packageCard, type AdvisorPackageCard } from "./packages";
 
 /** What the model asks for: service ids copied from the catalogue it was given, and a quantity for unit-priced services. */
-export type CustomPackageRequest = { name?: string; items: ReadonlyArray<{ serviceId: string; quantity?: number }> };
+export type CustomPackageRequest = {
+  name?: string;
+  items: ReadonlyArray<{ serviceId: string; quantity?: number }>;
+  /** True only once the customer said they need assembly / transport; otherwise those services are held back. */
+  logisticsConfirmed?: boolean;
+};
 
 export const MAX_CUSTOM_ITEMS = 20;
 const MAX_UNIT_QUANTITY = 60;
 
 export type CustomPackageResult =
-  | { status: "proposal"; proposal: StandardPackageProposal; card: AdvisorPackageCard }
+  | { status: "proposal"; proposal: StandardPackageProposal; card: AdvisorPackageCard; heldBack: string[] }
   | { status: "rejected"; reason: string };
 
 function normalise(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Assembly, transport and similar add-ons: the customer decides on them, the advisor never adds them by default. */
+export function isLogisticsService(service: { name: string }): boolean {
+  const name = normalise(service.name);
+  return /\b(montaje|desmontaje|transporte|instalacion|flete)\b/.test(name) && !/\bincluid[oa]s?\b/.test(name);
 }
 
 /** Services of the event's city only; a service from another city can never be offered. */
@@ -52,16 +63,25 @@ export function buildCustomPackage(catalogue: HappiaCatalogueResult, brief: Even
   const unknown = request.items.filter((item) => !byId.has(item.serviceId)).map((item) => item.serviceId);
   if (unknown.length > 0) return { status: "rejected", reason: `Estos servicios no existen en el catálogo de ${brief.city}: ${unknown.join(", ")}. Usa solo los identificadores del catálogo que te dio el servidor; no se armó la propuesta.` };
 
+  const heldBack: string[] = [];
+  const asked = request.logisticsConfirmed ? request.items : request.items.filter((item) => {
+    const service = byId.get(item.serviceId) as HappiaService & { name: string };
+    if (!isLogisticsService(service)) return true;
+    heldBack.push(service.name.trim());
+    return false;
+  });
+  if (asked.length === 0) return { status: "rejected", reason: `Solo pediste servicios de montaje o transporte (${heldBack.join(", ")}): pregunta primero al cliente si los necesita y arma la propuesta con lo principal (decoración, comida, postres).` };
+
   const guests = brief.guestCount;
   const isPerPerson = (service: HappiaService) => service.charge_type === "per_person" || service.charge_mode === "per_person";
   // Per-person services follow the guest count, event-priced and non-editable ones are a single unit, the rest take the asked quantity (repeated ids add up).
   const wanted = new Map<string, number>();
-  for (const item of request.items) {
+  for (const item of asked) {
     const service = byId.get(item.serviceId) as HappiaService;
     if (isPerPerson(service)) { wanted.set(service.id, guests); continue; }
     if (service.charge_mode === "event" || !service.quantity_editable) { wanted.set(service.id, 1); continue; }
-    const asked = Number.isInteger(item.quantity) && (item.quantity as number) >= 1 ? (item.quantity as number) : 1;
-    wanted.set(service.id, Math.min(MAX_UNIT_QUANTITY, (wanted.get(service.id) ?? 0) + asked));
+    const times = Number.isInteger(item.quantity) && (item.quantity as number) >= 1 ? (item.quantity as number) : 1;
+    wanted.set(service.id, Math.min(MAX_UNIT_QUANTITY, (wanted.get(service.id) ?? 0) + times));
   }
   const lines: ProposalLine[] = [...wanted].map(([id, quantity]) => {
     const service = byId.get(id) as HappiaService & { name: string };
@@ -90,5 +110,5 @@ export function buildCustomPackage(catalogue: HappiaCatalogueResult, brief: Even
     disclosures, quantityCheck: coverage.check,
     categories: [...new Set(lines.map((line) => line.category).filter((name) => name.trim() !== ""))].sort((a, b) => a.localeCompare(b, "es")),
   };
-  return { status: "proposal", proposal, card: packageCard(proposal) };
+  return { status: "proposal", proposal, card: packageCard(proposal), heldBack };
 }

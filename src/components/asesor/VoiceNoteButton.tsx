@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Mic, Square, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Loader2, Mic, Square, X } from "lucide-react";
 import { LiveWaveform } from "./LiveWaveform";
 import { formatearTiempo } from "@/components/voz/estado-dictado";
 import { MENSAJES_ERROR_DICTADO } from "@/components/voz/mensajes-voz";
 import { useDictado } from "@/components/voz/useDictado";
 import { useEstadoVoz } from "@/components/voz/useVozDisponible";
-import { MAX_SEGUNDOS_AUDIO } from "@/lib/voz/limites";
 
 /** A finished recording, reported the moment it ends so the chat can show it before the transcript exists. */
 export type RecordedNote = { turnId: string; url: string; seconds: number; levels: number[] };
@@ -22,6 +22,10 @@ type Props = {
   onFailed: (turnId: string, message: string) => void;
   disabled?: boolean;
   className: string;
+  /** Where the recording bar goes (it replaces the text field while recording) and where warnings and the microphone list go; both sit in the composer, never over the chat. */
+  rowHost: HTMLElement | null;
+  detailHost: HTMLElement | null;
+  onRecordingChange?: (recording: boolean) => void;
 };
 
 const ERROR_SECONDS = 7;
@@ -40,7 +44,7 @@ const UNAVAILABLE: Record<"sin_navegador" | "apagada", string> = {
  * Records a voice note and sends it to `/api/asesor/voice-notes`; the server stores the transcript as the customer's turn
  * and `onNote` then runs the advisor turn with it. When voice is unavailable the button stays visible and says why.
  */
-export function VoiceNoteButton({ conversationId, onRecorded, onNote, onFailed, disabled = false, className }: Props) {
+export function VoiceNoteButton({ conversationId, onRecorded, onNote, onFailed, disabled = false, className, rowHost, detailHost, onRecordingChange }: Props) {
   const voice = useEstadoVoz();
   const [hint, setHint] = useState(false);
   const turnId = useRef("");
@@ -87,6 +91,9 @@ export function VoiceNoteButton({ conversationId, onRecorded, onNote, onFailed, 
     return () => window.clearTimeout(timer);
   }, [error, descartarError]);
 
+  const isRecording = estado.fase === "grabando";
+  useEffect(() => { onRecordingChange?.(isRecording); }, [isRecording, onRecordingChange]);
+
   useEffect(() => {
     if (!hint) return;
     const timer = window.setTimeout(() => setHint(false), ERROR_SECONDS * 1000);
@@ -106,7 +113,7 @@ export function VoiceNoteButton({ conversationId, onRecorded, onNote, onFailed, 
   const working = estado.fase === "permiso" || estado.fase === "transcribiendo";
   const status = recording ? "Grabando la nota de voz. Toca de nuevo para enviarla." : estado.fase === "permiso" ? "Esperando el permiso del micrófono." : estado.fase === "transcribiendo" ? "Enviando la nota de voz." : "";
   const quiet = recording && segundos > 1.5 && Math.max(0, ...history) < SILENCE_PEAK;
-  const panel = recording || Boolean(error);
+  const panel = quiet || Boolean(error) || (recording && pickerOpen);
 
   const start = () => {
     if (estado.fase === "reposo") { levels.current = []; setHistory([]); setPickerOpen(false); }
@@ -129,29 +136,24 @@ export function VoiceNoteButton({ conversationId, onRecorded, onNote, onFailed, 
         {working ? <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden /> : recording ? <Square className="size-4 fill-current" aria-hidden /> : <Mic className="size-5" aria-hidden />}
       </button>
       <span className="sr-only" role="status" aria-live="polite">{status}{quiet ? " No se detecta sonido en el micrófono." : ""}</span>
-      {panel && (
-        <div className="asesor-sube absolute bottom-full right-0 z-30 mb-2 flex w-[min(21rem,86vw)] flex-col gap-2 rounded-2xl border border-borde bg-superficie p-3 text-xs text-texto shadow-lg">
-          {recording && (
-            <div className="flex items-center gap-2.5">
-              <span className="size-2 shrink-0 animate-pulse rounded-full bg-red-500 motion-reduce:animate-none" aria-hidden />
-              <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{formatearTiempo(segundos)} / {formatearTiempo(MAX_SEGUNDOS_AUDIO)}</span>
-              <LiveWaveform levels={history} quiet={quiet} />
-              <button type="button" onClick={cancelar} aria-label="Cancelar nota de voz" title="Cancelar (Esc)" className="grid size-7 shrink-0 place-items-center rounded-full opacity-80 hover:bg-superficie-suave hover:opacity-100"><X className="size-4" aria-hidden /></button>
-            </div>
-          )}
+      {recording && rowHost && createPortal(
+        <div className="asesor-fade flex min-w-0 flex-1 items-center gap-2 pl-1">
+          <button type="button" onClick={cancelar} aria-label="Cancelar nota de voz" title="Cancelar (Esc)" className="grid size-9 shrink-0 place-items-center rounded-full text-texto-suave hover:bg-superficie-suave"><X className="size-5" aria-hidden /></button>
+          <span className="size-2 shrink-0 animate-pulse rounded-full bg-red-500 motion-reduce:animate-none" aria-hidden />
+          <span className="shrink-0 whitespace-nowrap font-mono text-xs tabular-nums">{formatearTiempo(segundos)}</span>
+          <LiveWaveform levels={history} quiet={quiet} />
+          <button type="button" onClick={togglePicker} aria-expanded={pickerOpen} aria-label="Cambiar micrófono" title={dispositivo ?? "Micrófono predeterminado"} className="grid size-9 shrink-0 place-items-center rounded-full text-texto-suave hover:bg-superficie-suave"><Mic className="size-4" aria-hidden /></button>
+        </div>, rowHost)}
+      {panel && detailHost && createPortal(
+        <div className="asesor-sube flex flex-col gap-2 rounded-2xl border border-borde bg-superficie p-3 text-xs text-texto shadow-sm">
           {quiet && <p role="alert" className="rounded-lg bg-aviso-suave px-2.5 py-1.5 text-[13px] leading-snug">No se detecta sonido en tu micrófono. Habla más cerca o elige otro micrófono abajo.</p>}
           {error && <p role="alert" className="rounded-lg bg-aviso-suave px-2.5 py-1.5 text-[13px] leading-snug">{MENSAJES_ERROR_DICTADO[error]}</p>}
-          <button type="button" onClick={togglePicker} aria-expanded={pickerOpen} className="flex min-h-8 items-center justify-between gap-2 rounded-lg px-1 text-left text-texto-suave hover:bg-superficie-suave">
-            <span className="flex min-w-0 items-center gap-1.5"><Mic className="size-3.5 shrink-0" aria-hidden /><span className="truncate">{dispositivo ?? "Micrófono predeterminado"}</span></span>
-            <span className="flex shrink-0 items-center gap-0.5 font-medium text-acento">Cambiar<ChevronDown className="size-3.5" aria-hidden /></span>
-          </button>
-          {pickerOpen && <ul aria-label="Micrófonos disponibles" className="flex flex-col gap-0.5 border-t border-borde-suave pt-2">
+          {pickerOpen && <ul aria-label="Micrófonos disponibles" className="flex flex-col gap-0.5">
             {mics === null ? <li className="px-1 text-texto-suave">Buscando micrófonos…</li>
               : mics.length === 0 ? <li className="px-1 text-texto-suave">No se encontraron micrófonos.</li>
                 : mics.map((mic) => <li key={mic.id}><button type="button" onClick={() => chooseMic(mic.id)} aria-pressed={mic.id === micId || (dispositivo !== null && mic.label === dispositivo)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-1 text-left hover:bg-superficie-suave"><span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${mic.id === micId || (dispositivo !== null && mic.label === dispositivo) ? "bg-acento" : "bg-borde"}`} /><span className="truncate">{mic.label}</span></button></li>)}
           </ul>}
-        </div>
-      )}
+        </div>, detailHost)}
     </span>
   );
 }

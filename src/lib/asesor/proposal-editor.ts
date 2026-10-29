@@ -44,7 +44,7 @@ export function applyProposalEdit(state: EventBriefState, catalogue: HappiaCatal
     state.standardPackage = null;
     state.brief.proposedPackage = null;
   } else {
-    const outcome = buildCustomPackage(catalogue, state.brief, { ...(state.standardPackage?.kind === "custom" ? { name: state.standardPackage.name } : {}), items });
+    const outcome = buildCustomPackage(catalogue, state.brief, { ...(state.standardPackage?.kind === "custom" ? { name: state.standardPackage.name } : {}), items, logisticsConfirmed: true });
     if (outcome.status === "rejected") return { status: "rejected", reason: outcome.reason };
     state.standardPackage = outcome.proposal;
     state.brief.proposedPackage = `${outcome.proposal.name} (propuesta a medida)`;

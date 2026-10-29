@@ -145,3 +145,24 @@ test("find_venues looks the places up in the live catalogue instead of assuming 
   const proposal = buildCustomPackage(catalogue([...SERVICES, hall]), brief(), { items: [{ serviceId: "salon-1" }, { serviceId: "kit" }] });
   assert.ok(proposal.status === "proposal" && proposal.proposal.lines.some((line) => line.serviceId === "salon-1"));
 });
+
+test("assembly and transport are held back until the customer confirms them", () => {
+  const montaje = service("montaje", "Montaje y Transporte", 780_000, { provider_name: "Marcial Acuña Decoración" });
+  const incluido = service("arco", "Arco con montaje incluido", 190_000);
+  const services = catalogue([...SERVICES, montaje, incluido]);
+  const asked = [{ serviceId: "guirnalda" }, { serviceId: "montaje" }, { serviceId: "arco" }];
+
+  const held = buildCustomPackage(services, brief(), { items: asked });
+  assert.equal(held.status, "proposal");
+  if (held.status !== "proposal") return;
+  assert.deepEqual(held.heldBack, ["Montaje y Transporte"]);
+  assert.deepEqual(held.proposal.lines.map((line) => line.serviceId).sort(), ["arco", "guirnalda"]);
+  assert.ok(held.proposal.disclosures.every((text) => !/montaje/i.test(text)), "the customer-facing notices do not carry the model instruction");
+
+  const confirmed = buildCustomPackage(services, brief(), { items: asked, logisticsConfirmed: true });
+  assert.equal(confirmed.status === "proposal" && confirmed.proposal.lines.some((line) => line.serviceId === "montaje"), true);
+  assert.equal(confirmed.status === "proposal" && confirmed.heldBack.length, 0);
+
+  const only = buildCustomPackage(services, brief(), { items: [{ serviceId: "montaje" }] });
+  assert.equal(only.status, "rejected");
+});

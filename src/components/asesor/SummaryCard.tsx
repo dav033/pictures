@@ -21,9 +21,9 @@ export function summarySections(text: string): { rows: Row[]; changes: string[];
   return { rows, changes, conditions };
 }
 
-type Props = { summary: AdvisorSummary; approved: boolean; conversationId: string | null; busy: boolean; onApprove: () => void; onCorrect: () => void };
+type Props = { summary: AdvisorSummary; approved: boolean; busy: boolean; onApprove: () => void; onCorrect: () => void };
 
-export function SummaryCard({ summary, approved, conversationId, busy, onApprove, onCorrect }: Props) {
+export function SummaryCard({ summary, approved, busy, onApprove, onCorrect }: Props) {
   const { rows, changes, conditions } = summarySections(summary.text);
   return (
     <li aria-label="Resumen actual del evento" className="asesor-sube flex flex-col gap-3">
@@ -47,7 +47,7 @@ export function SummaryCard({ summary, approved, conversationId, busy, onApprove
         </details>}
       </article>
       {approved
-        ? <a className="asesor-pop asesor-pulso inline-flex min-h-12 items-center justify-center rounded-[14px] bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento" href={`/asesor/brief/${encodeURIComponent(conversationId ?? "")}`}>Ver resumen aprobado</a>
+        ? <p role="status" className="font-semibold text-exito">Resumen aprobado</p>
         : <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={busy} onClick={onCorrect} className="asesor-eleva min-h-12 rounded-[14px] border border-borde bg-superficie font-medium text-texto disabled:opacity-50">Corregir algo</button>
           <button type="button" disabled={busy} onClick={onApprove} className="asesor-eleva min-h-12 rounded-[14px] bg-acento font-semibold text-sobre-acento disabled:opacity-50">Aprobar resumen</button>

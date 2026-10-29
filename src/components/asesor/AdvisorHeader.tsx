@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 import type { AdvisorHeadline, AdvisorProgress } from "./conversation-contract";
 
 const STEPS = [
@@ -27,7 +28,10 @@ export function AdvisorHeader({ headline, progress, onNew }: Props) {
           <h1 key={headline.title ?? "sin-titulo"} className="asesor-fade asesor-display line-clamp-2 text-xl font-bold leading-tight">{headline.title ?? "Planeemos tu celebración"}</h1>
           <p key={headline.facts.join("|")} className="asesor-fade truncate text-[13px] text-texto-suave">{headline.facts.length ? headline.facts.join(" · ") : "Asesor Happia · versión de prueba"}</p>
         </div>
-        {onNew && <button type="button" onClick={onNew} className="min-h-11 shrink-0 rounded-full border border-borde bg-superficie px-3.5 text-sm font-medium text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Nueva</button>}
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/asesor/personalizado" className="inline-flex min-h-11 items-center rounded-full border border-borde bg-superficie px-3 text-sm font-medium text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Personalizado</Link>
+          {onNew && <button type="button" onClick={onNew} className="min-h-11 rounded-full border border-borde bg-superficie px-3.5 text-sm font-medium text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Nueva</button>}
+        </div>
       </div>
       {progress?.step && <nav aria-label="Pasos de la asesoría" className="mx-auto mt-3 flex max-w-2xl items-center gap-2 overflow-x-auto whitespace-nowrap text-xs [scrollbar-width:none]">
         {STEPS.map(({ key, label }, index) => <Fragment key={key}>
