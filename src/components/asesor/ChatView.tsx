@@ -26,7 +26,7 @@ const text = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variab
 const welcome: AdvisorMessage = {
   id: "advisor-welcome",
   role: "assistant",
-  content: "¡Hola! Soy Happia. Cuéntame sobre la celebración que tienes en mente: qué celebran y para quién es.",
+  content: "¡Hola! Soy el asesor de Happia. Cuéntame sobre la celebración que tienes en mente: qué celebran y para quién es.",
 };
 
 function Avatar() {
@@ -62,6 +62,15 @@ export function ChatView() {
   const settled = revealing.size === 0;
   const { follow, snap } = useStickToBottom(transcriptEnd);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  // The composer grows while a voice note is recorded (warnings, microphone list): keep the end of the chat above it.
+  const footer = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = footer.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => follow());
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [follow]);
   const visibleMessages = conversation.messages.length ? conversation.messages : [welcome];
   // Photos are named by their position in the conversation ("De la foto 2…"), the same order the server counts them in.
   const photoNumbers = new Map(visibleMessages.flatMap((message) => message.attachments ?? []).map((photo, index) => [photo.id, index + 1] as const));
@@ -69,11 +78,17 @@ export function ChatView() {
   const busy = conversation.voicePending || !conversation.conversationId || conversation.status === "sending" || conversation.status === "loading" || conversation.status === "invalid" || conversation.status === "unavailable";
   const idle = !busy && conversation.status !== "failed";
   const directions = ADVISOR_DIRECTIONS_ENABLED ? conversation.cards.filter((card) => card.kind === "direction") : [];
-  // The package card belongs to the reply that presents it: once the customer answers, it leaves the screen.
-  const [proposalSeen, setProposalSeen] = useState<{ id: string; messages: number } | null>(null);
+  // The package card and the summary belong to the reply that presents them: once the customer answers (text or voice note), they leave the screen.
+  const customerTurns = conversation.messages.filter((message) => message.role === "user").length;
+  const [proposalSeen, setProposalSeen] = useState<{ id: string; turns: number } | null>(null);
   const proposalId = conversation.proposal?.packageId ?? null;
-  if (proposalId && proposalSeen?.id !== proposalId) setProposalSeen({ id: proposalId, messages: conversation.messages.length });
-  const showProposal = Boolean(conversation.proposal) && proposalSeen?.id === proposalId && conversation.messages.length <= (proposalSeen?.messages ?? 0) + 1;
+  if (proposalId && proposalSeen?.id !== proposalId) setProposalSeen({ id: proposalId, turns: customerTurns });
+  const showProposal = Boolean(conversation.proposal) && proposalSeen?.id === proposalId && customerTurns <= (proposalSeen?.turns ?? 0);
+  // A corrected summary is a new version and comes back; an approved one stays as the record.
+  const [summarySeen, setSummarySeen] = useState<{ version: number; turns: number } | null>(null);
+  const summaryVersion = conversation.summary?.version ?? null;
+  if (summaryVersion !== null && summarySeen?.version !== summaryVersion) setSummarySeen({ version: summaryVersion, turns: customerTurns });
+  const showSummary = Boolean(conversation.summary) && (conversation.approved || (summarySeen?.version === summaryVersion && customerTurns <= (summarySeen?.turns ?? 0)));
 
   const lastRole = conversation.messages.at(-1)?.role;
   // Sending something goes to the end; anything that grows the chat afterwards is followed until the person scrolls up.
@@ -87,13 +102,6 @@ export function ChatView() {
       <AdvisorHeader headline={conversation.headline} progress={progress} onNew={conversation.conversationId ? () => void conversation.startFresh() : undefined} />
 
       <section aria-label="Conversación con tu asesor" aria-live="polite" className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 py-5">
-        <aside aria-label="Privacidad" className="rounded-2xl border border-borde-suave bg-superficie px-4 py-3 text-[13px] leading-relaxed text-texto-suave">
-          <p><span className="font-semibold text-texto">Tus datos se usan para preparar esta propuesta.</span> Comparte solo lo que quieras incluir; puedes corregirlo durante la conversación.</p>
-        </aside>
-        <aside aria-label="Versión de prueba" className="rounded-2xl bg-aviso-suave px-4 py-3 text-[13px] leading-relaxed text-texto">
-          <p><span className="font-semibold">Versión de prueba.</span> Estamos afinando esta asesoría; revisaremos contigo los detalles antes de cerrar la propuesta.</p>
-        </aside>
-
         {conversation.status === "loading" && <p role="status" className="rounded-2xl bg-superficie-suave px-4 py-3 text-sm text-texto-suave">Recuperando tu conversación…</p>}
         {conversation.status === "invalid" && <div role="alert" className="rounded-2xl border border-aviso/30 bg-aviso-suave p-4"><p className="font-medium">{conversation.error}</p><button type="button" onClick={() => void conversation.startFresh()} className="mt-3 min-h-11 rounded-xl bg-acento px-4 font-semibold text-sobre-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Empezar una conversación nueva</button></div>}
         {conversation.status === "unavailable" && <div role="alert" className="rounded-2xl border border-error/30 bg-error-suave p-4"><p>{conversation.error}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 min-h-11 rounded-xl border border-borde bg-superficie px-4 font-semibold text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento">Intentar recuperar de nuevo</button></div>}
@@ -120,7 +128,7 @@ export function ChatView() {
           })}
           {conversation.streamingText && <li aria-label="Respuesta en curso" className="asesor-sube flex items-start gap-3"><Avatar /><AssistantText id={conversation.streamingId ?? "streaming"} content={conversation.streamingText} animate streaming onRevealing={onRevealing} onGrow={follow} /></li>}
           {conversation.status === "sending" && !conversation.streamingText && <li role="status" className="asesor-sube flex items-center gap-3 text-sm text-texto-suave"><Avatar />Estoy pensando… <span aria-hidden="true" className="asesor-puntos"><span /><span /><span /></span></li>}
-          {conversation.summary && settled && <SummaryCard summary={conversation.summary} approved={conversation.approved} conversationId={conversation.conversationId} busy={busy}
+          {showSummary && conversation.summary && settled && <SummaryCard summary={conversation.summary} approved={conversation.approved} busy={busy}
             onApprove={() => conversation.submit(`Apruebo el resumen versión ${conversation.summary?.version}.`)} onCorrect={correct} />}
         </ol>
 
@@ -138,7 +146,7 @@ export function ChatView() {
 
       {sheetOpen && conversation.conversationId && <ProposalSheet conversationId={conversation.conversationId} proposal={conversation.proposal} guests={conversation.headline.guests} city={conversation.headline.city} onClose={() => setSheetOpen(false)} onSaved={conversation.applyProposalPatch} />}
 
-      <footer className="sticky bottom-0 z-10 bg-fondo/95 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+      <footer ref={footer} className="sticky bottom-0 z-10 bg-fondo/95 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         {conversation.conversationId && conversation.headline.city && <div className="mx-auto mb-2 flex w-full max-w-2xl">
           <button type="button" onClick={() => setSheetOpen(true)} className="asesor-eleva flex min-h-10 items-center gap-2 rounded-full border border-borde bg-superficie px-4 text-sm font-medium shadow-sm">
             <Store aria-hidden="true" className="size-4 text-acento" />{conversation.proposal?.estimate.subtotalCop ? `Tu propuesta · ${new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(conversation.proposal.estimate.subtotalCop)} · editar` : "Explorar servicios de Happia"}

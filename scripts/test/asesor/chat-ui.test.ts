@@ -12,12 +12,9 @@ const hook = readFileSync("src/components/asesor/useConversation.ts", "utf8");
 const createRoute = readFileSync("src/app/api/asesor/conversations/route.ts", "utf8");
 const restoreRoute = readFileSync("src/app/api/asesor/conversations/[id]/route.ts", "utf8");
 
-test("advisor page places privacy and test notices before the welcome question", () => {
+test("advisor page shows no privacy or test-version banners above the conversation", () => {
   assert.match(protectedPage, /<ChatView\s*\/>/);
-  const privacy = chatView.indexOf("aria-label=\"Privacidad\"");
-  const preview = chatView.indexOf("aria-label=\"Versión de prueba\"");
-  const transcript = chatView.indexOf("{visibleMessages.map");
-  assert.ok(privacy >= 0 && preview > privacy && transcript > preview);
+  assert.doesNotMatch(chatView, /aria-label="Privacidad"|aria-label="Versión de prueba"/);
   assert.match(chatView, /Cuéntame sobre la celebración que tienes en mente/);
   assert.match(chatView, /qué celebran y para quién es/);
   assert.match(chatView, /min-h-dvh/);
@@ -181,4 +178,14 @@ test("a photo sent without text still sends a message the server accepts", async
   assert.equal(photoOnlyMessage("venue", 2), "Te comparto fotos del lugar.");
   for (const kind of ["inspiration", "venue"] as const) for (const count of [1, 3]) assert.ok(photoOnlyMessage(kind, count).trim().length > 0);
   assert.match(hook, /content\.trim\(\) \|\| \(photos\?\.length \? photoOnlyMessage\(photoKind, photos\.length\)/);
+});
+
+test("summary and proposal leave the screen once the customer answers; the recording bar sits in the composer, not over the chat", () => {
+  assert.match(chatView, /customerTurns <= \(proposalSeen\?\.turns \?\? 0\)/);
+  assert.match(chatView, /customerTurns <= \(summarySeen\?\.turns \?\? 0\)/);
+  assert.match(chatView, /conversation\.approved \|\| /);
+  const voiceButton = readFileSync("src/components/asesor/VoiceNoteButton.tsx", "utf8");
+  assert.match(voiceButton, /createPortal\(/);
+  assert.doesNotMatch(voiceButton, /w-\[min\(21rem,86vw\)\]/);
+  assert.match(composer, /rowHost=\{rowHost\}/);
 });

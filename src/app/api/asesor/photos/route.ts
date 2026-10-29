@@ -3,6 +3,7 @@ import { requireAdvisorRole } from "@/lib/asesor/auth";
 import { createAsesorRepository } from "@/lib/asesor/repository";
 import { isSameOriginRequest } from "@/lib/auth/request";
 import { MAX_PHOTO_BYTES, parsePhotoKind, prepareAdvisorPhoto } from "@/lib/asesor/photos";
+import { PERSONALIZED_TITLE } from "@/lib/asesor/personalizado/state";
 
 const MAX_PHOTOS_PER_TURN = 4;
 const MAX_REQUEST_BYTES = MAX_PHOTO_BYTES * MAX_PHOTOS_PER_TURN + 64 * 1024;
@@ -63,8 +64,8 @@ export async function POST(request: Request) {
   }
   try {
     const repo = createAsesorRepository();
-    const { id: accountId } = await repo.upsertAccount(`advisor:${session.role}`);
     const conversation = await repo.getConversation(input.data.conversationId);
+    const { id: accountId } = await repo.upsertAccount(`${conversation?.title === PERSONALIZED_TITLE ? "advisor-personalized" : "advisor"}:${session.role}`);
     if (!conversation || conversation.accountId !== accountId) return Response.json({ code: "CONVERSATION_NOT_FOUND" }, { status: 404 });
     const content = input.data.content || "Quiero compartir estas fotos para orientar la propuesta.";
     const existingTurn = (await repo.listMessages(input.data.conversationId)).find((message) => message.id === input.data.turnId);

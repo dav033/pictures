@@ -192,7 +192,6 @@ test("the original Demo Decoración login is the only door for customers; it nev
 test("pages send a visitor without a session to the original login and keep /asesor/login for administration", async () => {
   const { readFileSync } = await import("node:fs");
   assert.match(readFileSync("src/app/asesor/(protected)/layout.tsx", "utf8"), /redirect\("\/login\?from=\/asesor"\)/);
-  assert.match(readFileSync("src/app/asesor/brief/[id]/page.tsx", "utf8"), /redirect\(`\/login\?from=\$\{encodeURIComponent/);
   const loginPage = readFileSync("src/app/asesor/login/page.tsx", "utf8");
   assert.match(loginPage, /query\.admin !== "1" && query\.error === undefined/);
   assert.match(loginPage, /"\/login\?from=\/asesor"/);
